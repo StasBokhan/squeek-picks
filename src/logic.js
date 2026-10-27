@@ -106,12 +106,12 @@
       };
     }
 
-    // Blocks count by settlement time, so a night's count is final once the data
-    // holds a settlement after the night ended (or a full day has passed since).
+    // Blocks are bucketed by when they settled on Ethereum, so a night's count is final
+    // once its bucket has closed and the 12-confirmation delay (about 2.5 minutes) has
+    // passed. 20 minutes leaves room for the API's indexer to catch up.
     var cur = data.blocks.get(night), prev = data.blocks.get(addDays(night, -1));
-    var blocksCover = data.blocksAt >= end + 30 * 60e3 && data.blocksFrom <= nightStart(addDays(night, -1));
-    var blocksFinal = data.settledTs >= end || (old && data.blocksAt >= end + VOID_AFTER);
-    if (!blocksCover || !blocksFinal) {
+    var blocksCover = data.blocksAt >= end + 20 * 60e3 && data.blocksFrom <= nightStart(addDays(night, -1));
+    if (!blocksCover) {
       res.blocks = { state: "wait" };
     } else if (cur == null || prev == null) {
       res.blocks = old ? { state: "void", reason: "No settlement data" } : { state: "wait" };
