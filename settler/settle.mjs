@@ -93,7 +93,7 @@ async function main() {
   const s = L.parseStats(stats), b = L.parseSettlements(settlements);
   if (!s || !b) { console.log("::warning::The Squeekchain API returned no usable data. Will try again next hour."); return; }
   const data = {
-    nights: s.nights, statsAt: s.at, statsFrom: s.from,
+    nights: s.nights, statsAt: s.at, statsFrom: s.from, firstAt: s.firstAt,
     blocks: b.blocks, blocksAt: b.at, blocksFrom: b.from, settledTs: b.settledTs,
   };
 
