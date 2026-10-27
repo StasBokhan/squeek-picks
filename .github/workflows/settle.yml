@@ -1,0 +1,33 @@
+name: Pay out the nightly pot
+
+on:
+  schedule:
+    - cron: "25 * * * *"   # every hour at :25 (UTC)
+  workflow_dispatch: {}      # lets you run it by hand from the Actions tab
+
+concurrency:
+  group: settle
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  settle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install
+        working-directory: settler
+        run: npm ci --no-audit --no-fund
+      - name: Settle finished nights
+        working-directory: settler
+        env:
+          SETTLER_PRIVATE_KEY: ${{ secrets.SETTLER_PRIVATE_KEY }}
+          SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
+          POT_ADDRESS: ${{ vars.POT_ADDRESS }}
+        run: node settle.mjs
