@@ -55,10 +55,14 @@
       });
     }
     var w = stats.window || {};
+    var life = stats.lifetime || {};
     return {
       nights: nights, typical: typical,
       at: Date.parse(w.endAt || stats.generatedAt) || Date.now(),
-      from: Date.parse(w.startAt) || 0
+      from: Date.parse(w.startAt) || 0,
+      // When this Squeekchain installation started recording. Nights that began
+      // earlier can never be complete (for example after a testnet restart).
+      firstAt: Date.parse(life.firstObservedAt) || 0
     };
   }
 
@@ -80,21 +84,25 @@
   }
 
   // ---------- Results ----------
-  // data: { nights, statsAt, statsFrom, blocks, blocksAt, blocksFrom, settledTs }
+  // data: { nights, statsAt, statsFrom, firstAt, blocks, blocksAt, blocksFrom, settledTs }
   // Each market comes back as live, wait (data not in yet), void, or resolved.
-  // Missing or stale data always means "wait", never "void".
+  // Missing or stale data means "wait", never "void", except for a night that began
+  // before Squeekchain started recording: that one can never be complete.
   function resolveNight(night, now, data) {
     var end = nightEnd(night), ended = now >= end, old = now >= end + VOID_AFTER;
     var res = { night: night, ended: ended, distance: { state: "live" }, peak: { state: "live" }, blocks: { state: "live" } };
     if (!ended) return res;
 
+    var started = data.firstAt || 0;
     var n = data.nights.get(night);
     var statsCover = data.statsAt >= end + 10 * 60e3 && data.statsFrom <= nightStart(night);
-    if (!statsCover) {
-      res.distance = res.peak = { state: "wait" };
+    if (started > nightStart(night)) {
+      res.distance = res.peak = { state: "void", reason: "Squeekchain started recording partway through this night" };
+    } else if (!statsCover) {
+      res.distance = res.peak = { state: "wait", reason: "The night's stats aren't published yet" };
     } else if (!n || n.coverageBps < COVERAGE_OK_BPS) {
-      var why = !n ? "No data for this night" : "Data gap: " + (n.coverageBps / 100).toFixed(0) + "% of rounds in";
-      res.distance = res.peak = old ? { state: "void", reason: why } : { state: "wait" };
+      var why = !n ? "No data for this night" : "Data gap: " + Math.floor(n.coverageBps / 100) + "% of the night's rounds are in";
+      res.distance = res.peak = old ? { state: "void", reason: why } : { state: "wait", reason: why + " so far" };
     } else {
       res.distance = { state: "resolved", km: n.distanceKm };
       var max = Math.max.apply(null, n.blocks);
@@ -111,8 +119,11 @@
     // passed. 20 minutes leaves room for the API's indexer to catch up.
     var cur = data.blocks.get(night), prev = data.blocks.get(addDays(night, -1));
     var blocksCover = data.blocksAt >= end + 20 * 60e3 && data.blocksFrom <= nightStart(addDays(night, -1));
-    if (!blocksCover) {
-      res.blocks = { state: "wait" };
+    if (started > nightStart(addDays(night, -1))) {
+      // The night before wasn't fully recorded, so its count is too low to compare with.
+      res.blocks = { state: "void", reason: "No fully recorded night before this one to compare with" };
+    } else if (!blocksCover) {
+      res.blocks = { state: "wait", reason: "Block counts are final 20 minutes after the night ends" };
     } else if (cur == null || prev == null) {
       res.blocks = old ? { state: "void", reason: "No settlement data" } : { state: "wait" };
     } else if (cur === prev) {
