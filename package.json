@@ -1,0 +1,12 @@
+{
+  "name": "squeek-picks-settler",
+  "private": true,
+  "type": "module",
+  "description": "Pays out the Squeek Picks nightly pot on Sepolia.",
+  "scripts": {
+    "settle": "node settle.mjs"
+  },
+  "dependencies": {
+    "ethers": "6.13.4"
+  }
+}
