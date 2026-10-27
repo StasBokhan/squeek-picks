@@ -422,7 +422,7 @@ footer a { color: var(--ink-2); }
   <section class="panel" id="admin" aria-labelledby="admin-h" hidden>
     <span class="eyebrow">Owner</span>
     <h2 id="admin-h">Pot settings</h2>
-    <p class="sub">Only you see this, because the address ends in ?admin. Changes need the wallet that deployed the pot.</p>
+    <p class="sub">Anyone can open this page, but the pot only accepts changes from the wallet that deployed it.</p>
     <div id="admin-body"></div>
     <p class="msg" id="admin-msg" role="status"></p>
   </section>
@@ -569,7 +569,7 @@ footer a { color: var(--ink-2); }
     return Promise.allSettled([api("/v1/measurement/stats?range=30d"), api("/v1/settlements?range=30d")])
       .then(function (r) {
         var p = r[0].status === "fulfilled" ? L.parseStats(r[0].value) : null;
-        if (p) { H.nights = p.nights; H.typical = p.typical; H.statsAt = p.at; H.statsFrom = p.from; H.apiOk = true; }
+        if (p) { H.nights = p.nights; H.typical = p.typical; H.statsAt = p.at; H.statsFrom = p.from; H.firstAt = p.firstAt; H.apiOk = true; }
         var q = r[1].status === "fulfilled" ? L.parseSettlements(r[1].value) : null;
         if (q) { H.blocks = q.blocks; H.settledTs = q.settledTs; H.blocksAt = q.at; H.blocksFrom = q.from; H.apiOk = true; }
         return r;
@@ -764,11 +764,12 @@ footer a { color: var(--ink-2); }
     }
     return loadEthers().then(function (E) {
       P.E = E;
-      if (P.on) {
-        var net = E.Network.from(Number(CONFIG.CHAIN_ID));
-        var provider = new E.JsonRpcProvider(CONFIG.RPC_URL, net, { staticNetwork: net });
-        P.read = new E.Contract(CONFIG.POT_ADDRESS, POT_ABI, provider);
-      }
+      // The page's own Sepolia connection, for reading and for checking transactions
+      // before they go to the wallet.
+      var net = E.Network.from(Number(CONFIG.CHAIN_ID));
+      P.rpc = new E.JsonRpcProvider(CONFIG.RPC_URL, net, { staticNetwork: net });
+      P.iface = new E.Interface(POT_ABI);
+      if (P.on) P.read = new E.Contract(CONFIG.POT_ADDRESS, POT_ABI, P.rpc);
       if (!window.ethereum) return;
       if (window.ethereum.on) {
         window.ethereum.on("accountsChanged", function (a) { P.account = a && a[0] ? a[0] : null; potRefresh().then(renderAll); });
@@ -817,10 +818,23 @@ footer a { color: var(--ink-2); }
     }).catch(function () { P.settled.set(night, null); });
   }
 
+  function walletName() {
+    var e = window.ethereum || {};
+    if (e.isRabby) return "Rabby";
+    if (e.isPhantom) return "Phantom";
+    if (e.isCoinbaseWallet) return "Coinbase Wallet";
+    if (e.isOkxWallet || e.isOKExWallet) return "OKX Wallet";
+    if (e.isBackpack) return "Backpack";
+    if (e.isTrust || e.isTrustWallet) return "Trust Wallet";
+    if (e.isBraveWallet) return "Brave Wallet";
+    if (e.isMetaMask) return "MetaMask";
+    return "your wallet";
+  }
   function errText(e) {
     if (!e) return "Something went wrong.";
     var code = e.code != null ? e.code : (e.info && e.info.error && e.info.error.code);
     if (code === "ACTION_REJECTED" || code === 4001) return "You cancelled in your wallet.";
+    if (code === -32002) return walletName() + " already has a request waiting. Click its icon in your browser's toolbar to see it.";
     if (code === "INSUFFICIENT_FUNDS" || /insufficient funds/i.test(e.message || "")) {
       return "Not enough Sepolia ETH in this wallet. Get some for free from a Sepolia faucet.";
     }
@@ -860,24 +874,65 @@ footer a { color: var(--ink-2); }
       .then(function (id) { P.chainId = parseInt(id, 16); msg(""); renderAll(); })
       .catch(function (e) { msg(errText(e), "err"); });
   }
-  function withSigner() {
-    return new P.E.BrowserProvider(window.ethereum).getSigner().then(function (s) {
-      return new P.E.Contract(CONFIG.POT_ADDRESS, POT_ABI, s);
-    });
+  function toHex(n) { return "0x" + BigInt(n).toString(16); }
+  function revertText(e) {
+    var reason = e.reason;
+    if (!reason && e.data && P.iface) {
+      try {
+        var pe = P.iface.parseError(e.data);
+        if (pe) reason = pe.name === "NotOwner" ? "only the wallet that deployed the pot can do this"
+          : pe.name === "NotResolver" ? "only the payout bot can do this" : pe.name;
+      } catch (x) { /* not one of the pot's errors */ }
+    }
+    return reason ? "The pot refused: " + reason + "." : "The pot refused this transaction.";
   }
-  function send(msg, doneText, makeTx) {
-    P.busy = true; renderPot(); msg("Confirm in your wallet…");
-    return makeTx().then(function (tx) {
-      msg("Sent. Waiting for Sepolia to confirm (usually under a minute). " + txLink(tx.hash), "", true);
-      return tx.wait().then(function () { return tx; });
-    }).then(function (tx) {
+  function encode(fn, args) { return P.iface.encodeFunctionData(fn, args); }
+
+  // Checks the transaction over the page's own Sepolia connection, then hands it straight
+  // to the wallet so its confirmation window opens at once, and waits for it on Sepolia.
+  // tx: { to?, data, value? }   after(result): runs once it's confirmed.
+  function sendTx(msg, doneText, tx, after) {
+    if (!window.ethereum || !P.account) { msg("Connect your wallet first.", "err"); return; }
+    if (!P.rpc) { msg("The wallet library is still loading. Try again in a moment.", "err"); return; }
+    var name = walletName(), nudge = null;
+    var call = { from: P.account, data: tx.data, value: tx.value || 0n };
+    if (tx.to) call.to = tx.to;
+    P.busy = true; renderPot();
+    msg("Checking the transaction…");
+    return P.rpc.estimateGas(call).then(function (g) {
+      return g * 12n / 10n + 10000n;
+    }, function (e) {
+      if (e && e.code === "CALL_EXCEPTION") throw new Error(revertText(e));
+      return null; // Trouble reaching Sepolia from here: let the wallet work out the gas.
+    }).then(function (gas) {
+      var req = { from: P.account, data: tx.data, chainId: toHex(CONFIG.CHAIN_ID) };
+      if (tx.to) req.to = tx.to;
+      if (tx.value) req.value = toHex(tx.value);
+      if (gas) req.gas = toHex(gas);
+      msg("Confirm in " + name + "…");
+      nudge = setTimeout(function () {
+        msg("Still waiting for " + name + ". If no window opened, click the " + name + " icon in your browser's toolbar: the request is probably waiting there.");
+      }, 12000);
+      return window.ethereum.request({ method: "eth_sendTransaction", params: [req] });
+    }).then(function (hash) {
+      clearTimeout(nudge);
+      msg("Sent. Waiting for Sepolia to confirm (usually under a minute). " + txLink(hash), "", true);
+      return P.rpc.waitForTransaction(hash, 1, 10 * 60e3).catch(function () {
+        return new P.E.BrowserProvider(window.ethereum).waitForTransaction(hash, 1, 10 * 60e3);
+      }).then(function (receipt) {
+        if (!receipt) throw new Error("Not confirmed after 10 minutes. It may still go through, so check it on Etherscan before trying again.");
+        if (receipt.status !== 1) throw new Error("The transaction failed on Sepolia.");
+        return { hash: hash, receipt: receipt };
+      });
+    }).then(function (r) {
       // Read the new state first, so the message never runs ahead of what's on screen.
-      return potRefresh().then(function () {
+      return Promise.resolve(after ? after(r) : null).then(potRefresh).then(function () {
         P.busy = false;
         renderAll();
-        msg(esc(doneText) + " " + txLink(tx.hash), "ok", true);
+        msg(esc(doneText) + " " + txLink(r.hash), "ok", true);
       });
     }).catch(function (e) {
+      clearTimeout(nudge);
       P.busy = false; msg(errText(e), "err"); renderPot();
     });
   }
@@ -896,11 +951,12 @@ footer a { color: var(--ink-2); }
     if ((kind === "buy" || kind === "change") && Date.now() >= nightStart(open)) { renderAll(); return; }
     var deci = v.ok ? Math.round(v.km * 10) : 0;
     if (P.demo) return demoAction(kind, night, v);
-    var day = L.nightToDay(night || open);
-    if (kind === "buy") return send(potMsg, "Ticket bought.", function () { return withSigner().then(function (c) { return c.buyTicket(day, deci, UI.draft.peak, UI.draft.more, { value: n.price }); }); });
-    if (kind === "change") return send(potMsg, "Ticket updated with your new picks.", function () { return withSigner().then(function (c) { return c.changePicks(day, deci, UI.draft.peak, UI.draft.more); }); });
-    if (kind === "refund") return send(potMsg, "Refunded.", function () { return withSigner().then(function (c) { return c.refund(day); }); });
-    if (kind === "collect") return send(potMsg, "Payout collected.", function () { return withSigner().then(function (c) { return c.withdrawOwed(); }); });
+    if (!P.iface) { potMsg("The wallet library is still loading. Try again in a moment.", "err"); return; }
+    var day = L.nightToDay(night || open), pot = CONFIG.POT_ADDRESS;
+    if (kind === "buy") return sendTx(potMsg, "Ticket bought.", { to: pot, data: encode("buyTicket", [day, deci, UI.draft.peak, UI.draft.more]), value: n.price });
+    if (kind === "change") return sendTx(potMsg, "Ticket updated with your new picks.", { to: pot, data: encode("changePicks", [day, deci, UI.draft.peak, UI.draft.more]) });
+    if (kind === "refund") return sendTx(potMsg, "Refunded.", { to: pot, data: encode("refund", [day]) });
+    if (kind === "collect") return sendTx(potMsg, "Payout collected.", { to: pot, data: encode("withdrawOwed", []) });
   }
 
   function payoutLine(pot, count) {
@@ -959,7 +1015,7 @@ footer a { color: var(--ink-2); }
       actions = '<button class="secondary" type="button" data-pot="change"' + busy + ">Send my new picks to the pot</button>" +
         '<span class="hint">The picks above differ from your ticket.</span>';
     }
-    if (P.account) actions += '<span class="chip">' + esc(P.demo ? "Preview wallet" : shortAddr(P.account)) + "</span>";
+    if (P.account) actions += '<span class="chip">' + esc(P.demo ? "Preview wallet" : shortAddr(P.account) + " · " + walletName()) + "</span>";
     $("pot-actions").innerHTML = actions;
   }
 
@@ -1041,7 +1097,7 @@ footer a { color: var(--ink-2); }
     var acct = !window.ethereum ? '<p class="hint">Open this page in a browser with MetaMask or Rabby to manage the pot.</p>'
       : !P.account ? '<div class="row"><button class="primary" type="button" data-admin="connect">Connect wallet</button></div>'
       : !onSepolia() ? '<div class="row"><span class="chip">' + esc(shortAddr(P.account)) + '</span><button class="primary" type="button" data-admin="switch">Switch to Sepolia</button></div>'
-      : '<div class="row"><span class="chip">Connected ' + esc(shortAddr(P.account)) + "</span></div>";
+      : '<div class="row"><span class="chip">Connected ' + esc(shortAddr(P.account) + " · " + walletName()) + "</span></div>";
     var body;
     if (!CONFIG.POT_ADDRESS) {
       body = acct + '<div class="admin-grid"><div><h3>Deploy the pot</h3>' +
@@ -1085,26 +1141,20 @@ footer a { color: var(--ink-2); }
     if (kind === "deploy") {
       var price = parseEthInput($("adm-price").value);
       if (!price) { adminMsg("Enter a ticket price like 0.01.", "err"); return; }
-      adminMsg("Confirm the deployment in your wallet…");
-      new P.E.BrowserProvider(window.ethereum).getSigner().then(function (s) {
-        return new P.E.ContractFactory(POT_ABI, POT_BYTECODE, s).deploy(price);
-      }).then(function (c) {
-        adminMsg("Deploying. This takes under a minute. " + txLink(c.deploymentTransaction().hash), "", true);
-        return c.waitForDeployment().then(function () { return c.getAddress(); });
-      }).then(function (addr) {
-        P.deployed = addr; adminMsg("Pot deployed.", "ok"); renderAdmin();
-      }).catch(function (e) { adminMsg(errText(e), "err"); });
-      return;
+      var data = POT_BYTECODE + P.iface.encodeDeploy([price]).slice(2);
+      return sendTx(adminMsg, "Pot deployed.", { data: data }, function (r) {
+        P.deployed = P.E.getAddress(r.receipt.contractAddress);
+      });
     }
     if (kind === "resolver") {
       var a = $("adm-resolver").value.trim();
       if (!P.E.isAddress(a)) { adminMsg("That isn't a wallet address. It starts with 0x and has 42 characters.", "err"); return; }
-      return send(adminMsg, "Payout bot set.", function () { return withSigner().then(function (c) { return c.setResolver(a); }); });
+      return sendTx(adminMsg, "Payout bot set.", { to: CONFIG.POT_ADDRESS, data: encode("setResolver", [a]) });
     }
     if (kind === "price") {
       var p = parseEthInput($("adm-newprice").value);
       if (!p) { adminMsg("Enter a ticket price like 0.01.", "err"); return; }
-      return send(adminMsg, "Ticket price set.", function () { return withSigner().then(function (c) { return c.setTicketPrice(p); }); });
+      return sendTx(adminMsg, "Ticket price set.", { to: CONFIG.POT_ADDRESS, data: encode("setTicketPrice", [p]) });
     }
   }
 
@@ -1390,7 +1440,7 @@ footer a { color: var(--ink-2); }
     function note(m, text) {
       if (m.state === "resolved") return text ? '<span class="d">' + text + "</span>" : "";
       if (m.state === "void") return '<span class="d">' + esc(m.reason) + ". No points either way.</span>";
-      return '<span class="d">Waiting for the night\'s rounds to come in.</span>';
+      return '<span class="d">' + esc(m.reason || "Waiting for the night's data") + ".</span>";
     }
     var html =
       '<div class="kv"><span class="k">Distance</span>' + cell(res.distance, res.distance.km != null ? fmtKm(res.distance.km) + " km" : "") + note(res.distance, "") + "</div>" +
@@ -1637,7 +1687,7 @@ footer a { color: var(--ink-2); }
     }, STATUS_POLL_MS);
     setInterval(renderStamp, 1000);
     setInterval(renderAll, 30e3);
-    setInterval(function () { if (!H.demo) loadSlow().then(renderAll); }, 10 * 60e3);
+    setInterval(function () { if (!H.demo) loadSlow().then(renderAll); }, 5 * 60e3);
     setInterval(function () { if (!H.demo) gameRefresh().then(renderAll, function () {}); }, 2 * 60e3);
     setInterval(function () { if (P.on) potRefresh().then(renderAll); }, 60e3);
     setInterval(function () { if (H.apiError) loadHamster().then(renderAll); }, 60e3);
