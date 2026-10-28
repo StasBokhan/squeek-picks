@@ -354,7 +354,7 @@ button.secondary {
 button.secondary:hover { border-color: var(--ink-3); }
 button.secondary:disabled { color: var(--ink-3); cursor: not-allowed; }
 .addr { font-family: var(--font-mono); font-size: 13px; }
-.msg a, .position a, .pot-list a { color: var(--blue); font-weight: 700; }
+.msg a, .position a, .pot-list a, .notice a { color: var(--blue); font-weight: 700; }
 .pot-list { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--rule); display: grid; gap: 8px; }
 .pot-list h3 { margin: 0; font: 600 17px/1.2 var(--font-display); }
 .admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 22px; margin-top: 16px; }
@@ -1155,7 +1155,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     P.chainId = s.chainId;
     if (account) rememberWallet(true);
     else if (changed) rememberWallet(false);   // disconnected from the picker
-    if (changed) { P.owed = 0n; UI.draftNight = null; potRefresh().then(renderAll); }
+    if (changed) { P.owed = 0n; P.balance = null; UI.draftNight = null; potRefresh().then(renderAll); }
     else renderAll();
   }
 
@@ -1254,6 +1254,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
       P.error = "";
       var jobs = P.pots.map(loadPayouts);
       if (P.account) {
+        jobs.push(P.rpc.getBalance(P.account).then(function (b) { P.balance = BigInt(b); }, function () { P.balance = null; }));
         jobs.push(Promise.all(P.pots.map(function (s) {
           return s.read.owed(P.account).then(function (v) { s.owed = BigInt(v); });
         })).then(function () {
@@ -1387,6 +1388,23 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
       .catch(function (e) { msg(errText(e), "err"); });
   }
   function toHex(n) { return "0x" + BigInt(n).toString(16); }
+  // The contract's reasons, in words a player understands.
+  var REFUSALS = {
+    "night not open": "Picks for this night are already locked. Reload the page to see the next night.",
+    "ticket limit reached": "You already have the most tickets allowed for this night.",
+    "already have a ticket": "This pot allows one ticket per wallet, and you already have one for this night.",
+    "night is full": "This night's pot is full.",
+    "wrong ticket price": "The ticket price changed. Reload the page and try again.",
+    "distance out of range": "The distance has to be between 0 and 60 km.",
+    "peak window out of range": "Pick one of the eight peak windows.",
+    "not your ticket": "That ticket belongs to another wallet.",
+    "no ticket": "You don't have a ticket for this night.",
+    "no such ticket": "That ticket doesn't exist. Reload the page and try again.",
+    "nothing to refund": "There's nothing left to refund for that night.",
+    "not refundable": "That night can't be refunded yet.",
+    "nothing owed": "There's no payout waiting for this wallet.",
+    "bad price": "Enter a ticket price above 0."
+  };
   function revertText(e) {
     var reason = e.reason;
     if (!reason && e.data && P.iface) {
@@ -1396,7 +1414,18 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
           : pe.name === "NotResolver" ? "only the payout bot can do this" : pe.name;
       } catch (x) { /* not one of the pot's errors */ }
     }
-    return reason ? "The pot refused: " + reason + "." : "The pot refused this transaction.";
+    if (reason && REFUSALS[reason]) return REFUSALS[reason];
+    return reason ? "The pot refused: " + reason + "." : "This transaction would fail, so it wasn't sent. Reload the page and try again.";
+  }
+  var FAUCETS = 'Test ETH is free: <a href="https://cloud.google.com/application/web3/faucet/ethereum/sepolia" target="_blank" rel="noopener">Google faucet</a> · ' +
+    '<a href="https://faucet.quicknode.com/ethereum/sepolia" target="_blank" rel="noopener">QuickNode faucet</a> · ' +
+    '<a href="https://sepolia-faucet.pk910.de/" target="_blank" rel="noopener">mining faucet</a>.';
+  var GAS_ROOM = 500000000000000n; // 0.0005 ETH, plenty for one pot transaction on Sepolia
+  function noEthError(value) {
+    var e = new Error("Not enough Sepolia test ETH in this wallet.");
+    e.html = "Your wallet doesn't have enough Sepolia test ETH" + (value ? " for this: " + fmtEth(value) + " ETH plus a little gas" : " to pay the gas") +
+      ". " + FAUCETS + " Send it to this wallet, then try again.";
+    return e;
   }
   function encode(fn, args) { return P.iface.encodeFunctionData(fn, args); }
 
@@ -1436,10 +1465,24 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     if (tx.to) call.to = tx.to;
     P.busy = true; renderPot();
     msg("Checking the transaction…");
-    return P.rpc.estimateGas(call).then(function (g) {
+    // An empty wallet gets a plain answer and the faucet links, before anything else.
+    return P.rpc.getBalance(P.account).catch(function () { return null; }).then(function (bal) {
+      if (bal != null) P.balance = BigInt(bal);
+      if (bal != null && (BigInt(bal) === 0n || BigInt(bal) < (tx.value || 0n))) throw noEthError(tx.value);
+      return P.rpc.estimateGas(call);
+    }).then(function (g) {
       return g * 12n / 10n + 10000n;
     }, function (e) {
-      if (e && e.code === "CALL_EXCEPTION") throw new Error(revertText(e));
+      if (e && e.html) throw e;
+      var inner = String((e && e.info && e.info.error && e.info.error.message) || (e && e.message) || "");
+      if (/insufficient funds/i.test(inner)) throw noEthError(tx.value);
+      if (e && e.code === "CALL_EXCEPTION") {
+        // A check that fails with no reason is usually an empty wallet: look before blaming the pot.
+        return P.rpc.getBalance(P.account).then(function (bal) {
+          if (bal === 0n || bal < (tx.value || 0n)) throw noEthError(tx.value);
+          throw new Error(revertText(e));
+        });
+      }
       return null; // Trouble reaching Sepolia from here: let the wallet work out the gas.
     }).then(function (gas) {
       var req = { from: P.account, data: tx.data, chainId: toHex(CONFIG.CHAIN_ID) };
@@ -1468,7 +1511,9 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
       });
     }).catch(function (e) {
       clearTimeout(nudge);
-      P.busy = false; msg(errText(e), "err"); renderPot();
+      var code = e && (e.code != null ? e.code : (e.info && e.info.error && e.info.error.code));
+      if (!e.html && (code === "INSUFFICIENT_FUNDS" || /insufficient funds/i.test((e && e.message) || ""))) e = noEthError(tx.value);
+      P.busy = false; if (e.html) msg(e.html, "err", true); else msg(errText(e), "err"); renderPot();
     });
   }
 
@@ -1559,6 +1604,10 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     }
     if (P.owed > 0n) {
       notices += '<div class="notice"><span>A payout of ' + fmtEth(P.owed) + ' ETH is waiting for you.</span><button class="secondary" type="button" data-pot="collect"' + busy + ">Collect</button></div>";
+    }
+    if (!P.demo && P.account && onSepolia() && P.balance != null && mine.length < limit && P.balance < n.price + GAS_ROOM) {
+      notices += '<div class="notice"><span>This wallet has ' + fmtEth(P.balance) + " Sepolia ETH, not enough for a ticket (" + fmtEth(n.price) +
+        " ETH plus a little gas). " + FAUCETS + "</span></div>";
     }
     if (mine.length) {
       notices += '<div class="position"><span>Your ' + (mine.length === 1 ? "ticket" : mine.length + " tickets") + " for " + esc(fmtNight(open)) + ":</span>" +
