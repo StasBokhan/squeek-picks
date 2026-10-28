@@ -976,11 +976,19 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
   }
 
   // ---------- Formatting ----------
+  // The page is in English, so day and month names and numbers are English for everyone
+  // ("Wed 28 Oct", "0.01"). Times stay in the visitor's own time zone and follow their
+  // clock: 13:00 for 24-hour countries, 1:00 PM where people use 12-hour time.
+  var H12 = (function () {
+    try { var hc = new Intl.DateTimeFormat(undefined, { hour: "numeric" }).resolvedOptions().hourCycle; return hc === "h12" || hc === "h11"; }
+    catch (e) { return false; }
+  })();
+  var TIME_LOCALE = H12 ? "en-US" : "en-GB";
   function fmtNight(night) {
-    return new Date(night + "T12:00:00Z").toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
+    return new Date(night + "T12:00:00Z").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
   }
-  function fmtTime(ms) { return new Date(ms).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }); }
-  function fmtDayTime(ms) { return new Date(ms).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" }); }
+  function fmtTime(ms) { return new Date(ms).toLocaleTimeString(TIME_LOCALE, { hour: "numeric", minute: "2-digit", hour12: H12 }); }
+  function fmtDayTime(ms) { return new Date(ms).toLocaleString(TIME_LOCALE, { weekday: "short", hour: "numeric", minute: "2-digit", hour12: H12 }); }
   function fmtIn(ms) {
     if (ms <= 0) return "now";
     var m = Math.round(ms / 60e3), h = Math.floor(m / 60);
@@ -989,11 +997,11 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
   function blockStart(night, i) { return nightStart(night) + i * 3 * HOUR; }
   function blockLabel(night, i) { return fmtTime(blockStart(night, i)) + "–" + fmtTime(blockStart(night, i + 1)); }
   function fmtKm(km) { return km == null || isNaN(km) ? "–" : km.toFixed(1); }
-  function fmtInt(n) { return n == null || isNaN(n) ? "–" : Math.round(n).toLocaleString(); }
+  function fmtInt(n) { return n == null || isNaN(n) ? "–" : Math.round(n).toLocaleString("en-GB"); }
   function fmtEth(wei) {
     if (wei == null) return "–";
     var n = Number(wei) / 1e18;
-    return n.toLocaleString(undefined, { maximumFractionDigits: n > 0 && n < 0.01 ? 6 : 4 });
+    return n.toLocaleString("en-GB", { maximumFractionDigits: n > 0 && n < 0.01 ? 6 : 4 });
   }
   function shortAddr(a) { return a ? a.slice(0, 6) + "…" + a.slice(-4) : ""; }
   function txLink(hash, text) {
