@@ -675,7 +675,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
 </div>
 
 <script src="config.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="vendor/supabase-js-2.45.4.js"></script>
 <script src="logic.js" data-inline></script>
 <script>
 (function () {
@@ -698,7 +698,9 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
   var POT_ABI = /*@@POT_ABI@@*/[];
   var POT_BYTECODE = /*@@POT_BYTECODE@@*/"";
   var POT_ABI_V1 = /*@@POT_ABI_V1@@*/[];   // pots deployed before version 2
-  var ETHERS_URL = "https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js";
+  // Libraries are served from this site (vendor/), copied unchanged from their npm releases,
+  // so no outside CDN can change the code that builds your transactions.
+  var ETHERS_URL = "vendor/ethers-6.13.4.umd.min.js";
 
   var L = window.SqueekLogic;
   var HOUR = L.HOUR, DAY = L.DAY;
