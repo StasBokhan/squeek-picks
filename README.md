@@ -6,7 +6,7 @@ A prediction game on Squeektoshi's wheel. Every night players call three things:
 - **Nightly pot:** players buy tickets in Sepolia test ETH, up to 5 per wallet a night, each with its own picks. The top 3 tickets by that night's points split the pot 50/30/20. A bot pays out every hour.
 - **My tickets:** a connected player sees every ticket from the last 2 weeks, how each night went, what they won, and refunds in one place. The leaderboard has a second tab ranking pot winners by ETH won.
 
-The pot runs on the **Sepolia testnet only**. The contract refuses to deploy anywhere else.
+Play it at **[squeekpicks.xyz](https://squeekpicks.xyz)**. The pot runs on the **Sepolia testnet only**. The contract refuses to deploy anywhere else.
 
 ## What's in the folder
 
@@ -35,7 +35,7 @@ You need MetaMask (or Rabby) with Sepolia test ETH. Get it free from a Sepolia f
 
 ### 1. Deploy the pot
 
-1. Open your site with `?admin` on the end: `https://YOUR-USERNAME.github.io/squeek-picks/?admin`
+1. Open your site with `?admin` on the end: `https://squeekpicks.xyz/?admin` (or `https://YOUR-USERNAME.github.io/squeek-picks/?admin` without a custom domain)
 2. Scroll to **Pot settings** at the bottom and click **Connect wallet**. Switch to Sepolia if asked.
 3. Set the ticket price (0.01 is a good start) and click **Deploy**. Confirm in your wallet.
 4. Copy the address it shows. Paste it into `config.js` after `POT_ADDRESS:` and upload `config.js` again.
