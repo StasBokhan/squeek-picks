@@ -3,7 +3,7 @@
 A prediction game on Squeektoshi's wheel. Every night players call three things: how far he runs, which 3 hours he spins the most, and whether more Squeek blocks settle than the night before.
 
 - **Points game:** free, nickname only, with a 28-night leaderboard. Stored in Supabase.
-- **Nightly pot:** players buy a ticket in Sepolia test ETH. The top 3 by that night's points split the pot 50/30/20. A bot pays out every hour.
+- **Nightly pot:** players buy tickets in Sepolia test ETH, up to 5 per wallet a night, each with its own picks. The top 3 tickets by that night's points split the pot 50/30/20. A bot pays out every hour.
 - **My tickets:** a connected player sees every ticket from the last 2 weeks, how each night went, what they won, and refunds in one place. The leaderboard has a second tab ranking pot winners by ETH won.
 
 The pot runs on the **Sepolia testnet only**. The contract refuses to deploy anywhere else.
@@ -15,7 +15,7 @@ The pot runs on the **Sepolia testnet only**. The contract refuses to deploy any
 | `index.html` | The site. |
 | `config.js` | **Your settings.** Updates to `index.html` never touch this file. |
 | `supabase.sql` | Database setup for the points game. Already done if you set it up before. |
-| `contracts/SqueekPot.sol` | The pot contract. `SqueekPot.json` is the compiled version the page deploys. |
+| `contracts/SqueekPot.sol` | The pot contract, version 2. `SqueekPot.json` is the compiled version the page deploys. `SqueekPotV1.*` is the first version (one ticket per wallet), kept so older pots can finish. |
 | `settler/` | The payout bot. |
 | `.github/workflows/settle.yml` | Runs the payout bot every hour on GitHub. |
 | `wallet.js` | The wallet picker (Reown AppKit). Loads only when someone connects. |
@@ -55,7 +55,7 @@ The bot needs its own wallet to send payouts. Never use your main wallet for thi
 1. In MetaMask, open the bot account's details and reveal its private key. Copy it.
 2. In your repository on GitHub, open **Settings > Secrets and variables > Actions**.
 3. Under **Secrets**, click **New repository secret**. Name: `SETTLER_PRIVATE_KEY`. Value: the bot's private key.
-4. Switch to the **Variables** tab, click **New repository variable**. Name: `POT_ADDRESS`. Value: the pot address from step 1.
+4. Optional: switch to the **Variables** tab and add `POT_ADDRESS` with the pot address. The bot also reads it from `config.js`, so this is only a backup.
 
 The private key only goes into that GitHub secret. Never paste it anywhere else, and never use a key from a wallet holding anything real.
 
@@ -66,6 +66,20 @@ The private key only goes into that GitHub secret. Never paste it anywhere else,
 3. Open the run. The log should show the bot's address, its gas balance and "Nothing to pay out." That means it works.
 
 From then on it runs every hour at :25 past.
+
+## Upgrading a version 1 pot
+
+Version 1 pots allow one ticket per wallet a night. A deployed contract can't change, so upgrading means deploying a version 2 pot next to it:
+
+1. Open `?admin` with your owner wallet. Under **Upgrade to version 2**, check the ticket price and click **Deploy version 2**. The new pot starts with the same payout bot.
+2. In `config.js`, set `POT_ADDRESS` to the new address and list the old one under `OLD_POTS`:
+   ```js
+   POT_ADDRESS: "0xNEW…",
+   OLD_POTS: ["0xOLD…"],
+   ```
+3. Upload `config.js`. The page sells tickets on the new pot and still shows the old pot's last nights in My tickets, with refunds if needed. The bot pays out every pot in `config.js`, so nothing changes on GitHub.
+
+After 3 days with no new tickets on the old pot, its nights are all done and you can remove it from `OLD_POTS`.
 
 ## The wallet picker
 
@@ -99,10 +113,10 @@ The workflow file sits in a hidden folder, which Windows often won't drag. Creat
 
 ### The pot
 
-- Every ticket costs the same. One ticket per wallet per night. Players can change their picks until the lock, paying only gas.
+- Every ticket costs the same. Up to 5 tickets per wallet per night, each with its own picks, so players can spread their guesses. Each ticket ranks on its own, so one wallet can win more than one place. Players can change any of their tickets until the lock, paying only gas.
 - Ranking: the night's points, then the closest distance guess, then the earlier ticket.
 - Payout: 50/30/20 to the top 3. With 2 tickets, 62.5/37.5. Players tied on everything share the places they cover.
-- The night is voided and everyone can refund when there's only 1 ticket, no result at all, or too many winners tied.
+- The night is voided and everyone can refund when there's only 1 ticket, no result at all, or too many winners tied. A refund takes back all of a wallet's tickets for that night at once.
 - If the bot hasn't paid a night out within 3 days of it ending, every ticket can be refunded from the page. Nobody's ticket can get stuck.
 - If a payout can't be sent to a wallet, it waits in the contract and the player collects it from the page.
 - The page and the bot use the same rules file (`src/logic.js`), so the expected winners shown on the page match what the bot pays.

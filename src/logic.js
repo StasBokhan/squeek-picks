@@ -219,12 +219,32 @@
     };
   }
 
+  // Pot tickets in one shape for both contract versions. Version 1 sells one ticket per
+  // wallet, so the wallet is the ticket's id; version 2 numbers tickets within the night.
+  // The page and the bot both use this, so ties break the same way in both.
+  function potTicketId(version, index, address) {
+    return version >= 2 ? "t" + ("000" + index).slice(-4) : String(address).toLowerCase();
+  }
+  function potTickets(version, raw) {
+    function one(t, i, addr) {
+      return {
+        player_id: potTicketId(version, i, addr), index: i, address: addr,
+        distance_km: Number(t.distanceDeci) / 10, peak_block: Number(t.peakBlock), more_blocks: !!t.moreBlocks,
+        boughtAt: Number(t.boughtAt), refunded: !!t.refunded
+      };
+    }
+    if (version >= 2) return Array.from(raw.tickets || []).map(function (t, i) { return one(t, i, t.player); });
+    var picks = Array.from(raw.picks || []);
+    return Array.from(raw.players || []).map(function (addr, i) { return one(picks[i], i, addr); });
+  }
+
   return {
     HOUR: HOUR, DAY: DAY, COVERAGE_OK_BPS: COVERAGE_OK_BPS, VOID_AFTER: VOID_AFTER,
     POT_SHARES_3: POT_SHARES_3, POT_SHARES_2: POT_SHARES_2, MAX_WINNERS: MAX_WINNERS,
     dateStr: dateStr, addDays: addDays, nightStart: nightStart, nightEnd: nightEnd,
     liveNightAt: liveNightAt, openNightAt: openNightAt, nightToDay: nightToDay, dayToNight: dayToNight, slotOf: slotOf,
     parseStats: parseStats, parseSettlements: parseSettlements,
-    resolveNight: resolveNight, distancePoints: distancePoints, scoreNight: scoreNight, potPayouts: potPayouts
+    resolveNight: resolveNight, distancePoints: distancePoints, scoreNight: scoreNight, potPayouts: potPayouts,
+    potTicketId: potTicketId, potTickets: potTickets
   };
 });

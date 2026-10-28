@@ -318,6 +318,10 @@ tr.mine td:last-child { border-radius: 0 12px 12px 0; }
 .payouts { margin: 0; font: 600 14px/1.5 var(--font-body); color: var(--ink-2); }
 .position { padding: 14px 16px; border-radius: 16px; border: 2px solid var(--mark-blue); background: var(--blue-soft); font-size: 14px; color: var(--ink-2); display: grid; gap: 4px; }
 .position strong { color: var(--ink); }
+.my-tix { list-style: none; margin: 2px 0; padding: 0; display: grid; gap: 6px; }
+.my-tix li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; }
+.my-tix button.secondary { padding: 7px 12px; font-size: 13px; background: var(--panel); }
+.tno { display: inline-block; margin-right: 8px; padding: 1px 7px; border-radius: 999px; background: var(--blue-soft); color: var(--blue-ink); font: 800 11px/1.5 var(--font-body); vertical-align: 1px; }
 .notice { padding: 12px 14px; border-radius: 16px; border: 1.5px dashed var(--gold); font-size: 14px; color: var(--ink-2); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
 button.secondary {
   appearance: none; cursor: pointer;
@@ -610,7 +614,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
       </div>
       <div id="rules-pot" hidden>
         <h3>The pot</h3>
-        <p>Every ticket costs the same. When the night's results are in, the top 3 tickets by that night's points split the pot 50/30/20, or 62.5/37.5 with two tickets. Ties go to the closer distance guess, then the earlier ticket. A bot pays out every hour. With one ticket or no result, the night is voided and tickets are refunded. If a night isn't paid out within 3 days, everyone can take their ticket back.</p>
+        <p>Every ticket costs the same, and a wallet can hold up to 5 tickets a night, each with its own picks. When the night's results are in, the top 3 tickets by that night's points split the pot 50/30/20, or 62.5/37.5 with two tickets. Ties go to the closer distance guess, then the earlier ticket. A bot pays out every hour. With one ticket or no result, the night is voided and tickets are refunded. If a night isn't paid out within 3 days, everyone can take their ticket back.</p>
       </div>
     </div>
     <p class="care">Nothing here can make him run, and nothing should. He's never woken up to mine, and quiet nights are part of the game. If the operator's device reports wrong data, results follow it, which is one more reason this is for points only.</p>
@@ -634,6 +638,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     SUPABASE_URL: "",
     SUPABASE_ANON_KEY: "",
     POT_ADDRESS: "",
+    OLD_POTS: [],                                          // earlier pots still finishing their last nights
     RPC_URL: "https://ethereum-sepolia-rpc.publicnode.com",
     CHAIN_ID: 11155111,
     EXPLORER: "https://sepolia.etherscan.io",
@@ -644,6 +649,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
   }, window.SQUEEK_CONFIG || {});
   var POT_ABI = /*@@POT_ABI@@*/[];
   var POT_BYTECODE = /*@@POT_BYTECODE@@*/"";
+  var POT_ABI_V1 = /*@@POT_ABI_V1@@*/[];   // pots deployed before version 2
   var ETHERS_URL = "https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js";
 
   var L = window.SqueekLogic;
@@ -973,14 +979,18 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
   function nameOf(id) { return G.players.get(id) || "Unknown player"; }
 
   // ---------- Pot (Sepolia) ----------
+  // The current pot is POT_ADDRESS. Pots listed in OLD_POTS stay readable until their last
+  // nights are paid out, so tickets bought there still show and can be refunded.
   var P = {
     on: !!(CONFIG.POT_ADDRESS && POT_ABI.length),
     admin: /[?&]admin(=|&|$)/.test(location.search),
-    demo: false, E: null, read: null, account: null, chainId: null,
-    nights: new Map(), payouts: new Map(), owed: 0n, info: null, logsTo: 0,
+    demo: false, E: null, account: null, chainId: null,
+    pots: [], cur: null,
+    nights: new Map(), payouts: new Map(), owed: 0n, owedPot: null, info: null,
     busy: false, error: "", deployed: "", adminKey: ""
   };
   var BPS = 10000n;
+  var MAX_PER_WALLET = 5;
 
   function loadEthers() {
     if (window.ethers) return Promise.resolve(window.ethers);
@@ -996,24 +1006,43 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
   }
 
   function onSepolia() { return P.chainId === Number(CONFIG.CHAIN_ID); }
-  function myTicket(night) {
+  function isMine(t) { return !!P.account && t.address.toLowerCase() === P.account.toLowerCase(); }
+  function myTickets(night) {
     var n = P.nights.get(night);
-    if (!n || !P.account) return null;
-    var me = P.account.toLowerCase();
-    for (var i = 0; i < n.tickets.length; i++) if (n.tickets[i].player_id === me) return n.tickets[i];
+    return n && P.account ? n.tickets.filter(isMine) : [];
+  }
+  // Every pot's record for a night that sold tickets, current pot first. My tickets and
+  // refunds look at all of them; the night's lists show the one P.nights picked.
+  function nightRecs(night) {
+    if (P.demo) { var d = P.nights.get(night); return d ? [d] : []; }
+    var out = [];
+    P.pots.forEach(function (s) { var r = s.nights.get(night); if (r && r.tickets.length) out.push(r); });
+    return out;
+  }
+  function recFor(night, addr) {
+    var recs = nightRecs(night);
+    for (var i = 0; i < recs.length; i++) if (!addr || recs[i].src.addr.toLowerCase() === String(addr).toLowerCase()) return recs[i];
     return null;
   }
-  function parseNight(r) {
-    var tickets = Array.from(r.players).map(function (addr, i) {
-      var t = r.picks[i];
-      return {
-        player_id: addr.toLowerCase(), address: addr,
-        distance_km: Number(t.distanceDeci) / 10, peak_block: Number(t.peakBlock), more_blocks: !!t.moreBlocks,
-        boughtAt: Number(t.boughtAt), refunded: !!t.refunded
-      };
-    });
-    return { price: BigInt(r.price), pot: BigInt(r.pot), status: Number(r.status), tickets: tickets };
+  function payoutOf(rec, night) { return P.demo ? P.payouts.get(night) : rec.src.payouts.get(night); }
+  // Version 2 pots sell up to 5 tickets per wallet a night; version 1 sold one.
+  function ticketLimit() { return P.demo || (P.cur && P.cur.version >= 2) ? MAX_PER_WALLET : 1; }
+  function parseNight(s, r) {
+    return { src: s, price: BigInt(r.price), pot: BigInt(r.pot), status: Number(r.status), tickets: L.potTickets(s.version, r) };
   }
+  // What a night's payout sent to each ticket, keyed by ticket id.
+  function paidMap(p) {
+    var m = new Map();
+    if (!p) return m;
+    p.winners.forEach(function (w, i) {
+      var id = p.tickets ? L.potTicketId(2, p.tickets[i]) : w.toLowerCase();
+      m.set(id, (m.get(id) || 0n) + p.amounts[i]);
+    });
+    return m;
+  }
+  function sumOf(list, fn) { return list.reduce(function (a, x) { return a + fn(x); }, 0n); }
+  // Calls for a given pot, in that pot's own version.
+  function encodeFor(s, fn, args) { return (s && s.version < 2 ? P.iface1 : P.iface).encodeFunctionData(fn, args); }
   var HISTORY_NIGHTS = 14;
   // The open night, the night in progress, and the 14 before it.
   function potNights() {
@@ -1094,7 +1123,19 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
       var net = E.Network.from(Number(CONFIG.CHAIN_ID));
       P.rpc = new E.JsonRpcProvider(CONFIG.RPC_URL, net, { staticNetwork: net });
       P.iface = new E.Interface(POT_ABI);
-      if (P.on) P.read = new E.Contract(CONFIG.POT_ADDRESS, POT_ABI, P.rpc);
+      P.iface1 = new E.Interface(POT_ABI_V1);
+      if (P.on) {
+        var seen = {};
+        P.pots = [CONFIG.POT_ADDRESS].concat(Array.isArray(CONFIG.OLD_POTS) ? CONFIG.OLD_POTS : []).filter(function (a) {
+          var k = String(a || "").toLowerCase();
+          if (!E.isAddress(a) || seen[k]) return false;
+          seen[k] = true;
+          return true;
+        }).map(function (a, i) {
+          return { addr: E.getAddress(a), current: i === 0, version: 0, read: null, nights: new Map(), payouts: new Map(), owed: 0n, logsTo: 0, logChunk: 0, busy: null };
+        });
+        P.cur = P.pots[0] || null;
+      }
       if (hasKit()) {
         // Restore a previous connection without making first-time visitors load the picker.
         if (walletUsedBefore()) loadKit().catch(function (e) { P.error = e.message; });
@@ -1112,66 +1153,123 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     }).then(potRefresh).catch(function (e) { P.error = e.message || String(e); });
   }
 
+  // Each pot's version, read once: version 1 has no VERSION() and reverts.
+  function potVersions() {
+    return Promise.all(P.pots.map(function (s) {
+      if (s.read) return null;
+      var probe = new P.E.Contract(s.addr, ["function VERSION() view returns (uint256)"], P.rpc);
+      return probe.VERSION().then(function (v) { return Number(v); }, function (e) {
+        if (e && (e.code === "CALL_EXCEPTION" || e.code === "BAD_DATA")) return 1;
+        throw e; // network trouble: try again next refresh
+      }).then(function (v) {
+        s.version = v >= 2 ? 2 : 1;
+        s.read = new P.E.Contract(s.addr, s.version >= 2 ? POT_ABI : POT_ABI_V1, P.rpc);
+      });
+    }));
+  }
+
+  // One record per night: the current pot's, unless only an old pot sold tickets that night.
+  function mergeNights() {
+    var nights = new Map(), payouts = new Map();
+    if (P.cur) {
+      potNights().forEach(function (night) {
+        var rec = P.cur.nights.get(night);
+        if (!rec || !rec.tickets.length) {
+          for (var i = 1; i < P.pots.length; i++) {
+            var o = P.pots[i].nights.get(night);
+            if (o && o.tickets.length) { rec = o; break; }
+          }
+        }
+        if (!rec) return;
+        nights.set(night, rec);
+        var p = rec.src.payouts.get(night);
+        if (p) payouts.set(night, p);
+      });
+    }
+    P.nights = nights;
+    P.payouts = payouts;
+  }
+
   function potRefresh() {
-    if (!P.read) return Promise.resolve();
-    var nights = potNights(), read = P.read, provider = read.runner;
-    return Promise.all(nights.map(function (n) { return read.getNight(L.nightToDay(n)); })).then(function (rs) {
-      rs.forEach(function (r, i) { P.nights.set(nights[i], parseNight(r)); });
+    if (!P.cur) return Promise.resolve();
+    var nights = potNights();
+    return potVersions().then(function () {
+      return Promise.all(P.pots.map(function (s) {
+        // Old pots only matter for nights they already sold: tonight and earlier.
+        var list = s.current ? nights : nights.slice(1);
+        return Promise.all(list.map(function (n) { return s.read.getNight(L.nightToDay(n)); })).then(function (rs) {
+          rs.forEach(function (r, i) { s.nights.set(list[i], parseNight(s, r)); });
+        });
+      }));
+    }).then(function () {
+      mergeNights();
       P.error = "";
-      var jobs = [loadPayouts()];
-      if (P.account) jobs.push(read.owed(P.account).then(function (v) { P.owed = BigInt(v); }));
+      var jobs = P.pots.map(loadPayouts);
+      if (P.account) {
+        jobs.push(Promise.all(P.pots.map(function (s) {
+          return s.read.owed(P.account).then(function (v) { s.owed = BigInt(v); });
+        })).then(function () {
+          P.owed = 0n; P.owedPot = null;
+          P.pots.forEach(function (s) { P.owed += s.owed; if (s.owed > 0n && !P.owedPot) P.owedPot = s; });
+        }));
+      }
       if (P.admin) {
-        jobs.push(Promise.all([read.owner(), read.resolver(), read.ticketPrice(), provider.getBalance(CONFIG.POT_ADDRESS)]).then(function (v) {
-          return provider.getBalance(v[1]).then(function (gas) {
-            P.info = { owner: v[0], resolver: v[1], price: BigInt(v[2]), held: BigInt(v[3]), botGas: BigInt(gas) };
+        var read = P.cur.read;
+        jobs.push(Promise.all([read.owner(), read.resolver(), read.ticketPrice(), P.rpc.getBalance(P.cur.addr)]).then(function (v) {
+          return P.rpc.getBalance(v[1]).then(function (gas) {
+            P.info = { owner: v[0], resolver: v[1], price: BigInt(v[2]), held: BigInt(v[3]), botGas: BigInt(gas), version: P.cur.version };
           });
         }));
       }
       return Promise.all(jobs);
     }).then(function () {
+      mergeNights(); // payouts may have arrived since
       // Look up ENS names for every wallet the page shows.
       var addrs = [];
-      P.nights.forEach(function (n) { n.tickets.forEach(function (t) { addrs.push(t.address); }); });
-      P.payouts.forEach(function (p) { addrs = addrs.concat(p.winners); });
+      P.pots.forEach(function (s) {
+        s.nights.forEach(function (n) { n.tickets.forEach(function (t) { addrs.push(t.address); }); });
+        s.payouts.forEach(function (p) { addrs = addrs.concat(p.winners); });
+      });
       if (P.account) addrs.push(P.account);
       lookupEns(addrs);
     }).catch(function () { P.error = "Couldn't read the pot right now. Retrying in a minute."; });
   }
 
-  // Every payout of the last 2 weeks, from the pot's NightSettled events. Reads new blocks
+  // Every payout of the last 2 weeks, from a pot's NightSettled events. Reads new blocks
   // only after the first load, in chunks that public Sepolia endpoints accept.
   var BLOCKS_PER_NIGHT = 7200; // Sepolia makes a block every 12 seconds
-  function loadPayouts() {
-    var read = P.read, provider = read.runner;
-    if (P.payoutsBusy) return P.payoutsBusy;
-    P.payoutsBusy = provider.getBlockNumber().then(function (latest) {
-      var from = P.logsTo ? P.logsTo + 1 : Math.max(0, latest - (HISTORY_NIGHTS + 2) * BLOCKS_PER_NIGHT);
+  function loadPayouts(s) {
+    if (s.busy) return s.busy;
+    var read = s.read;
+    s.busy = P.rpc.getBlockNumber().then(function (latest) {
+      var from = s.logsTo ? s.logsTo + 1 : Math.max(0, latest - (HISTORY_NIGHTS + 2) * BLOCKS_PER_NIGHT);
       if (from > latest) return;
-      var chunk = P.logChunk || 20000;
+      var chunk = s.logChunk || 20000;
       function step(start) {
         if (start > latest) return Promise.resolve();
         var end = Math.min(latest, start + chunk - 1);
         return read.queryFilter(read.filters.NightSettled(), start, end).then(function (logs) {
           logs.forEach(function (ev) {
-            P.payouts.set(L.dayToNight(Number(ev.args.night)), {
+            s.payouts.set(L.dayToNight(Number(ev.args.night)), {
+              tickets: s.version >= 2 ? Array.from(ev.args.tickets).map(Number) : null,
               winners: Array.from(ev.args.winners),
               amounts: Array.from(ev.args.amounts).map(function (x) { return BigInt(x); }),
               tx: ev.transactionHash
             });
           });
-          P.logsTo = end;
+          s.logsTo = end;
           return step(end + 1);
         }, function (e) {
           if (chunk <= 1000) throw e;
           chunk = Math.floor(chunk / 4);
-          P.logChunk = chunk;
+          s.logChunk = chunk;
           return step(start);
         });
       }
       return step(from);
     }).catch(function () { /* history shows what loaded; the next refresh carries on */ })
-      .then(function () { P.payoutsBusy = null; });
-    return P.payoutsBusy;
+      .then(function () { s.busy = null; });
+    return s.busy;
   }
 
   function walletName() {
@@ -1332,20 +1430,32 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     return Math.round(v.km * 10) !== Math.round(t.distance_km * 10) || UI.draft.peak !== t.peak_block || UI.draft.more !== t.more_blocks;
   }
 
-  function potAction(kind, night) {
+  function potAction(kind, night, ticket, srcAddr) {
     var v = draftValid(), open = UI.open, n = P.nights.get(open);
     if (kind === "connect") return connectWallet(potMsg);
     if (kind === "switch") return switchChain(potMsg);
     if ((kind === "buy" || kind === "change") && !v.ok) { potMsg("Fill in all three picks above first.", "err"); return; }
     if ((kind === "buy" || kind === "change") && Date.now() >= nightStart(open)) { renderAll(); return; }
     var deci = v.ok ? Math.round(v.km * 10) : 0;
-    if (P.demo) return demoAction(kind, night, v);
-    if (!P.iface) { potMsg("The wallet library is still loading. Try again in a moment.", "err"); return; }
-    var day = L.nightToDay(night || open), pot = CONFIG.POT_ADDRESS;
-    if (kind === "buy") return sendTx(potMsg, "Ticket bought.", { to: pot, data: encode("buyTicket", [day, deci, UI.draft.peak, UI.draft.more]), value: n.price });
-    if (kind === "change") return sendTx(potMsg, "Ticket updated with your new picks.", { to: pot, data: encode("changePicks", [day, deci, UI.draft.peak, UI.draft.more]) });
-    if (kind === "refund") return sendTx(potMsg, "Refunded.", { to: pot, data: encode("refund", [day]) });
-    if (kind === "collect") return sendTx(potMsg, "Payout collected.", { to: pot, data: encode("withdrawOwed", []) });
+    if (P.demo) return demoAction(kind, night, v, potMsg, ticket);
+    if (!P.iface || !P.cur) { potMsg("The wallet library is still loading. Try again in a moment.", "err"); return; }
+    var cur = P.cur, day = L.nightToDay(night || open);
+    if (kind === "buy") {
+      return sendTx(potMsg, myTickets(open).length ? "Another ticket bought." : "Ticket bought.",
+        { to: cur.addr, data: encodeFor(cur, "buyTicket", [day, deci, UI.draft.peak, UI.draft.more]), value: n.price });
+    }
+    if (kind === "change") {
+      var args = cur.version >= 2 ? [day, Number(ticket), deci, UI.draft.peak, UI.draft.more] : [day, deci, UI.draft.peak, UI.draft.more];
+      return sendTx(potMsg, "Ticket updated with your new picks.", { to: cur.addr, data: encodeFor(cur, "changePicks", args) });
+    }
+    if (kind === "refund") {
+      var rec = recFor(night, srcAddr);
+      if (!rec) return;
+      return sendTx(potMsg, "Refunded.", { to: rec.src.addr, data: encodeFor(rec.src, "refund", [day]) });
+    }
+    if (kind === "collect" && P.owedPot) {
+      return sendTx(potMsg, "Payout collected.", { to: P.owedPot.addr, data: encodeFor(P.owedPot, "withdrawOwed", []) });
+    }
   }
 
   function payoutLine(pot, count) {
@@ -1354,6 +1464,15 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     }
     if (count === 2) return "With 2 tickets: 1st " + fmtEth(pot * 6250n / BPS) + " · 2nd " + fmtEth(pot * 3750n / BPS) + " ETH. A third ticket makes it 50/30/20.";
     return "The pot pays out once 2 or more tickets are in. With fewer, tickets are refunded.";
+  }
+
+  function picksText(night, t) {
+    return fmtKm(t.distance_km) + " km · " + blockLabel(night, t.peak_block) + " · " + (t.more_blocks ? "more" : "fewer") + " blocks";
+  }
+
+  // A past night where these tickets can be taken back.
+  function refundable(night, n, now) {
+    return n && (n.status === 2 || (n.status === 0 && now >= nightEnd(night) + 3 * DAY));
   }
 
   function renderPot() {
@@ -1379,44 +1498,55 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
       (ln && ln.tickets.length ? " Tonight's pot: " + fmtEth(ln.pot) + " ETH from " + ln.tickets.length + (ln.tickets.length === 1 ? " ticket" : " tickets") +
         ", paid out after " + esc(fmtDayTime(nightEnd(UI.live))) + "." : "");
 
-    var notices = "", me = myTicket(open), v = draftValid();
+    var notices = "", mine = myTickets(open), v = draftValid(), busy = P.busy ? " disabled" : "", limit = ticketLimit();
     for (var k = 1; k <= HISTORY_NIGHTS; k++) {
-      var night = addDays(UI.live, -k), nn = P.nights.get(night), t = myTicket(night);
-      if (t && !t.refunded && nn && (nn.status === 2 || (nn.status === 0 && now >= nightEnd(night) + 3 * DAY))) {
-        notices += '<div class="notice"><span>Refund ready for the night of ' + esc(fmtNight(night)) + ".</span>" +
-          '<button class="secondary" type="button" data-pot="refund" data-night="' + night + '"' + (P.busy ? " disabled" : "") + ">Take back " + fmtEth(nn.price) + " ETH</button></div>";
-      }
+      var night = addDays(UI.live, -k);
+      nightRecs(night).forEach(function (nn) {
+        var back = nn.tickets.filter(function (t) { return isMine(t) && !t.refunded; });
+        if (back.length && refundable(night, nn, now)) {
+          notices += '<div class="notice"><span>Refund ready for the night of ' + esc(fmtNight(night)) + ".</span>" +
+            '<button class="secondary" type="button" data-pot="refund" data-night="' + night + '" data-src="' + nn.src.addr + '"' + busy + ">Take back " + fmtEth(nn.price * BigInt(back.length)) + " ETH</button></div>";
+        }
+      });
     }
     if (P.owed > 0n) {
-      notices += '<div class="notice"><span>A payout of ' + fmtEth(P.owed) + ' ETH is waiting for you.</span><button class="secondary" type="button" data-pot="collect"' + (P.busy ? " disabled" : "") + ">Collect</button></div>";
+      notices += '<div class="notice"><span>A payout of ' + fmtEth(P.owed) + ' ETH is waiting for you.</span><button class="secondary" type="button" data-pot="collect"' + busy + ">Collect</button></div>";
     }
-    if (me) {
-      notices += '<div class="position"><span>Your ticket for ' + esc(fmtNight(open)) + ": <strong>" + fmtKm(me.distance_km) + " km</strong>, <strong>" +
-        esc(blockLabel(open, me.peak_block)) + "</strong>, <strong>" + (me.more_blocks ? "more" : "fewer") + " blocks</strong>.</span>" +
-        "<span>Paid " + fmtEth(n.price) + " ETH" + (me.boughtAt ? " on " + esc(fmtDayTime(me.boughtAt * 1000)) : "") +
-        ". You win a share if your ticket finishes in the top 3 that night.</span></div>";
+    if (mine.length) {
+      notices += '<div class="position"><span>Your ' + (mine.length === 1 ? "ticket" : mine.length + " tickets") + " for " + esc(fmtNight(open)) + ":</span>" +
+        '<ul class="my-tix">' + mine.map(function (t, i) {
+          var change = v.ok && draftDiffers(t) && !(P.cur && P.cur.version < 2 && mine.length > 1);
+          return "<li><span>" + (mine.length > 1 ? '<span class="tno">#' + (i + 1) + "</span>" : "") + "<strong>" + esc(picksText(open, t)) + "</strong></span>" +
+            (change ? '<button class="secondary" type="button" data-pot="change" data-ticket="' + t.index + '"' + busy + ">Use the picks above</button>" : "") + "</li>";
+        }).join("") + "</ul>" +
+        "<span>Paid " + fmtEth(n.price * BigInt(mine.length)) + " ETH. " + (mine.length === 1 ? "Your ticket wins a share if it finishes" : "Each ticket wins a share if it finishes") +
+        " in the top 3 that night.</span></div>";
     }
     $("pot-me").innerHTML = notices;
 
-    var actions = "", busy = P.busy ? " disabled" : "";
+    var actions = "";
     if (!P.demo && !P.account) actions = '<button class="primary" type="button" data-pot="connect">Connect wallet</button>';
     else if (!P.demo && !onSepolia()) actions = '<button class="primary" type="button" data-pot="switch">Switch to Sepolia</button>';
-    else if (!me) {
-      actions = '<button class="primary" type="button" data-pot="buy"' + (busy || (v.ok ? "" : " disabled")) + ">Buy a ticket for " + fmtEth(n.price) + " ETH</button>" +
-        (v.ok ? "" : '<span class="hint">Fill in all three picks above first.</span>');
-    } else if (draftDiffers(me)) {
-      actions = '<button class="secondary" type="button" data-pot="change"' + busy + ">Send my new picks to the pot</button>" +
-        '<span class="hint">The picks above differ from your ticket.</span>';
+    else if (mine.length < limit) {
+      var same = v.ok && mine.some(function (t) { return !draftDiffers(t); });
+      actions = '<button class="primary" type="button" data-pot="buy"' + (busy || (v.ok ? "" : " disabled")) + ">" +
+        (mine.length ? "Buy another ticket for " : "Buy a ticket for ") + fmtEth(n.price) + " ETH</button>" +
+        (!v.ok ? '<span class="hint">Fill in all three picks above first.</span>'
+          : same ? '<span class="hint">You already have a ticket with these picks. Change them above to spread your guesses' +
+            (mine.length ? " (" + (limit - mine.length) + " more allowed tonight)" : "") + ".</span>"
+          : mine.length ? '<span class="hint">Up to ' + limit + " tickets per night, " + (limit - mine.length) + " left.</span>" : "");
+    } else {
+      actions = '<span class="hint">' + (limit > 1 ? "You have " + limit + " tickets for this night, the most allowed." : "One ticket per wallet on this pot.") + "</span>";
     }
     if (P.account) actions += '<span class="chip">' + esc(P.demo ? "Preview wallet" : (ensName(P.account) || shortAddr(P.account)) + " · " + walletName()) + "</span>";
     $("pot-actions").innerHTML = actions;
   }
 
   function ticketTable(night, tickets, extraCol) {
-    var me = P.account ? P.account.toLowerCase() : "";
     var rows = tickets.slice(0, 25).map(function (t) {
-      return "<tr" + (t.player_id === me ? ' class="mine"' : "") + "><td>" + who(t.address) +
-        (t.player_id === me ? '<span class="tag">you</span>' : "") + '</td><td class="r num">' + fmtKm(t.distance_km) + "</td><td>" +
+      var mine = isMine(t);
+      return "<tr" + (mine ? ' class="mine"' : "") + "><td>" + who(t.address) +
+        (mine ? '<span class="tag">you</span>' : "") + '</td><td class="r num">' + fmtKm(t.distance_km) + "</td><td>" +
         esc(fmtTime(blockStart(night, t.peak_block))) + "</td><td>" + (t.more_blocks ? "More" : "Fewer") + "</td>" + (extraCol ? extraCol(t) : "") + "</tr>";
     }).join("");
     return '<div class="table-wrap"><table><thead><tr><th>Wallet</th><th class="r">km</th><th>Window</th><th>Blocks</th>' +
@@ -1437,27 +1567,32 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     if (!rn.tickets.length) { rp.innerHTML = '<div class="pot-list"><h3>Pot</h3><p class="hint">No pot tickets this night.</p></div>'; return; }
     var head = "<h3>Pot · " + fmtEth(rn.pot) + " ETH from " + rn.tickets.length + " ticket" + (rn.tickets.length === 1 ? "" : "s") + "</h3>";
     var out = L.potPayouts(resolve(night, Date.now()), rn.tickets), body = "";
-    var me = myTicket(night), mine = null;
-    if (me && out.ranking) out.ranking.forEach(function (r) { if (r.player_id === me.player_id) mine = r; });
+    var mineIds = new Set(rn.tickets.filter(isMine).map(function (t) { return t.player_id; }));
+    // My best-placed ticket, for the line under the table.
+    var best = null;
+    (out.ranking || []).forEach(function (r) { if (mineIds.has(r.player_id) && !best) best = r; });
+    var many = mineIds.size > 1 ? "Your best ticket" : "Your ticket";
     function amountCol(map) { return function (t) { var a = map.get(t.player_id); return '<td class="r num">' + (a ? fmtEth(a) : "–") + "</td>"; }; }
 
     if (rn.status === 1) {
       var s = P.payouts.get(night);
       if (s) {
-        var paid = new Map(s.winners.map(function (w, i) { return [w.toLowerCase(), s.amounts[i]]; }));
+        var paid = paidMap(s);
         var winners = rn.tickets.filter(function (t) { return paid.has(t.player_id); })
           .sort(function (a, b) { return Number(paid.get(b.player_id) - paid.get(a.player_id)); });
         body = ticketTable(night, winners, amountCol(paid)) + '<p class="hint">Paid out. ' + txLink(s.tx) + "</p>";
-        if (me && paid.has(me.player_id)) {
-          body += '<div class="yours"><span class="pts">' + fmtEth(paid.get(me.player_id)) + "</span> ETH paid to your wallet" +
-            (mine ? " for finishing #" + mine.place + " with " + mine.points + " points" : "") + ".</div>";
-          mine = null;
+        var got = 0n, wins = 0;
+        mineIds.forEach(function (id) { if (paid.has(id)) { got += paid.get(id); wins++; } });
+        if (got > 0n) {
+          body += '<div class="yours"><span class="pts">' + fmtEth(got) + "</span> ETH paid to your wallet" +
+            (wins > 1 ? " for " + wins + " winning tickets." : best ? " for finishing #" + best.place + " with " + best.points + " points." : ".") + "</div>";
+          best = null;
         }
       } else {
-        body = '<p class="hint">Paid out. See the winners on ' + addrLink(CONFIG.POT_ADDRESS, "Etherscan") + ".</p>";
+        body = '<p class="hint">Paid out. See the winners on ' + addrLink(rn.src.addr, "Etherscan") + ".</p>";
       }
     } else if (rn.status === 2) {
-      body = '<p class="hint">Voided, so every ticket can be refunded' + (me ? " from your ticket panel" : "") + ".</p>";
+      body = '<p class="hint">Voided, so every ticket can be refunded' + (mineIds.size ? " from your ticket panel" : "") + ".</p>";
     } else if (Date.now() >= nightEnd(night) + 3 * DAY) {
       body = '<p class="hint">Not paid out within 3 days, so every ticket can be refunded.</p>';
     } else if (out.action === "wait") {
@@ -1470,9 +1605,9 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
         .sort(function (a, b) { return Number(expected.get(b.player_id) - expected.get(a.player_id)); });
       body = ticketTable(night, ws, amountCol(expected)) + '<p class="hint">Results are in. The payout bot sends this within the hour.</p>';
     }
-    if (mine && rn.status !== 2) {
-      body += '<div class="yours">Your ticket finished #' + mine.place + " with " + mine.points + " points" +
-        (mine.bps ? ", worth " + fmtEth(rn.pot * BigInt(mine.bps) / BPS) + " ETH." : ".") + "</div>";
+    if (best && rn.status !== 2) {
+      body += '<div class="yours">' + many + " finished #" + best.place + " with " + best.points + " points" +
+        (best.bps ? ", worth " + fmtEth(rn.pot * BigInt(best.bps) / BPS) + " ETH." : ".") + "</div>";
     }
     rp.innerHTML = '<div class="pot-list">' + head + body + "</div>";
   }
@@ -1491,11 +1626,11 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     if (n.status === 2) return t.refunded ? { pill: "done", label: "Refunded", back: n.price, note: "The night was voided." }
       : { pill: "refund", label: "Refund ready", action: "refund", note: "The night was voided." };
     if (n.status === 1) {
-      var p = P.payouts.get(night), won = 0n;
+      var p = payoutOf(n, night);
       r = placeOf(night, n, t, now);
       var place = r && r.mine && r.out.action === "settle" ? "#" + r.mine.place + " with " + r.mine.points + " points" : "";
       if (!p) return { pill: "done", label: "Paid out", note: place || "Loading the payout…", settled: true };
-      p.winners.forEach(function (w, i) { if (w.toLowerCase() === t.player_id) won = p.amounts[i]; });
+      var won = paidMap(p).get(t.player_id) || 0n;
       return won > 0n ? { pill: "won", label: "Won", won: won, note: place, tx: p.tx, settled: true }
         : { pill: "lost", label: "No prize", note: place, tx: p.tx, settled: true };
     }
@@ -1533,15 +1668,21 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     if (!P.nights.size) { body.innerHTML = '<p class="empty">' + esc(P.error || "Loading your tickets…") + "</p>"; return; }
 
     var rows = [], inPlay = 0n, won = 0n, back = 0n, spentDone = 0n, count = 0;
-    potNights().forEach(function (night) {
-      var n = P.nights.get(night), t = n && myTicket(night);
-      if (!t) return;
-      var o = ticketOutcome(night, n, t, now);
-      count++;
-      if (o.pending || o.action) inPlay += n.price;
-      else { spentDone += n.price; if (o.won) won += o.won; if (o.back) back += o.back; }
-      rows.push({ night: night, n: n, t: t, o: o });
-    });
+    potNights().forEach(function (night) { nightRecs(night).forEach(function (n) {
+      var ts = n.tickets.filter(isMine);
+      if (!ts.length) return;
+      // A refund takes back all of a night's tickets in a pot at once, so one button each.
+      var toRefund = ts.filter(function (t) { return !t.refunded; }).length, refundShown = false;
+      ts.forEach(function (t, i) {
+        var o = ticketOutcome(night, n, t, now);
+        count++;
+        if (o.pending || o.action) inPlay += n.price;
+        else { spentDone += n.price; if (o.won) won += o.won; if (o.back) back += o.back; }
+        var btn = o.action === "refund" && !refundShown ? toRefund : 0;
+        if (o.action === "refund") refundShown = true;
+        rows.push({ night: night, n: n, t: t, o: o, num: ts.length > 1 ? i + 1 : 0, refundCount: btn });
+      });
+    }); });
     var net = won + back - spentDone;
     var stats = '<div class="stats">' +
       '<div class="stat"><span class="label">Tickets</span><span class="val">' + count + "</span></div>" +
@@ -1559,7 +1700,11 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
       table = '<div class="table-wrap"><table class="dash-table"><thead><tr><th>Night</th><th>Your picks</th><th>Result</th><th class="r">ETH</th></tr></thead><tbody>' +
         rows.map(function (r) {
           var o = r.o, amount;
-          if (o.action === "refund") amount = '<button class="secondary" type="button" data-dash="refund" data-night="' + r.night + '"' + (P.busy ? " disabled" : "") + ">Take back " + fmtEth(r.n.price) + "</button>";
+          if (o.action === "refund" && r.refundCount) {
+            amount = '<button class="secondary" type="button" data-dash="refund" data-night="' + r.night + '" data-src="' + r.n.src.addr + '"' + (P.busy ? " disabled" : "") + ">Take back " +
+              fmtEth(r.n.price * BigInt(r.refundCount)) + "</button>";
+          }
+          else if (o.action === "refund") amount = '<span class="num" style="color:var(--ink-3)">' + fmtEth(r.n.price) + " in</span>";
           else if (o.won) amount = '<span class="num" style="color:var(--good)">+' + fmtEth(o.won) + "</span>";
           else if (o.expected) amount = '<span class="num">+' + fmtEth(o.expected) + "</span>";
           else if (o.back) amount = '<span class="num">' + fmtEth(o.back) + " back</span>";
@@ -1567,7 +1712,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
           else amount = '<span class="num" style="color:var(--ink-3)">−' + fmtEth(r.n.price) + "</span>";
           var note = o.note ? esc(o.note) : "";
           if (o.tx) note += (note ? " " : "") + txLink(o.tx, "Payout on Etherscan");
-          return '<tr><td class="nt">' + esc(fmtNight(r.night)) + '</td><td class="picks">' + fmtKm(r.t.distance_km) + " km · " +
+          return '<tr><td class="nt">' + esc(fmtNight(r.night)) + (r.num ? ' <span class="tno">#' + r.num + "</span>" : "") + '</td><td class="picks">' + fmtKm(r.t.distance_km) + " km · " +
             esc(fmtTime(blockStart(r.night, r.t.peak_block))) + " · " + (r.t.more_blocks ? "More" : "Fewer") + "</td>" +
             '<td class="res"><span class="pill ' + o.pill + '">' + esc(o.label) + "</span>" + (note ? '<span class="note">' + note + "</span>" : "") + "</td>" +
             '<td class="r">' + amount + "</td></tr>";
@@ -1582,15 +1727,20 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     body.innerHTML = stats + notice + table + pts;
   }
 
-  function dashAction(kind, night) {
+  function dashAction(kind, night, srcAddr) {
     if (kind === "connect") return connectWallet(dashMsg);
     if (kind === "switch") return switchChain(dashMsg);
     if (kind === "account") { if (W.kit) W.kit.open("Account"); return; }
     if (P.demo) return demoAction(kind, night, null, dashMsg);
     if (!P.iface) { dashMsg("The wallet library is still loading. Try again in a moment.", "err"); return; }
-    var pot = CONFIG.POT_ADDRESS;
-    if (kind === "refund") return sendTx(dashMsg, "Refunded.", { to: pot, data: encode("refund", [L.nightToDay(night)]) });
-    if (kind === "collect") return sendTx(dashMsg, "Payout collected.", { to: pot, data: encode("withdrawOwed", []) });
+    if (kind === "refund") {
+      var rec = recFor(night, srcAddr);
+      if (!rec) return;
+      return sendTx(dashMsg, "Refunded.", { to: rec.src.addr, data: encodeFor(rec.src, "refund", [L.nightToDay(night)]) });
+    }
+    if (kind === "collect" && P.owedPot) {
+      return sendTx(dashMsg, "Payout collected.", { to: P.owedPot.addr, data: encodeFor(P.owedPot, "withdrawOwed", []) });
+    }
   }
 
   // ----- Pot winners board -----
@@ -1598,14 +1748,17 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     var el = $("board-pot");
     if (!(P.on || P.demo)) { el.innerHTML = ""; return; }
     var since = addDays(UI.live, -HISTORY_NIGHTS), totals = new Map();
-    P.payouts.forEach(function (p, night) {
+    function add(p, night) {
       if (night < since) return;
       p.winners.forEach(function (w, i) {
         var k = w.toLowerCase(), t = totals.get(k) || { addr: w, won: 0n, prizes: 0 };
         t.won += p.amounts[i]; t.prizes++;
         totals.set(k, t);
       });
-    });
+    }
+    // Every pot, old ones included.
+    if (P.demo) P.payouts.forEach(add);
+    else P.pots.forEach(function (s) { s.payouts.forEach(add); });
     var rows = Array.from(totals.values()).sort(function (a, b) { return b.won > a.won ? 1 : b.won < a.won ? -1 : b.prizes - a.prizes; });
     if (!rows.length) {
       el.innerHTML = '<p class="empty">No payouts yet. Winners show up here once a night with 2 or more tickets is paid out.</p>';
@@ -1663,6 +1816,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
       var i = P.info;
       body = acct + (i ? '<dl class="facts">' +
         "<dt>Pot contract</dt><dd>" + addrLink(CONFIG.POT_ADDRESS, CONFIG.POT_ADDRESS) + "</dd>" +
+        "<dt>Version</dt><dd>" + i.version + (i.version >= 2 ? " (up to " + MAX_PER_WALLET + " tickets per wallet)" : " (one ticket per wallet)") + "</dd>" +
         "<dt>Owner</dt><dd>" + esc(i.owner) + "</dd>" +
         "<dt>Payout bot</dt><dd>" + esc(i.resolver) + (i.resolver.toLowerCase() === i.owner.toLowerCase() ? " (still you: set the bot wallet below)" : "") + "</dd>" +
         "<dt>Bot gas</dt><dd>" + fmtEth(i.botGas) + " ETH" + (i.botGas < 2000000000000000n ? " (low: send it some Sepolia ETH)" : "") + "</dd>" +
@@ -1673,7 +1827,14 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
         '<div class="row"><input type="text" id="adm-resolver" placeholder="0x…" spellcheck="false"><button class="secondary" type="button" data-admin="resolver">Set</button></div></div>' +
         '<div><h3>Ticket price</h3><p class="hint">Applies to nights that have no tickets yet.</p>' +
         '<div class="row"><input type="text" id="adm-newprice" placeholder="0.01" inputmode="decimal"><button class="secondary" type="button" data-admin="price">Set</button></div></div></div>' +
-        (i && P.account && P.account.toLowerCase() !== i.owner.toLowerCase() ? '<p class="hint">This wallet isn\'t the owner, so changes will be refused.</p>' : "");
+        (i && P.account && P.account.toLowerCase() !== i.owner.toLowerCase() ? '<p class="hint">This wallet isn\'t the owner, so changes will be refused.</p>' : "") +
+        (i && i.version < 2 ? '<div class="admin-grid"><div><h3>Upgrade to version 2</h3>' +
+          '<p class="hint">Deploys a new pot where each wallet can buy up to ' + MAX_PER_WALLET + ' tickets a night, each with its own picks. It starts with the same payout bot. This pot keeps paying out its last nights.</p>' +
+          '<label for="adm-upprice" class="hint">Ticket price in Sepolia ETH</label>' +
+          '<div class="row"><input type="text" id="adm-upprice" value="' + esc(fmtEth(i.price)) + '" inputmode="decimal"><button class="primary" type="button" data-admin="upgrade">Deploy version 2</button></div></div></div>' : "") +
+        (P.deployed ? '<div class="notice"><span>Deployed at <span class="addr">' + esc(P.deployed) + "</span></span>" +
+          '<button class="secondary" type="button" data-admin="copy">Copy address</button></div>' +
+          '<p class="hint">Next: in config.js, set POT_ADDRESS to this address and add the old one to OLD_POTS, so its last nights still show and get paid. The payout bot reads both from config.js.</p>' : "");
     }
     // Only redraw when something changed, so typing in the fields isn't interrupted.
     var key = body.replace(/value="[^"]*"/g, "");
@@ -1690,10 +1851,12 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     }
     if (!P.E) { adminMsg("The wallet library is still loading.", "err"); return; }
     if (!P.account || !onSepolia()) { adminMsg("Connect your wallet on Sepolia first.", "err"); return; }
-    if (kind === "deploy") {
-      var price = parseEthInput($("adm-price").value);
+    if (kind === "deploy" || kind === "upgrade") {
+      var price = parseEthInput($(kind === "deploy" ? "adm-price" : "adm-upprice").value);
       if (!price) { adminMsg("Enter a ticket price like 0.01.", "err"); return; }
-      var data = POT_BYTECODE + P.iface.encodeDeploy([price]).slice(2);
+      // An upgrade keeps the current payout bot, so nothing else needs setting.
+      var bot = kind === "upgrade" && P.info ? P.info.resolver : P.E.ZeroAddress;
+      var data = POT_BYTECODE + P.iface.encodeDeploy([price, bot]).slice(2);
       return sendTx(adminMsg, "Pot deployed.", { data: data }, function (r) {
         P.deployed = P.E.getAddress(r.receipt.contractAddress);
       });
@@ -1716,35 +1879,42 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     P.account = "0x7e57000000000000000000000000000000c0ffee";
     P.chainId = Number(CONFIG.CHAIN_ID);
     var price = 10n ** 16n, live = liveNightAt(Date.now());
+    var src = { addr: "0x0000000000000000000000000000000000000000", version: 2 };
     function fake(i) { return "0x5a3e" + String(i).padStart(4, "0") + "000000000000000000000000000000" + String(i * 7).padStart(2, "0"); }
     var samples = Array.from(G.sample);
     function ticketsFor(night) {
       return G.picks.filter(function (p) { return p.night === night && G.sample.has(p.player_id); }).slice(0, 5).map(function (p) {
         var addr = fake(samples.indexOf(p.player_id) + 1);
-        return { player_id: addr.toLowerCase(), address: addr, distance_km: p.distance_km, peak_block: p.peak_block, more_blocks: p.more_blocks, boughtAt: Math.floor(nightStart(night) / 1000) - 3600 * (samples.indexOf(p.player_id) + 2), refunded: false };
+        return { address: addr, distance_km: p.distance_km, peak_block: p.peak_block, more_blocks: p.more_blocks, boughtAt: Math.floor(nightStart(night) / 1000) - 3600 * (samples.indexOf(p.player_id) + 2), refunded: false };
       });
     }
+    // Ticket numbers and ids, the way a version 2 pot hands them out.
+    function number(list) { list.forEach(function (t, i) { t.index = i; t.player_id = L.potTicketId(2, i); }); return list; }
     var me = P.account;
-    function mine(night, dist, peak, more) {
-      return { player_id: me.toLowerCase(), address: me, distance_km: dist, peak_block: peak, more_blocks: more, boughtAt: Math.floor(nightStart(night) / 1000) - 7200, refunded: false };
+    function mine(night, dist, peak, more, early) {
+      return { address: me, distance_km: dist, peak_block: peak, more_blocks: more, boughtAt: Math.floor(nightStart(night) / 1000) - (early || 7200), refunded: false };
     }
-    // Sample tickets for the preview wallet: a close call, a miss, a voided night, and tonight.
+    // Sample tickets for the preview wallet: a close call plus a second guess, a miss,
+    // a voided night, and tonight.
     function truth(night) {
       var n = H.nights.get(night), cur = H.blocks.get(night), prev = H.blocks.get(addDays(night, -1));
       return { km: n ? n.distanceKm : 8, peak: n ? n.blocks.indexOf(Math.max.apply(null, n.blocks)) : 3, more: cur != null && prev != null ? cur > prev : true };
     }
     var plan = {};
     var t1 = truth(addDays(live, -1)), t2 = truth(addDays(live, -2)), t4 = truth(addDays(live, -4));
-    plan[addDays(live, -1)] = mine(addDays(live, -1), Math.round((t1.km + 0.2) * 10) / 10, t1.peak, t1.more);
-    plan[addDays(live, -2)] = mine(addDays(live, -2), Math.round((t2.km + 3.4) * 10) / 10, (t2.peak + 3) % 8, !t2.more);
-    plan[addDays(live, -4)] = mine(addDays(live, -4), Math.round((t4.km - 0.6) * 10) / 10, t4.peak, t4.more);
-    plan[addDays(live, -6)] = mine(addDays(live, -6), 8.4, 3, true);
-    plan[live] = mine(live, 9.1, 3, true);
+    plan[addDays(live, -1)] = [mine(addDays(live, -1), Math.round((t1.km + 0.2) * 10) / 10, t1.peak, t1.more),
+      mine(addDays(live, -1), Math.round((t1.km - 1.5) * 10) / 10, (t1.peak + 1) % 8, t1.more, 5400)];
+    plan[addDays(live, -2)] = [mine(addDays(live, -2), Math.round((t2.km + 3.4) * 10) / 10, (t2.peak + 3) % 8, !t2.more)];
+    plan[addDays(live, -4)] = [mine(addDays(live, -4), Math.round((t4.km - 0.6) * 10) / 10, t4.peak, t4.more)];
+    plan[addDays(live, -6)] = [mine(addDays(live, -6), 8.4, 3, true)];
+    plan[live] = [mine(live, 9.1, 3, true)];
 
     for (var k = 8; k >= 0; k--) {
       var night = addDays(live, -k), t = ticketsFor(night);
-      if (plan[night]) t.push(plan[night]);
-      var n = { price: price, pot: price * BigInt(t.length), status: 0, tickets: t };
+      if (plan[night]) t = t.concat(plan[night]);
+      t.sort(function (a, b) { return a.boughtAt - b.boughtAt; });
+      number(t);
+      var n = { src: src, price: price, pot: price * BigInt(t.length), status: 0, tickets: t };
       P.nights.set(night, n);
       if (k === 0) continue;
       if (k === 6) { n.status = 2; continue; } // a voided night, so a refund shows
@@ -1752,26 +1922,30 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
       var out = L.potPayouts(resolve(night, Date.now()), t);
       if (out.action !== "settle") continue;
       n.status = 1;
-      var byId = new Map(t.map(function (x) { return [x.player_id, x.address]; }));
-      P.payouts.set(night, { winners: out.winners.map(function (w) { return byId.get(w); }), amounts: out.bps.map(function (b) { return n.pot * BigInt(b) / BPS; }), tx: null });
+      var byId = new Map(t.map(function (x) { return [x.player_id, x]; }));
+      P.payouts.set(night, {
+        tickets: out.winners.map(function (w) { return byId.get(w).index; }),
+        winners: out.winners.map(function (w) { return byId.get(w).address; }),
+        amounts: out.bps.map(function (b) { return n.pot * BigInt(b) / BPS; }), tx: null
+      });
     }
     var open = addDays(live, 1);
-    var openTickets = [[9.2, 3, true], [10.4, 4, false], [8.1, 3, true]].map(function (x, i) {
-      var addr = fake(i + 1);
-      return { player_id: addr.toLowerCase(), address: addr, distance_km: x[0], peak_block: x[1], more_blocks: x[2], boughtAt: Math.floor(Date.now() / 1000) - 3600 * (i + 1), refunded: false };
-    });
-    P.nights.set(open, { price: price, pot: price * 3n, status: 0, tickets: openTickets });
+    var openTickets = number([[9.2, 3, true], [10.4, 4, false], [8.1, 3, true]].map(function (x, i) {
+      return { address: fake(i + 1), distance_km: x[0], peak_block: x[1], more_blocks: x[2], boughtAt: Math.floor(Date.now() / 1000) - 3600 * (3 - i), refunded: false };
+    }));
+    P.nights.set(open, { src: src, price: price, pot: price * 3n, status: 0, tickets: openTickets });
   }
-  function demoAction(kind, night, v, msgFn) {
-    var open = UI.open, n = P.nights.get(open), me = myTicket(open);
-    if (kind === "buy" && !me) {
-      n.tickets.push({ player_id: P.account.toLowerCase(), address: P.account, distance_km: v.km, peak_block: UI.draft.peak, more_blocks: UI.draft.more, boughtAt: Math.floor(Date.now() / 1000), refunded: false });
+  function demoAction(kind, night, v, msgFn, ticket) {
+    var open = UI.open, n = P.nights.get(open), mine = myTickets(open);
+    if (kind === "buy" && mine.length < MAX_PER_WALLET) {
+      var i = n.tickets.length;
+      n.tickets.push({ index: i, player_id: L.potTicketId(2, i), address: P.account, distance_km: v.km, peak_block: UI.draft.peak, more_blocks: UI.draft.more, boughtAt: Math.floor(Date.now() / 1000), refunded: false });
       n.pot += n.price;
-    } else if (kind === "change" && me) {
-      me.distance_km = v.km; me.peak_block = UI.draft.peak; me.more_blocks = UI.draft.more;
+    } else if (kind === "change") {
+      var t = n.tickets[Number(ticket)];
+      if (t && isMine(t)) { t.distance_km = v.km; t.peak_block = UI.draft.peak; t.more_blocks = UI.draft.more; }
     } else if (kind === "refund") {
-      var t = myTicket(night);
-      if (t) t.refunded = true;
+      myTickets(night).forEach(function (x) { x.refunded = true; });
     }
     (msgFn || potMsg)("Preview only: nothing was sent. On your site this asks your wallet to confirm a Sepolia transaction.");
     renderAll();
@@ -1784,7 +1958,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
   function setBanner(html) { var b = $("banner"); b.innerHTML = html; b.hidden = !html; }
 
   function syncDraftFromSaved() {
-    var p = myPick(UI.open) || myTicket(UI.open);
+    var p = myPick(UI.open) || myTickets(UI.open).slice(-1)[0];
     UI.draftNight = UI.open;
     UI.dirty = false;
     UI.draft = p ? { distance: p.distance_km.toFixed(1), peak: p.peak_block, more: p.more_blocks } : { distance: "", peak: null, more: null };
@@ -2182,7 +2356,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     });
     $("pot").addEventListener("click", function (e) {
       var btn = e.target.closest("button[data-pot]"); if (!btn || btn.disabled) return;
-      potAction(btn.dataset.pot, btn.dataset.night);
+      potAction(btn.dataset.pot, btn.dataset.night, btn.dataset.ticket, btn.dataset.src);
     });
     $("admin").addEventListener("click", function (e) {
       var btn = e.target.closest("button[data-admin]"); if (!btn || btn.disabled) return;
@@ -2192,7 +2366,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     $("theme-btn").addEventListener("click", function () { setTheme(currentTheme() === "light" ? "dark" : "light"); });
     $("dash").addEventListener("click", function (e) {
       var btn = e.target.closest("button[data-dash]"); if (!btn || btn.disabled) return;
-      dashAction(btn.dataset.dash, btn.dataset.night);
+      dashAction(btn.dataset.dash, btn.dataset.night, btn.dataset.src);
     });
     $("me").addEventListener("click", function (e) {
       var btn = e.target.closest("button[data-wallet]"); if (!btn) return;

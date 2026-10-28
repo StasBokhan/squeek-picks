@@ -1,7 +1,8 @@
 // Builds the page you host from src/.
 //   node build.mjs                 ->  index.html (complete page for any static host)
 //   node build.mjs --fragment out  ->  also writes a body-only copy (used for previews)
-// It inlines src/logic.js and the pot contract (contracts/SqueekPot.json).
+// It inlines src/logic.js and the pot contract (contracts/SqueekPot.json, plus the
+// version 1 ABI from SqueekPotV1.json for older pots).
 // Your settings stay in config.js, which this never touches.
 import { readFileSync, writeFileSync } from "node:fs";
 
@@ -17,6 +18,7 @@ const swap = (from, to) => {
 swap('<script src="logic.js" data-inline></script>', "<script>\n" + logic.trim() + "\n</script>");
 swap("/*@@POT_ABI@@*/[]", JSON.stringify(pot.abi));
 swap('/*@@POT_BYTECODE@@*/""', JSON.stringify(pot.bytecode));
+swap("/*@@POT_ABI_V1@@*/[]", JSON.stringify(JSON.parse(read("./contracts/SqueekPotV1.json")).abi));
 
 const [head, body] = src.split("<!-- BODY -->");
 if (!body) throw new Error("src/app.html needs a <!-- BODY --> marker");
