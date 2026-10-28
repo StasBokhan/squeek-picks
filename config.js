@@ -4,8 +4,12 @@ window.SQUEEK_CONFIG = {
   SUPABASE_URL: "https://ckmrseoqpxwpvhmitmre.supabase.co",
   SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrbXJzZW9xcHh3cHZobWl0bXJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMwNDM0MDUsImV4cCI6MjEwODYxOTQwNX0.Z-icQ9xqr6za7GFEaMNfkLllmA1p0Xg7f72FQLZtTrE",   // paste your anon key (the long one starting with eyJ)
 
-  // The nightly pot on Sepolia, deployed from index.html?admin
-  POT_ADDRESS: "0x10fC2c8CCe2FFAceb619c3F1A1E38e253264B81B",
+  // The nightly pot on Sepolia, deployed from index.html?admin (version 2: up to 5 tickets per wallet)
+  POT_ADDRESS: "0x845AC45012405B8Fa1Ff017320304b665b915F86",
+
+  // Earlier pots still finishing their last nights. The page keeps showing their tickets
+  // and the payout bot keeps paying them. Safe to remove 3 days after their last night.
+  OLD_POTS: ["0x10fC2c8CCe2FFAceb619c3F1A1E38e253264B81B"],
 
   // Reown project for the wallet picker (dashboard.reown.com). Public by design;
   // the project's allowed domain is what stops other sites using it.
