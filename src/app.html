@@ -164,6 +164,25 @@ a.link:hover { text-decoration: underline; text-underline-offset: 3px; }
 .live-head h2 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
 .live-head .eyebrow { font: 600 14px/1.4 var(--font-body); text-transform: none; letter-spacing: 0; }
 .metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 20px; }
+/* Tonight's numbers on the left, the hamster on the right; stacked on phones. */
+.live-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 340px); gap: 20px; align-items: stretch; }
+.live-top .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 860px) {
+  .live-top { grid-template-columns: minmax(0, 1fr); }
+  .live-top .cam { order: -1; min-height: 0; height: clamp(170px, 50vw, 260px); }
+}
+@media (min-width: 861px) and (max-width: 1000px) { .live-top { grid-template-columns: minmax(0, 1fr) minmax(0, 280px); } }
+.cam { position: relative; display: block; border-radius: 20px; overflow: hidden; background: #000; min-height: 200px; text-decoration: none; }
+.cam img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 45% 40%; display: block; transition: transform .4s ease; }
+.cam:hover img { transform: scale(1.03); }
+@media (prefers-reduced-motion: reduce) { .cam img { transition: none; } .cam:hover img { transform: none; } }
+.cam-cap {
+  position: absolute; left: 12px; bottom: 12px; display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 14px; border-radius: 999px; background: rgba(23, 26, 33, .82); color: #EEF1F7;
+  font: 800 14px/1.2 var(--font-body); backdrop-filter: blur(4px);
+}
+.cam-dot { width: 8px; height: 8px; border-radius: 50%; background: #FF5A4E; box-shadow: 0 0 0 3px rgba(255, 90, 78, .25); }
+.cam:hover .cam-cap { background: rgba(23, 26, 33, .95); }
 @media (max-width: 720px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .metric { display: grid; gap: 4px; align-content: start; min-width: 0; background: var(--raise); border-radius: 18px; padding: 14px 16px; }
 .metric .label { font-size: 13px; color: var(--ink-3); font-weight: 700; }
@@ -439,9 +458,10 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
   <div class="banner" id="banner" role="status" hidden></div>
 
   <section class="panel live" aria-labelledby="live-h">
+    <div class="live-top">
+    <div class="live-main">
     <div class="live-head">
       <h2 id="live-h">Tonight <span class="eyebrow" id="live-night"></span></h2>
-      <a class="link" href="https://sepolia.squeekchain.com/" target="_blank" rel="noopener">Watch the livestream</a>
     </div>
     <div class="metrics">
       <div class="metric">
@@ -462,6 +482,12 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
         <span class="mid" id="m-height">–</span>
         <span class="stamp" id="m-height-all"></span>
       </div>
+    </div>
+    </div>
+    <a class="cam" href="https://sepolia.squeekchain.com/" target="_blank" rel="noopener">
+      <img src="squeektoshi.jpg" width="665" height="413" alt="Squeektoshi, a fluffy hamster, sitting in front of his wheel on the night camera">
+      <span class="cam-cap"><span class="cam-dot" aria-hidden="true"></span>Watch Squeektoshi live</span>
+    </a>
     </div>
     <figure class="chart" aria-labelledby="chart-cap">
       <figcaption class="legend" id="chart-cap">
