@@ -1,0 +1,16 @@
+{
+  "name": "squeek-picks-wallet",
+  "private": true,
+  "description": "Builds wallet.js, the Reown AppKit wallet picker for the site.",
+  "scripts": {
+    "build": "esbuild entry.js --bundle --minify --format=iife --target=es2020 --outfile=../wallet.js --legal-comments=none --define:process.env.NODE_ENV='\"production\"' --define:global=globalThis"
+  },
+  "dependencies": {
+    "@reown/appkit": "1.8.24",
+    "@reown/appkit-adapter-ethers": "1.8.24",
+    "ethers": "6.13.4"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}

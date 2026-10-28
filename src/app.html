@@ -1,4 +1,5 @@
 <title>Squeek Picks</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="description" content="Call Squeektoshi's night on the wheel. Distance, peak window and Squeek blocks, for points or a Sepolia test pot.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -278,6 +279,66 @@ button.secondary:disabled { color: var(--ink-3); cursor: not-allowed; }
 .care { margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--rule); font-size: 14px; color: var(--ink-2); max-width: 75ch; }
 footer { color: var(--ink-3); font-size: 13px; padding-top: 4px; display: flex; flex-wrap: wrap; gap: 6px 16px; }
 footer a { color: var(--ink-2); }
+
+/* Identity: ENS names and avatars, with a dot-grid avatar for everyone else */
+.av { width: 22px; height: 22px; border-radius: 6px; flex: none; display: inline-block; vertical-align: middle; object-fit: cover; background: var(--raise); }
+.av.lg { width: 44px; height: 44px; border-radius: 11px; }
+.who { display: inline-flex; align-items: center; gap: 8px; min-width: 0; max-width: 100%; color: var(--ink); text-decoration: none; }
+.who .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.who .nm.addr { font-family: var(--font-data); font-size: 13px; color: var(--ink-2); }
+a.who:hover .nm { color: var(--gold); text-decoration: underline; text-underline-offset: 3px; }
+.me { flex-wrap: wrap; justify-content: flex-end; }
+button.wallet-btn {
+  appearance: none; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+  padding: 5px 12px 5px 5px; border-radius: 999px; border: 1px solid var(--rule);
+  background: var(--raise); color: var(--ink); font: 600 14px/1 var(--font-body); max-width: 100%;
+}
+button.wallet-btn:hover { border-color: var(--ink-3); }
+button.wallet-btn.connect { padding: 9px 14px; background: var(--gold); color: var(--on-gold); border-color: var(--gold); }
+
+/* Leaderboard tabs */
+.board-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.tabs { display: inline-flex; padding: 3px; gap: 2px; border-radius: 9px; background: var(--raise); border: 1px solid var(--rule); }
+.tabs button { appearance: none; cursor: pointer; border: 0; background: transparent; color: var(--ink-2); font: 600 13px/1 var(--font-body); padding: 8px 12px; border-radius: 6px; }
+.tabs button[aria-selected="true"] { background: var(--panel); color: var(--ink); box-shadow: inset 0 0 0 1px var(--rule); }
+
+/* My tickets */
+.dash-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px 24px; flex-wrap: wrap; }
+.dash-who { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.dash-who .id { display: grid; gap: 2px; min-width: 0; }
+.dash-who .id strong { font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dash-who .id span { font-size: 13px; color: var(--ink-3); }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
+@media (max-width: 640px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.stat { padding: 12px 14px; border-radius: 8px; background: var(--raise); border: 1px solid var(--rule); display: grid; gap: 4px; min-width: 0; }
+.stat .label { font-size: 12px; color: var(--ink-3); }
+.stat .val { font: 600 20px/1.1 var(--font-data); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.stat .val.pos { color: var(--good); }
+.stat .val.neg { color: var(--bad); }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 9px; border-radius: 999px; border: 1px solid currentColor; font: 600 12px/1.6 var(--font-body); white-space: nowrap; color: var(--ink-2); }
+.pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
+.pill.won { color: var(--good); }
+.pill.open { color: var(--blue); }
+.pill.live { color: var(--gold); }
+.pill.refund { color: var(--gold); }
+.pill.lost, .pill.void, .pill.done { color: var(--ink-3); }
+.dash-table td { vertical-align: middle; }
+.dash-table .picks { font-family: var(--font-data); font-size: 13px; color: var(--ink-2); white-space: nowrap; }
+.dash-table .note { display: block; font-size: 12px; color: var(--ink-3); margin-top: 3px; white-space: normal; }
+.dash-table .nt { white-space: nowrap; }
+@media (max-width: 560px) {
+  /* Each ticket becomes a small card: night and amount, then picks, then the result. */
+  .dash-table thead { display: none; }
+  .dash-table, .dash-table tbody { display: block; }
+  .dash-table tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "nt amt" "picks picks" "res res"; gap: 6px 12px; padding: 12px 0; border-bottom: 1px solid var(--rule); }
+  .dash-table td { display: block; padding: 0; border: 0; }
+  .dash-table .nt { grid-area: nt; font-weight: 600; }
+  .dash-table .picks { grid-area: picks; }
+  .dash-table .res { grid-area: res; }
+  .dash-table td.r { grid-area: amt; text-align: right; }
+}
+.dash-empty { display: grid; gap: 12px; justify-items: start; margin-top: 16px; }
+.dash-points { margin: 14px 0 0; font-size: 14px; color: var(--ink-2); }
 </style>
 <!-- BODY -->
 <div class="wrap">
@@ -403,6 +464,19 @@ footer a { color: var(--ink-2); }
     </section>
   </div>
 
+  <section class="panel dash" id="dash" aria-labelledby="dash-h" hidden>
+    <div class="dash-head">
+      <div>
+        <span class="eyebrow">Your bets</span>
+        <h2 id="dash-h">My tickets</h2>
+        <p class="sub">Your pot tickets from the last 2 weeks: picks, results and payouts.</p>
+      </div>
+      <div id="dash-who"></div>
+    </div>
+    <div id="dash-body"></div>
+    <p class="msg" id="dash-msg" role="status"></p>
+  </section>
+
   <div class="grid-2">
     <section class="panel" aria-labelledby="results-h">
       <span class="eyebrow">Results</span>
@@ -413,9 +487,18 @@ footer a { color: var(--ink-2); }
     </section>
 
     <section class="panel" aria-labelledby="board-h">
-      <span class="eyebrow">Leaderboard</span>
-      <h2 id="board-h">Last 28 nights</h2>
-      <div id="board"></div>
+      <div class="board-head">
+        <div>
+          <span class="eyebrow">Leaderboard</span>
+          <h2 id="board-h">Last 28 nights</h2>
+        </div>
+        <div class="tabs" role="tablist" aria-label="Leaderboard" id="board-tabs" hidden>
+          <button type="button" role="tab" id="tab-points" aria-controls="board" aria-selected="true">Points</button>
+          <button type="button" role="tab" id="tab-pot" aria-controls="board-pot" aria-selected="false" tabindex="-1">Pot winners</button>
+        </div>
+      </div>
+      <div id="board" role="tabpanel" aria-labelledby="tab-points"></div>
+      <div id="board-pot" role="tabpanel" aria-labelledby="tab-pot" hidden></div>
     </section>
   </div>
 
@@ -475,7 +558,10 @@ footer a { color: var(--ink-2); }
     RPC_URL: "https://ethereum-sepolia-rpc.publicnode.com",
     CHAIN_ID: 11155111,
     EXPLORER: "https://sepolia.etherscan.io",
-    API_BASE: "https://api.squeekchain.com"
+    API_BASE: "https://api.squeekchain.com",
+    REOWN_PROJECT_ID: "",                                  // turns on the wallet picker
+    MAINNET_RPC_URL: "https://ethereum-rpc.publicnode.com", // ENS names live on Ethereum mainnet
+    ENS_AVATAR_URL: "https://metadata.ens.domains/mainnet/avatar/"
   }, window.SQUEEK_CONFIG || {});
   var POT_ABI = /*@@POT_ABI@@*/[];
   var POT_BYTECODE = /*@@POT_BYTECODE@@*/"";
@@ -523,6 +609,104 @@ footer a { color: var(--ink-2); }
   function addrLink(a, text) {
     return '<a class="addr" href="' + esc(CONFIG.EXPLORER + "/address/" + a) + '" target="_blank" rel="noopener">' + esc(text || shortAddr(a)) + "</a>";
   }
+
+  // ---------- Identity: ENS names and avatars ----------
+  // A wallet's ENS name (reverse record, checked forwards) and its ENS avatar.
+  // Wallets without one get a dot-grid avatar drawn from their address.
+  var ENS = { names: {}, pending: {}, provider: null, queue: [], running: 0, dirty: false };
+  var ENS_KEY = "squeekpicks.ens.v1";
+  try {
+    var savedEns = JSON.parse(localStorage.getItem(ENS_KEY) || "{}");
+    Object.keys(savedEns).forEach(function (a) {
+      var e = savedEns[a];
+      // Names are kept a day, "no name" answers six hours.
+      if (e && Date.now() - e.at < (e.name ? 24 : 6) * HOUR) ENS.names[a] = e;
+    });
+  } catch (e) { /* storage blocked */ }
+
+  function ensName(addr) {
+    var e = addr && ENS.names[addr.toLowerCase()];
+    return e ? e.name : null;
+  }
+  function lookupEns(addrs) {
+    if (H.demo || !CONFIG.MAINNET_RPC_URL || !window.ethers) return;
+    addrs.forEach(function (a) {
+      var k = a && a.toLowerCase();
+      if (!k || ENS.names[k] || ENS.pending[k]) return;
+      ENS.pending[k] = true;
+      ENS.queue.push(a);
+    });
+    pumpEns();
+  }
+  function pumpEns() {
+    var E = window.ethers;
+    if (!ENS.provider) {
+      var net = E.Network.from("mainnet");
+      ENS.provider = new E.JsonRpcProvider(CONFIG.MAINNET_RPC_URL, net, { staticNetwork: net });
+    }
+    while (ENS.running < 3 && ENS.queue.length) {
+      var a = ENS.queue.shift();
+      ENS.running++;
+      (function (addr) {
+        ENS.provider.lookupAddress(addr).then(function (name) {
+          ENS.names[addr.toLowerCase()] = { name: name || null, at: Date.now() };
+          if (name) ENS.dirty = true;
+        }, function () { /* no answer: try again next visit */ }).then(function () {
+          ENS.running--;
+          delete ENS.pending[addr.toLowerCase()];
+          if (ENS.queue.length) return pumpEns();
+          try { localStorage.setItem(ENS_KEY, JSON.stringify(ENS.names)); } catch (e) { /* storage blocked */ }
+          if (ENS.dirty) { ENS.dirty = false; renderIdentity(); }
+        });
+      })(a);
+    }
+  }
+
+  function hash32(s) {
+    var h = 2166136261;
+    for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return h >>> 0;
+  }
+  var DOT_COLORS = ["var(--gold)", "var(--blue)", "var(--good)", "var(--bad)", "#b99cf2"];
+  // A mirrored 5x5 dot grid, the same family as the Squeek NFT art.
+  function dotAvatar(seed, cls) {
+    var h = hash32(String(seed).toLowerCase()), h2 = hash32(String(seed) + "~");
+    var color = DOT_COLORS[h2 % DOT_COLORS.length];
+    var dots = "";
+    for (var y = 0; y < 5; y++) {
+      for (var x = 0; x < 3; x++) {
+        var on = (h >>> (y * 3 + x)) & 1;
+        [x, 4 - x].forEach(function (cx, j) {
+          if (j === 1 && cx === x) return;
+          dots += '<circle cx="' + (cx * 2 + 1) + '" cy="' + (y * 2 + 1) + '" r="' + (on ? 0.78 : 0.32) + '" style="fill:' + (on ? color : "var(--rule)") + '"/>';
+        });
+      }
+    }
+    return '<svg class="av' + (cls ? " " + cls : "") + '" viewBox="0 0 10 10" aria-hidden="true">' + dots + "</svg>";
+  }
+  function avatar(addr, cls) {
+    var name = ensName(addr);
+    if (!name) return dotAvatar(addr, cls);
+    return '<img class="av' + (cls ? " " + cls : "") + '" alt="" loading="lazy" referrerpolicy="no-referrer" data-seed="' + esc(addr) +
+      '" src="' + esc(CONFIG.ENS_AVATAR_URL + encodeURIComponent(name)) + '">';
+  }
+  // Avatar plus ENS name or short address, linked to the wallet on Etherscan.
+  function who(addr, opts) {
+    opts = opts || {};
+    var name = ensName(addr);
+    var label = '<span class="nm' + (name ? "" : " addr") + '">' + esc(name || shortAddr(addr)) + "</span>";
+    if (opts.plain || P.demo) return '<span class="who">' + avatar(addr) + label + "</span>";
+    return '<a class="who" href="' + esc(CONFIG.EXPLORER + "/address/" + addr) + '" target="_blank" rel="noopener" title="' + esc(addr) + '">' + avatar(addr) + label + "</a>";
+  }
+  // ENS avatars that fail to load (no avatar set, or a broken link) fall back to dots.
+  document.addEventListener("error", function (e) {
+    var t = e.target;
+    if (t && t.tagName === "IMG" && t.classList.contains("av")) {
+      var tmp = document.createElement("span");
+      tmp.innerHTML = dotAvatar(t.getAttribute("data-seed") || "", t.classList.contains("lg") ? "lg" : "");
+      t.replaceWith(tmp.firstChild);
+    }
+  }, true);
 
   // ---------- Hamster data ----------
   var H = {
@@ -714,7 +898,7 @@ footer a { color: var(--ink-2); }
     on: !!(CONFIG.POT_ADDRESS && POT_ABI.length),
     admin: /[?&]admin(=|&|$)/.test(location.search),
     demo: false, E: null, read: null, account: null, chainId: null,
-    nights: new Map(), settled: new Map(), owed: 0n, info: null,
+    nights: new Map(), payouts: new Map(), owed: 0n, info: null, logsTo: 0,
     busy: false, error: "", deployed: "", adminKey: ""
   };
   var BPS = 10000n;
@@ -751,10 +935,54 @@ footer a { color: var(--ink-2); }
     });
     return { price: BigInt(r.price), pot: BigInt(r.pot), status: Number(r.status), tickets: tickets };
   }
+  var HISTORY_NIGHTS = 14;
+  // The open night, the night in progress, and the 14 before it.
   function potNights() {
     var live = UI.live || liveNightAt(Date.now()), out = [addDays(live, 1), live];
-    for (var k = 1; k <= 3; k++) out.push(addDays(live, -k));
+    for (var k = 1; k <= HISTORY_NIGHTS; k++) out.push(addDays(live, -k));
     return out;
+  }
+
+  // ----- Wallet connection -----
+  // With a Reown project ID the page uses the AppKit wallet picker (wallet.js, loaded on
+  // first use or when this browser connected before). Without one, it talks to the
+  // browser's wallet directly.
+  var W = { kit: null, loading: null, state: null };
+  var WALLET_USED_KEY = "squeekpicks.wallet.used";
+  function hasKit() { return !!CONFIG.REOWN_PROJECT_ID; }
+  function eth() { return W.kit ? W.kit.provider() : window.ethereum; }
+  function walletUsedBefore() { try { return localStorage.getItem(WALLET_USED_KEY) === "1"; } catch (e) { return false; } }
+  function rememberWallet(on) { try { if (on) localStorage.setItem(WALLET_USED_KEY, "1"); else localStorage.removeItem(WALLET_USED_KEY); } catch (e) { /* storage blocked */ } }
+
+  function loadKit() {
+    if (W.loading) return W.loading;
+    W.loading = new Promise(function (resolve, reject) {
+      var s = document.createElement("script");
+      s.src = "wallet.js";
+      s.onload = resolve;
+      s.onerror = function () { reject(new Error("The wallet picker didn't load. Check your connection and reload.")); };
+      document.head.appendChild(s);
+    }).then(function () {
+      W.kit = window.SqueekWallet.create({
+        projectId: CONFIG.REOWN_PROJECT_ID, rpcUrl: CONFIG.RPC_URL, explorer: CONFIG.EXPLORER,
+        icon: new URL("icon.svg", location.href).href
+      });
+      W.kit.subscribe(onWalletState);
+      return W.kit;
+    });
+    W.loading.catch(function () { W.loading = null; });
+    return W.loading;
+  }
+  function onWalletState(s) {
+    var account = s.connected ? s.address : null;
+    var changed = (account || "").toLowerCase() !== (P.account || "").toLowerCase();
+    W.state = s;
+    P.account = account;
+    P.chainId = s.chainId;
+    if (account) rememberWallet(true);
+    else if (changed) rememberWallet(false);   // disconnected from the picker
+    if (changed) { P.owed = 0n; UI.draftNight = null; potRefresh().then(renderAll); }
+    else renderAll();
   }
 
   function potInit() {
@@ -770,9 +998,14 @@ footer a { color: var(--ink-2); }
       P.rpc = new E.JsonRpcProvider(CONFIG.RPC_URL, net, { staticNetwork: net });
       P.iface = new E.Interface(POT_ABI);
       if (P.on) P.read = new E.Contract(CONFIG.POT_ADDRESS, POT_ABI, P.rpc);
+      if (hasKit()) {
+        // Restore a previous connection without making first-time visitors load the picker.
+        if (walletUsedBefore()) loadKit().catch(function (e) { P.error = e.message; });
+        return;
+      }
       if (!window.ethereum) return;
       if (window.ethereum.on) {
-        window.ethereum.on("accountsChanged", function (a) { P.account = a && a[0] ? a[0] : null; potRefresh().then(renderAll); });
+        window.ethereum.on("accountsChanged", function (a) { P.account = a && a[0] ? a[0] : null; UI.draftNight = null; potRefresh().then(renderAll); });
         window.ethereum.on("chainChanged", function (id) { P.chainId = parseInt(id, 16); renderAll(); });
       }
       return window.ethereum.request({ method: "eth_accounts" }).then(function (a) {
@@ -788,10 +1021,8 @@ footer a { color: var(--ink-2); }
     return Promise.all(nights.map(function (n) { return read.getNight(L.nightToDay(n)); })).then(function (rs) {
       rs.forEach(function (r, i) { P.nights.set(nights[i], parseNight(r)); });
       P.error = "";
-      var jobs = [];
+      var jobs = [loadPayouts()];
       if (P.account) jobs.push(read.owed(P.account).then(function (v) { P.owed = BigInt(v); }));
-      var last = nights[2], ln = P.nights.get(last);
-      if (ln && ln.status === 1 && !P.settled.has(last)) jobs.push(loadSettled(last));
       if (P.admin) {
         jobs.push(Promise.all([read.owner(), read.resolver(), read.ticketPrice(), provider.getBalance(CONFIG.POT_ADDRESS)]).then(function (v) {
           return provider.getBalance(v[1]).then(function (gas) {
@@ -800,25 +1031,54 @@ footer a { color: var(--ink-2); }
         }));
       }
       return Promise.all(jobs);
+    }).then(function () {
+      // Look up ENS names for every wallet the page shows.
+      var addrs = [];
+      P.nights.forEach(function (n) { n.tickets.forEach(function (t) { addrs.push(t.address); }); });
+      P.payouts.forEach(function (p) { addrs = addrs.concat(p.winners); });
+      if (P.account) addrs.push(P.account);
+      lookupEns(addrs);
     }).catch(function () { P.error = "Couldn't read the pot right now. Retrying in a minute."; });
   }
 
-  function loadSettled(night) {
-    var read = P.read;
-    return read.runner.getBlockNumber().then(function (bn) {
-      return read.queryFilter(read.filters.NightSettled(L.nightToDay(night)), Math.max(0, bn - 40000), bn);
-    }).then(function (logs) {
-      if (!logs.length) { P.settled.set(night, null); return; }
-      var ev = logs[logs.length - 1];
-      P.settled.set(night, {
-        winners: Array.from(ev.args.winners),
-        amounts: Array.from(ev.args.amounts).map(function (x) { return BigInt(x); }),
-        tx: ev.transactionHash
-      });
-    }).catch(function () { P.settled.set(night, null); });
+  // Every payout of the last 2 weeks, from the pot's NightSettled events. Reads new blocks
+  // only after the first load, in chunks that public Sepolia endpoints accept.
+  var BLOCKS_PER_NIGHT = 7200; // Sepolia makes a block every 12 seconds
+  function loadPayouts() {
+    var read = P.read, provider = read.runner;
+    if (P.payoutsBusy) return P.payoutsBusy;
+    P.payoutsBusy = provider.getBlockNumber().then(function (latest) {
+      var from = P.logsTo ? P.logsTo + 1 : Math.max(0, latest - (HISTORY_NIGHTS + 2) * BLOCKS_PER_NIGHT);
+      if (from > latest) return;
+      var chunk = P.logChunk || 20000;
+      function step(start) {
+        if (start > latest) return Promise.resolve();
+        var end = Math.min(latest, start + chunk - 1);
+        return read.queryFilter(read.filters.NightSettled(), start, end).then(function (logs) {
+          logs.forEach(function (ev) {
+            P.payouts.set(L.dayToNight(Number(ev.args.night)), {
+              winners: Array.from(ev.args.winners),
+              amounts: Array.from(ev.args.amounts).map(function (x) { return BigInt(x); }),
+              tx: ev.transactionHash
+            });
+          });
+          P.logsTo = end;
+          return step(end + 1);
+        }, function (e) {
+          if (chunk <= 1000) throw e;
+          chunk = Math.floor(chunk / 4);
+          P.logChunk = chunk;
+          return step(start);
+        });
+      }
+      return step(from);
+    }).catch(function () { /* history shows what loaded; the next refresh carries on */ })
+      .then(function () { P.payoutsBusy = null; });
+    return P.payoutsBusy;
   }
 
   function walletName() {
+    if (W.kit) return (W.state && W.state.walletName) || "your wallet";
     var e = window.ethereum || {};
     if (e.isRabby) return "Rabby";
     if (e.isPhantom) return "Phantom";
@@ -849,6 +1109,11 @@ footer a { color: var(--ink-2); }
   function adminMsg(text, kind, isHtml) { say("admin-msg", text, kind, isHtml); }
 
   function connectWallet(msg) {
+    if (hasKit()) {
+      msg("");
+      loadKit().then(function (kit) { return kit.open(); }).catch(function (e) { msg(errText(e), "err"); });
+      return;
+    }
     if (!window.ethereum) { msg("No wallet found. Install MetaMask or Rabby, then reload this page.", "err"); return; }
     window.ethereum.request({ method: "eth_requestAccounts" }).then(function (a) {
       P.account = a && a[0] ? a[0] : null;
@@ -860,6 +1125,10 @@ footer a { color: var(--ink-2); }
     }).then(renderAll).catch(function (e) { msg(errText(e), "err"); });
   }
   function switchChain(msg) {
+    if (W.kit) {
+      W.kit.switchToSepolia().then(function () { msg(""); }, function (e) { msg(errText(e), "err"); });
+      return;
+    }
     var hex = "0x" + Number(CONFIG.CHAIN_ID).toString(16);
     window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: hex }] }).catch(function (e) {
       var code = e && (e.code || (e.data && e.data.originalError && e.data.originalError.code));
@@ -892,7 +1161,7 @@ footer a { color: var(--ink-2); }
   // to the wallet so its confirmation window opens at once, and waits for it on Sepolia.
   // tx: { to?, data, value? }   after(result): runs once it's confirmed.
   function sendTx(msg, doneText, tx, after) {
-    if (!window.ethereum || !P.account) { msg("Connect your wallet first.", "err"); return; }
+    if (!eth() || !P.account) { msg("Connect your wallet first.", "err"); return; }
     if (!P.rpc) { msg("The wallet library is still loading. Try again in a moment.", "err"); return; }
     var name = walletName(), nudge = null;
     var call = { from: P.account, data: tx.data, value: tx.value || 0n };
@@ -913,12 +1182,12 @@ footer a { color: var(--ink-2); }
       nudge = setTimeout(function () {
         msg("Still waiting for " + name + ". If no window opened, click the " + name + " icon in your browser's toolbar: the request is probably waiting there.");
       }, 12000);
-      return window.ethereum.request({ method: "eth_sendTransaction", params: [req] });
+      return eth().request({ method: "eth_sendTransaction", params: [req] });
     }).then(function (hash) {
       clearTimeout(nudge);
       msg("Sent. Waiting for Sepolia to confirm (usually under a minute). " + txLink(hash), "", true);
       return P.rpc.waitForTransaction(hash, 1, 10 * 60e3).catch(function () {
-        return new P.E.BrowserProvider(window.ethereum).waitForTransaction(hash, 1, 10 * 60e3);
+        return new P.E.BrowserProvider(eth()).waitForTransaction(hash, 1, 10 * 60e3);
       }).then(function (receipt) {
         if (!receipt) throw new Error("Not confirmed after 10 minutes. It may still go through, so check it on Etherscan before trying again.");
         if (receipt.status !== 1) throw new Error("The transaction failed on Sepolia.");
@@ -987,7 +1256,7 @@ footer a { color: var(--ink-2); }
     $("pot-payouts").textContent = payoutLine(n.pot, n.tickets.length);
 
     var notices = "", me = myTicket(open), v = draftValid();
-    for (var k = 1; k <= 3; k++) {
+    for (var k = 1; k <= HISTORY_NIGHTS; k++) {
       var night = addDays(UI.live, -k), nn = P.nights.get(night), t = myTicket(night);
       if (t && !t.refunded && nn && (nn.status === 2 || (nn.status === 0 && now >= nightEnd(night) + 3 * DAY))) {
         notices += '<div class="notice"><span>Refund ready for the night of ' + esc(fmtNight(night)) + ".</span>" +
@@ -1015,14 +1284,14 @@ footer a { color: var(--ink-2); }
       actions = '<button class="secondary" type="button" data-pot="change"' + busy + ">Send my new picks to the pot</button>" +
         '<span class="hint">The picks above differ from your ticket.</span>';
     }
-    if (P.account) actions += '<span class="chip">' + esc(P.demo ? "Preview wallet" : shortAddr(P.account) + " · " + walletName()) + "</span>";
+    if (P.account) actions += '<span class="chip">' + esc(P.demo ? "Preview wallet" : (ensName(P.account) || shortAddr(P.account)) + " · " + walletName()) + "</span>";
     $("pot-actions").innerHTML = actions;
   }
 
   function ticketTable(night, tickets, extraCol) {
     var me = P.account ? P.account.toLowerCase() : "";
     var rows = tickets.slice(0, 25).map(function (t) {
-      return "<tr" + (t.player_id === me ? ' class="mine"' : "") + "><td>" + (P.demo ? '<span class="addr">' + esc(shortAddr(t.address)) + "</span>" : addrLink(t.address)) +
+      return "<tr" + (t.player_id === me ? ' class="mine"' : "") + "><td>" + who(t.address) +
         (t.player_id === me ? '<span class="tag">you</span>' : "") + '</td><td class="r num">' + fmtKm(t.distance_km) + "</td><td>" +
         esc(fmtTime(blockStart(night, t.peak_block))) + "</td><td>" + (t.more_blocks ? "More" : "Fewer") + "</td>" + (extraCol ? extraCol(t) : "") + "</tr>";
     }).join("");
@@ -1049,7 +1318,7 @@ footer a { color: var(--ink-2); }
     function amountCol(map) { return function (t) { var a = map.get(t.player_id); return '<td class="r num">' + (a ? fmtEth(a) : "–") + "</td>"; }; }
 
     if (rn.status === 1) {
-      var s = P.settled.get(night);
+      var s = P.payouts.get(night);
       if (s) {
         var paid = new Map(s.winners.map(function (w, i) { return [w.toLowerCase(), s.amounts[i]]; }));
         var winners = rn.tickets.filter(function (t) { return paid.has(t.player_id); })
@@ -1084,6 +1353,165 @@ footer a { color: var(--ink-2); }
     rp.innerHTML = '<div class="pot-list">' + head + body + "</div>";
   }
 
+  // ----- My tickets -----
+  function dashMsg(text, kind, isHtml) { say("dash-msg", text, kind, isHtml); }
+  function placeOf(night, n, t, now) {
+    if (!n.tickets.length) return null;
+    var out = L.potPayouts(resolve(night, now), n.tickets), mine = null;
+    (out.ranking || []).forEach(function (r) { if (r.player_id === t.player_id) mine = r; });
+    return { out: out, mine: mine };
+  }
+  // What happened to one ticket, as a state pill, an amount and an optional action.
+  function ticketOutcome(night, n, t, now) {
+    var end = nightEnd(night), r;
+    if (n.status === 2) return t.refunded ? { pill: "done", label: "Refunded", back: n.price, note: "The night was voided." }
+      : { pill: "refund", label: "Refund ready", action: "refund", note: "The night was voided." };
+    if (n.status === 1) {
+      var p = P.payouts.get(night), won = 0n;
+      r = placeOf(night, n, t, now);
+      var place = r && r.mine && r.out.action === "settle" ? "#" + r.mine.place + " with " + r.mine.points + " points" : "";
+      if (!p) return { pill: "done", label: "Paid out", note: place || "Loading the payout…", settled: true };
+      p.winners.forEach(function (w, i) { if (w.toLowerCase() === t.player_id) won = p.amounts[i]; });
+      return won > 0n ? { pill: "won", label: "Won", won: won, note: place, tx: p.tx, settled: true }
+        : { pill: "lost", label: "No prize", note: place, tx: p.tx, settled: true };
+    }
+    if (now < nightStart(night)) return { pill: "open", label: "Open", note: "Picks can change until " + fmtDayTime(nightStart(night)) + ".", pending: true };
+    if (now < end) return { pill: "live", label: "Running", note: "The night ends " + fmtDayTime(end) + ".", pending: true };
+    if (now >= end + 3 * DAY) return t.refunded ? { pill: "done", label: "Refunded", back: n.price, note: "Not paid out within 3 days." }
+      : { pill: "refund", label: "Refund ready", action: "refund", note: "Not paid out within 3 days." };
+    r = placeOf(night, n, t, now);
+    if (!r || r.out.action === "wait") return { pill: "wait", label: "Counting", note: "Waiting for the night's results.", pending: true };
+    if (r.out.action === "void") return { pill: "wait", label: "Refund coming", note: r.out.reason, pending: true };
+    if (r.mine && r.mine.bps) return { pill: "won", label: "Winning", expected: n.pot * BigInt(r.mine.bps) / BPS, note: "#" + r.mine.place + " with " + r.mine.points + " points. The bot pays out within the hour.", pending: true };
+    return { pill: "lost", label: "No prize", note: r.mine ? "#" + r.mine.place + " with " + r.mine.points + " points." : "", pending: true };
+  }
+
+  function renderDash() {
+    var show = P.on || P.demo;
+    $("dash").hidden = !show;
+    if (!show) return;
+    var whoEl = $("dash-who"), body = $("dash-body"), now = Date.now();
+    if (!P.account) {
+      whoEl.innerHTML = "";
+      body.innerHTML = '<div class="dash-empty"><p class="empty">Connect a wallet to see your tickets, how each night went and what you won.</p>' +
+        '<button class="primary" type="button" data-dash="connect">Connect wallet</button></div>';
+      return;
+    }
+    var name = ensName(P.account);
+    whoEl.innerHTML = '<div class="dash-who">' + avatar(P.account, "lg") + '<div class="id"><strong>' + esc(P.demo ? "Preview wallet" : name || shortAddr(P.account)) + "</strong>" +
+      "<span>" + esc(P.demo ? "Sample tickets" : (name ? shortAddr(P.account) + " · " : "") + walletName()) + "</span></div>" +
+      (W.kit ? '<button class="secondary" type="button" data-dash="account">Wallet</button>' : "") + "</div>";
+    if (!P.demo && !onSepolia()) {
+      body.innerHTML = '<div class="dash-empty"><p class="empty">Your wallet is on another network. Switch to Sepolia to see your tickets.</p>' +
+        '<button class="primary" type="button" data-dash="switch">Switch to Sepolia</button></div>';
+      return;
+    }
+    if (!P.nights.size) { body.innerHTML = '<p class="empty">' + esc(P.error || "Loading your tickets…") + "</p>"; return; }
+
+    var rows = [], inPlay = 0n, won = 0n, back = 0n, spentDone = 0n, count = 0;
+    potNights().forEach(function (night) {
+      var n = P.nights.get(night), t = n && myTicket(night);
+      if (!t) return;
+      var o = ticketOutcome(night, n, t, now);
+      count++;
+      if (o.pending || o.action) inPlay += n.price;
+      else { spentDone += n.price; if (o.won) won += o.won; if (o.back) back += o.back; }
+      rows.push({ night: night, n: n, t: t, o: o });
+    });
+    var net = won + back - spentDone;
+    var stats = '<div class="stats">' +
+      '<div class="stat"><span class="label">Tickets</span><span class="val">' + count + "</span></div>" +
+      '<div class="stat"><span class="label">In play</span><span class="val">' + fmtEth(inPlay) + " ETH</span></div>" +
+      '<div class="stat"><span class="label">Won</span><span class="val' + (won > 0n ? " pos" : "") + '">' + fmtEth(won) + " ETH</span></div>" +
+      '<div class="stat"><span class="label">Net, finished nights</span><span class="val' + (net > 0n ? " pos" : net < 0n ? " neg" : "") + '">' +
+        (net > 0n ? "+" : net < 0n ? "−" : "") + fmtEth(net < 0n ? -net : net) + " ETH</span></div></div>";
+    var notice = P.owed > 0n ? '<div class="notice" style="margin-top:14px"><span>A payout of ' + fmtEth(P.owed) + ' ETH couldn\'t be sent to your wallet automatically.</span>' +
+      '<button class="secondary" type="button" data-dash="collect"' + (P.busy ? " disabled" : "") + ">Collect</button></div>" : "";
+
+    var table;
+    if (!rows.length) {
+      table = '<p class="empty">No tickets in the last 2 weeks. Fill in your picks and buy one on your ticket above.</p>';
+    } else {
+      table = '<div class="table-wrap"><table class="dash-table"><thead><tr><th>Night</th><th>Your picks</th><th>Result</th><th class="r">ETH</th></tr></thead><tbody>' +
+        rows.map(function (r) {
+          var o = r.o, amount;
+          if (o.action === "refund") amount = '<button class="secondary" type="button" data-dash="refund" data-night="' + r.night + '"' + (P.busy ? " disabled" : "") + ">Take back " + fmtEth(r.n.price) + "</button>";
+          else if (o.won) amount = '<span class="num" style="color:var(--good)">+' + fmtEth(o.won) + "</span>";
+          else if (o.expected) amount = '<span class="num">+' + fmtEth(o.expected) + "</span>";
+          else if (o.back) amount = '<span class="num">' + fmtEth(o.back) + " back</span>";
+          else if (o.pending) amount = '<span class="num" style="color:var(--ink-3)">' + fmtEth(r.n.price) + " in</span>";
+          else amount = '<span class="num" style="color:var(--ink-3)">−' + fmtEth(r.n.price) + "</span>";
+          var note = o.note ? esc(o.note) : "";
+          if (o.tx) note += (note ? " " : "") + txLink(o.tx, "Payout on Etherscan");
+          return '<tr><td class="nt">' + esc(fmtNight(r.night)) + '</td><td class="picks">' + fmtKm(r.t.distance_km) + " km · " +
+            esc(fmtTime(blockStart(r.night, r.t.peak_block))) + " · " + (r.t.more_blocks ? "More" : "Fewer") + "</td>" +
+            '<td class="res"><span class="pill ' + o.pill + '">' + esc(o.label) + "</span>" + (note ? '<span class="note">' + note + "</span>" : "") + "</td>" +
+            '<td class="r">' + amount + "</td></tr>";
+        }).join("") + "</tbody></table></div>";
+    }
+    var pts = "";
+    if (G.me && UI.points) {
+      var mineP = UI.points.get(G.uid);
+      pts = '<p class="dash-points">Points game: playing as <strong>' + esc(G.me.nickname) + "</strong>" +
+        (mineP ? ", " + mineP.points + " points over the last " + BOARD_NIGHTS + " nights, #" + mineP.rank + " on the board." : ", no scored nights yet.") + "</p>";
+    }
+    body.innerHTML = stats + notice + table + pts;
+  }
+
+  function dashAction(kind, night) {
+    if (kind === "connect") return connectWallet(dashMsg);
+    if (kind === "switch") return switchChain(dashMsg);
+    if (kind === "account") { if (W.kit) W.kit.open("Account"); return; }
+    if (P.demo) return demoAction(kind, night, null, dashMsg);
+    if (!P.iface) { dashMsg("The wallet library is still loading. Try again in a moment.", "err"); return; }
+    var pot = CONFIG.POT_ADDRESS;
+    if (kind === "refund") return sendTx(dashMsg, "Refunded.", { to: pot, data: encode("refund", [L.nightToDay(night)]) });
+    if (kind === "collect") return sendTx(dashMsg, "Payout collected.", { to: pot, data: encode("withdrawOwed", []) });
+  }
+
+  // ----- Pot winners board -----
+  function renderPotBoard() {
+    var el = $("board-pot");
+    if (!(P.on || P.demo)) { el.innerHTML = ""; return; }
+    var since = addDays(UI.live, -HISTORY_NIGHTS), totals = new Map();
+    P.payouts.forEach(function (p, night) {
+      if (night < since) return;
+      p.winners.forEach(function (w, i) {
+        var k = w.toLowerCase(), t = totals.get(k) || { addr: w, won: 0n, prizes: 0 };
+        t.won += p.amounts[i]; t.prizes++;
+        totals.set(k, t);
+      });
+    });
+    var rows = Array.from(totals.values()).sort(function (a, b) { return b.won > a.won ? 1 : b.won < a.won ? -1 : b.prizes - a.prizes; });
+    if (!rows.length) {
+      el.innerHTML = '<p class="empty">No payouts yet. Winners show up here once a night with 2 or more tickets is paid out.</p>';
+      return;
+    }
+    var me = P.account ? P.account.toLowerCase() : "";
+    el.innerHTML = '<div class="table-wrap"><table><thead><tr><th class="rank">#</th><th>Player</th><th class="r">Won (ETH)</th><th class="r">Prizes</th></tr></thead><tbody>' +
+      rows.slice(0, 25).map(function (t, i) {
+        var mine = t.addr.toLowerCase() === me;
+        return "<tr" + (mine ? ' class="mine"' : "") + '><td class="rank num">' + (i + 1) + "</td><td>" + who(t.addr) + (mine ? '<span class="tag">you</span>' : "") +
+          '</td><td class="r num">' + fmtEth(t.won) + '</td><td class="r num">' + t.prizes + "</td></tr>";
+      }).join("") + "</tbody></table></div>" +
+      (P.demo ? '<p class="hint">Sample wallets in the preview.</p>' : "");
+  }
+
+  function renderBoardTabs() {
+    var show = P.on || P.demo, tab = show ? UI.boardTab : "points";
+    $("board-tabs").hidden = !show;
+    [["points", "tab-points", "board"], ["pot", "tab-pot", "board-pot"]].forEach(function (x) {
+      var on = tab === x[0];
+      $(x[1]).setAttribute("aria-selected", String(on));
+      $(x[1]).tabIndex = on ? 0 : -1;
+      $(x[2]).hidden = !on;
+    });
+    $("board-h").textContent = tab === "pot" ? "Last " + HISTORY_NIGHTS + " nights" : "Last " + BOARD_NIGHTS + " nights";
+  }
+
+  // Redraws the parts that show names and avatars, after ENS answers arrive.
+  function renderIdentity() { renderMe(); renderPotLists(); renderDash(); renderPotBoard(); }
+
   // ----- Owner settings (?admin) -----
   function parseEthInput(raw) {
     try {
@@ -1094,7 +1522,7 @@ footer a { color: var(--ink-2); }
   function renderAdmin() {
     $("admin").hidden = !P.admin;
     if (!P.admin) return;
-    var acct = !window.ethereum ? '<p class="hint">Open this page in a browser with MetaMask or Rabby to manage the pot.</p>'
+    var acct = !hasKit() && !window.ethereum ? '<p class="hint">Open this page in a browser with MetaMask or Rabby to manage the pot.</p>'
       : !P.account ? '<div class="row"><button class="primary" type="button" data-admin="connect">Connect wallet</button></div>'
       : !onSepolia() ? '<div class="row"><span class="chip">' + esc(shortAddr(P.account)) + '</span><button class="primary" type="button" data-admin="switch">Switch to Sepolia</button></div>'
       : '<div class="row"><span class="chip">Connected ' + esc(shortAddr(P.account) + " · " + walletName()) + "</span></div>";
@@ -1172,38 +1600,62 @@ footer a { color: var(--ink-2); }
         return { player_id: addr.toLowerCase(), address: addr, distance_km: p.distance_km, peak_block: p.peak_block, more_blocks: p.more_blocks, boughtAt: Math.floor(nightStart(night) / 1000) - 3600 * (samples.indexOf(p.player_id) + 2), refunded: false };
       });
     }
-    [addDays(live, -3), addDays(live, -2), addDays(live, -1), live].forEach(function (night) {
-      var t = ticketsFor(night);
-      P.nights.set(night, { price: price, pot: price * BigInt(t.length), status: 0, tickets: t });
-    });
+    var me = P.account;
+    function mine(night, dist, peak, more) {
+      return { player_id: me.toLowerCase(), address: me, distance_km: dist, peak_block: peak, more_blocks: more, boughtAt: Math.floor(nightStart(night) / 1000) - 7200, refunded: false };
+    }
+    // Sample tickets for the preview wallet: a close call, a miss, a voided night, and tonight.
+    function truth(night) {
+      var n = H.nights.get(night), cur = H.blocks.get(night), prev = H.blocks.get(addDays(night, -1));
+      return { km: n ? n.distanceKm : 8, peak: n ? n.blocks.indexOf(Math.max.apply(null, n.blocks)) : 3, more: cur != null && prev != null ? cur > prev : true };
+    }
+    var plan = {};
+    var t1 = truth(addDays(live, -1)), t2 = truth(addDays(live, -2)), t4 = truth(addDays(live, -4));
+    plan[addDays(live, -1)] = mine(addDays(live, -1), Math.round((t1.km + 0.2) * 10) / 10, t1.peak, t1.more);
+    plan[addDays(live, -2)] = mine(addDays(live, -2), Math.round((t2.km + 3.4) * 10) / 10, (t2.peak + 3) % 8, !t2.more);
+    plan[addDays(live, -4)] = mine(addDays(live, -4), Math.round((t4.km - 0.6) * 10) / 10, t4.peak, t4.more);
+    plan[addDays(live, -6)] = mine(addDays(live, -6), 8.4, 3, true);
+    plan[live] = mine(live, 9.1, 3, true);
+
+    for (var k = 8; k >= 0; k--) {
+      var night = addDays(live, -k), t = ticketsFor(night);
+      if (plan[night]) t.push(plan[night]);
+      var n = { price: price, pot: price * BigInt(t.length), status: 0, tickets: t };
+      P.nights.set(night, n);
+      if (k === 0) continue;
+      if (k === 6) { n.status = 2; continue; } // a voided night, so a refund shows
+      // Earlier nights are shown as paid out, using the same rules the bot uses.
+      var out = L.potPayouts(resolve(night, Date.now()), t);
+      if (out.action !== "settle") continue;
+      n.status = 1;
+      var byId = new Map(t.map(function (x) { return [x.player_id, x.address]; }));
+      P.payouts.set(night, { winners: out.winners.map(function (w) { return byId.get(w); }), amounts: out.bps.map(function (b) { return n.pot * BigInt(b) / BPS; }), tx: null });
+    }
     var open = addDays(live, 1);
     var openTickets = [[9.2, 3, true], [10.4, 4, false], [8.1, 3, true]].map(function (x, i) {
       var addr = fake(i + 1);
       return { player_id: addr.toLowerCase(), address: addr, distance_km: x[0], peak_block: x[1], more_blocks: x[2], boughtAt: Math.floor(Date.now() / 1000) - 3600 * (i + 1), refunded: false };
     });
     P.nights.set(open, { price: price, pot: price * 3n, status: 0, tickets: openTickets });
-    // Last night is shown as paid out, using the same rules the bot uses.
-    var last = addDays(live, -1), ln = P.nights.get(last), out = L.potPayouts(resolve(last, Date.now()), ln.tickets);
-    if (out.action === "settle") {
-      ln.status = 1;
-      var byId = new Map(ln.tickets.map(function (t) { return [t.player_id, t.address]; }));
-      P.settled.set(last, { winners: out.winners.map(function (w) { return byId.get(w); }), amounts: out.bps.map(function (b) { return ln.pot * BigInt(b) / BPS; }), tx: null });
-    }
   }
-  function demoAction(kind, night, v) {
+  function demoAction(kind, night, v, msgFn) {
     var open = UI.open, n = P.nights.get(open), me = myTicket(open);
     if (kind === "buy" && !me) {
       n.tickets.push({ player_id: P.account.toLowerCase(), address: P.account, distance_km: v.km, peak_block: UI.draft.peak, more_blocks: UI.draft.more, boughtAt: Math.floor(Date.now() / 1000), refunded: false });
       n.pot += n.price;
     } else if (kind === "change" && me) {
       me.distance_km = v.km; me.peak_block = UI.draft.peak; me.more_blocks = UI.draft.more;
+    } else if (kind === "refund") {
+      var t = myTicket(night);
+      if (t) t.refunded = true;
     }
-    potMsg("Preview only: nothing was sent. On your site this asks your wallet to confirm a Sepolia transaction.");
+    (msgFn || potMsg)("Preview only: nothing was sent. On your site this asks your wallet to confirm a Sepolia transaction.");
     renderAll();
   }
 
   // ---------- UI state ----------
-  var UI = { open: null, live: null, draft: { distance: "", peak: null, more: null }, draftNight: null, dirty: false, saving: false };
+  var UI = { open: null, live: null, draft: { distance: "", peak: null, more: null }, draftNight: null, dirty: false, saving: false, points: null, boardTab: "points" };
+  try { if (localStorage.getItem("squeekpicks.boardtab") === "pot") UI.boardTab = "pot"; } catch (x) { /* storage blocked */ }
 
   function setBanner(html) { var b = $("banner"); b.innerHTML = html; b.hidden = !html; }
 
@@ -1492,6 +1944,7 @@ footer a { color: var(--ink-2); }
     var rows = Array.from(totals.entries()).sort(function (a, b) {
       return b[1].points - a[1].points || a[1].nights - b[1].nights || nameOf(a[0]).localeCompare(nameOf(b[0]));
     });
+    UI.points = new Map();
     if (!rows.length) {
       el.innerHTML = note || '<p class="empty">No scored nights yet. Points appear here once a night you picked has settled.</p>';
       return;
@@ -1499,21 +1952,28 @@ footer a { color: var(--ink-2); }
     var rank = 0, last = null, out = [];
     rows.forEach(function (r, i) {
       if (r[1].points !== last) { rank = i + 1; last = r[1].points; }
+      UI.points.set(r[0], { points: r[1].points, rank: rank });
       if (i < 50 || r[0] === G.uid) out.push([rank, r]);
     });
     el.innerHTML = note + '<div class="table-wrap"><table><thead><tr><th class="rank">#</th><th>Player</th><th class="r">Points</th><th class="r">Nights</th><th class="r">Best</th></tr></thead><tbody>' +
       out.map(function (x) {
         var id = x[1][0], t = x[1][1];
-        return "<tr" + (id === G.uid ? ' class="mine"' : "") + '><td class="rank num">' + x[0] + "</td><td>" + esc(nameOf(id)) +
+        return "<tr" + (id === G.uid ? ' class="mine"' : "") + '><td class="rank num">' + x[0] + '</td><td><span class="who">' + dotAvatar(id) + '<span class="nm">' + esc(nameOf(id)) + "</span></span>" +
           (G.sample.has(id) ? '<span class="tag">sample</span>' : "") + (id === G.uid ? '<span class="tag">you</span>' : "") +
           '</td><td class="r num">' + t.points + '</td><td class="r num">' + t.nights + '</td><td class="r num">' + t.best + "</td></tr>";
       }).join("") + "</tbody></table></div>";
   }
 
   function renderMe() {
-    var el = $("me");
-    if (G.me) el.innerHTML = "Playing as <strong>" + esc(G.me.nickname) + "</strong>" + (G.mode === "local" ? '<span class="chip">this browser</span>' : "");
-    else el.innerHTML = '<span class="chip">' + (H.demo ? "Preview" : "Not playing yet") + "</span>";
+    var el = $("me"), html;
+    if (G.me) html = "<span>Playing as <strong>" + esc(G.me.nickname) + "</strong></span>" + (G.mode === "local" ? '<span class="chip">this browser</span>' : "");
+    else html = '<span class="chip">' + (H.demo ? "Preview" : "Not playing yet") + "</span>";
+    if (P.on || P.demo) {
+      if (!P.account) html += '<button class="wallet-btn connect" type="button" data-wallet="connect">Connect wallet</button>';
+      else html += '<button class="wallet-btn" type="button" data-wallet="account" title="' + esc(P.account) + '">' + avatar(P.account) +
+        '<span class="nm">' + esc(P.demo ? "Preview wallet" : ensName(P.account) || shortAddr(P.account)) + "</span></button>";
+    }
+    el.innerHTML = html;
   }
 
   function renderBanner() {
@@ -1543,7 +2003,7 @@ footer a { color: var(--ink-2); }
       }
     }
     renderBanner(); renderMe(); renderLive(now); renderTicket(now); renderCrowd(now); renderResults(now); renderBoard(now);
-    renderPot(); renderAdmin();
+    renderPot(); renderDash(); renderPotBoard(); renderBoardTabs(); renderAdmin();
   }
 
   // ---------- Events ----------
@@ -1603,6 +2063,31 @@ footer a { color: var(--ink-2); }
     $("admin").addEventListener("click", function (e) {
       var btn = e.target.closest("button[data-admin]"); if (!btn || btn.disabled) return;
       adminAction(btn.dataset.admin);
+    });
+    $("dash").addEventListener("click", function (e) {
+      var btn = e.target.closest("button[data-dash]"); if (!btn || btn.disabled) return;
+      dashAction(btn.dataset.dash, btn.dataset.night);
+    });
+    $("me").addEventListener("click", function (e) {
+      var btn = e.target.closest("button[data-wallet]"); if (!btn) return;
+      if (btn.dataset.wallet === "connect") return connectWallet(dashMsg);
+      if (W.kit) W.kit.open("Account");
+      else $("dash").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    function pickTab(tab, focus) {
+      UI.boardTab = tab;
+      try { localStorage.setItem("squeekpicks.boardtab", tab); } catch (x) { /* storage blocked */ }
+      renderBoardTabs();
+      if (focus) $(tab === "pot" ? "tab-pot" : "tab-points").focus();
+    }
+    $("board-tabs").addEventListener("click", function (e) {
+      var btn = e.target.closest("button[role=tab]"); if (!btn) return;
+      pickTab(btn.id === "tab-pot" ? "pot" : "points");
+    });
+    $("board-tabs").addEventListener("keydown", function (e) {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      e.preventDefault();
+      pickTab(UI.boardTab === "pot" ? "points" : "pot", true);
     });
     document.addEventListener("visibilitychange", function () {
       if (document.visibilityState === "visible") refreshAll();

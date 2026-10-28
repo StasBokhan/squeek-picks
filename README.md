@@ -4,6 +4,7 @@ A prediction game on Squeektoshi's wheel. Every night players call three things:
 
 - **Points game:** free, nickname only, with a 28-night leaderboard. Stored in Supabase.
 - **Nightly pot:** players buy a ticket in Sepolia test ETH. The top 3 by that night's points split the pot 50/30/20. A bot pays out every hour.
+- **My tickets:** a connected player sees every ticket from the last 2 weeks, how each night went, what they won, and refunds in one place. The leaderboard has a second tab ranking pot winners by ETH won.
 
 The pot runs on the **Sepolia testnet only**. The contract refuses to deploy anywhere else.
 
@@ -17,7 +18,10 @@ The pot runs on the **Sepolia testnet only**. The contract refuses to deploy any
 | `contracts/SqueekPot.sol` | The pot contract. `SqueekPot.json` is the compiled version the page deploys. |
 | `settler/` | The payout bot. |
 | `.github/workflows/settle.yml` | Runs the payout bot every hour on GitHub. |
+| `wallet.js` | The wallet picker (Reown AppKit). Loads only when someone connects. |
+| `icon.svg` | The site icon, also shown in wallet windows. |
 | `src/`, `build.mjs` | Source files, if you want to edit. `node build.mjs` rebuilds `index.html`. |
+| `wallet/` | Source of `wallet.js`. `npm install && npm run build` in that folder rebuilds it. |
 
 ## Updating from the first version
 
@@ -62,6 +66,20 @@ The private key only goes into that GitHub secret. Never paste it anywhere else,
 3. Open the run. The log should show the bot's address, its gas balance and "Nothing to pay out." That means it works.
 
 From then on it runs every hour at :25 past.
+
+## The wallet picker
+
+With a Reown project ID in `config.js`, **Connect wallet** opens a picker that lists every wallet installed in the browser, plus WalletConnect for phone wallets. Without one, the page uses the browser wallet directly, as before.
+
+1. Sign in at [dashboard.reown.com](https://dashboard.reown.com) and create a project (type **AppKit**, framework **JavaScript**).
+2. Under the project's domain settings, add `https://YOUR-USERNAME.github.io`.
+3. Copy the **Project ID** and add it to `config.js`: `REOWN_PROJECT_ID: "your-id",`
+
+The project ID is public by design, like the Supabase anon key. The domain setting is what stops other sites using it.
+
+### Names and avatars
+
+Wallets with an ENS name (set as primary on Ethereum mainnet) show that name and its ENS avatar everywhere a wallet appears. Every other wallet gets a dot-grid avatar made from its address, the same one every time. Names are looked up once a day per visitor and kept in their browser.
 
 ## Uploading
 
