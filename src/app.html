@@ -257,6 +257,9 @@ input[type="text"]:focus { border-color: var(--blue); outline: none; box-shadow:
 .duo .opt:hover { color: var(--ink); }
 .duo .opt[aria-pressed="true"] { background: var(--seg-on); color: var(--ink); font-weight: 800; box-shadow: 0 1px 3px rgba(23, 32, 58, .14); }
 .save-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding-top: 22px; }
+.save-row .save-note { flex-basis: 100%; }
+a.chip { text-decoration: none; color: var(--blue); }
+a.chip:hover { border-color: var(--blue); }
 button.primary {
   appearance: none; cursor: pointer;
   background: var(--gold); color: var(--on-gold); border: 0; border-radius: 16px;
@@ -298,6 +301,7 @@ tr.mine td { background: var(--gold-soft); }
 tr.mine td:first-child { border-radius: 12px 0 0 12px; }
 tr.mine td:last-child { border-radius: 0 12px 12px 0; }
 .rank { color: var(--ink-3); width: 2.5em; font-weight: 800; }
+.who .tag { margin-left: 0; flex: none; }
 .tag { margin-left: 8px; font: 800 11px var(--font-body); color: var(--blue-ink); background: var(--blue-soft); border-radius: 999px; padding: 2px 8px; vertical-align: middle; white-space: nowrap; }
 
 /* Rules */
@@ -454,15 +458,16 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
         <span><span class="mid" id="m-speed">–</span><span class="unit">km/h</span></span>
       </div>
       <div class="metric">
-        <span class="label">Squeek blocks settled</span>
+        <span class="label">Squeek blocks tonight</span>
         <span class="mid" id="m-height">–</span>
+        <span class="stamp" id="m-height-all"></span>
       </div>
     </div>
     <figure class="chart" aria-labelledby="chart-cap">
       <figcaption class="legend" id="chart-cap">
-        <span><i class="sw typical"></i>Typical night, last 30</span>
+        <span><i class="sw typical"></i>Typical night (last 30 nights)</span>
         <span><i class="sw tonight"></i>Tonight so far</span>
-        <span><i class="sw pick"></i>Your peak pick</span>
+        <span><i class="sw pick"></i>Your peak pick for the next night</span>
       </figcaption>
       <div class="chart-box" id="chart"></div>
       <div class="xlabels" id="xlabels" aria-hidden="true"></div>
@@ -474,13 +479,15 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
   <div class="grid-2">
     <section class="panel ticket" aria-labelledby="ticket-h">
       <div class="ticket-head">
-        <span class="eyebrow">Your ticket</span>
+        <span class="eyebrow">Your picks for the next night</span>
         <h2 id="ticket-h">Night of <span id="open-night">…</span></h2>
         <p class="lock" id="lock-line"></p>
+        <p class="sub">Call the next night while you watch this one. Save your picks for free in the points game, put them on a pot ticket, or both.</p>
       </div>
 
+      <span id="join-anchor"></span>
       <form class="join" id="join" hidden novalidate>
-        <label for="nick">Pick a nickname to play</label>
+        <label for="nick">Free points game: pick a nickname to save your picks</label>
         <div class="row">
           <input type="text" id="nick" maxlength="20" autocomplete="off" spellcheck="false" placeholder="wheel_watcher">
           <button class="primary" type="submit" id="join-btn">Join</button>
@@ -504,7 +511,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
           <div class="m-head"><h3 class="m-name" id="mk-peak">Peak window</h3><span class="m-pts">up to 20 pts</span></div>
           <p class="q">Which 3 hours will he spin the most?</p>
           <div class="opts" id="pick-peak"></div>
-          <p class="hint">Your local time. The bar under each window is its share of a typical night.</p>
+          <p class="hint">Your local time. The bar shows how much of a typical night's running falls in each window.</p>
         </fieldset>
 
         <fieldset class="market" aria-labelledby="mk-blocks">
@@ -520,6 +527,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
         <div class="save-row">
           <button class="primary" type="submit" id="save">Save picks</button>
           <p class="msg" id="save-msg" role="status"></p>
+          <p class="hint save-note">Free. Saved picks score on the points leaderboard. They don't buy a pot ticket.</p>
         </div>
       </form>
 
@@ -539,8 +547,8 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     </section>
 
     <section class="panel" aria-labelledby="crowd-h">
-      <span class="eyebrow">Locked</span>
-      <h2 id="crowd-h">Tonight's picks</h2>
+      <span class="eyebrow">Tonight</span>
+      <h2 id="crowd-h">What players predicted</h2>
       <p class="sub" id="crowd-sub"></p>
       <div class="stack" id="crowd"></div>
       <div id="crowd-pot"></div>
@@ -563,7 +571,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
   <div class="grid-2">
     <section class="panel" aria-labelledby="results-h">
       <span class="eyebrow">Results</span>
-      <h2 id="results-h">Last night</h2>
+      <h2 id="results-h">Last night's results</h2>
       <p class="sub" id="results-sub"></p>
       <div class="stack" id="results"></div>
       <div id="results-pot"></div>
@@ -573,7 +581,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
       <div class="board-head">
         <div>
           <span class="eyebrow">Leaderboard</span>
-          <h2 id="board-h">Last 28 nights</h2>
+          <h2 id="board-h">Points game, last 28 nights</h2>
         </div>
         <div class="tabs" role="tablist" aria-label="Leaderboard" id="board-tabs" hidden>
           <button type="button" role="tab" id="tab-points" aria-controls="board" aria-selected="true">Points</button>
@@ -597,8 +605,16 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     <h2 id="rules-h">How it works</h2>
     <div class="rules-grid">
       <div>
+        <h3>Two ways to play</h3>
+        <ul>
+          <li><strong>Points game, free:</strong> pick a nickname and save your picks. Points add up on a 28-night leaderboard.</li>
+          <li><strong>Nightly pot:</strong> connect a wallet and buy tickets with your picks in Sepolia test ETH. The night's best tickets share the pot.</li>
+          <li>Same three picks either way, and you can do both.</li>
+        </ul>
+      </div>
+      <div>
         <h3>The night</h3>
-        <p>A night runs from 12:00 to 12:00 UTC, the same day the Squeekchain API uses. Picks for a night close the moment it starts, so you pick the next night while you watch the current one. You can change your picks until then.</p>
+        <p>A night runs from 12:00 to 12:00 UTC<span id="rules-local"></span>, the same day the Squeekchain API uses. Picks for a night close the moment it starts, so you pick the next night while you watch the current one. You can change your picks until then.</p>
       </div>
       <div>
         <h3>Points</h3>
@@ -610,14 +626,14 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
       </div>
       <div>
         <h3>Results</h3>
-        <p>Distance and peak come from closed, accepted rounds, so they settle once the night's data is in. Blocks come from blocks settled on Ethereum, counted by when they settled. A pick with a data gap, a tie or a night off is void: no points either way.</p>
+        <p>Distance and peak come from closed, accepted rounds, so they settle once the night's data is in. Blocks come from blocks settled on Ethereum, counted by when they settled. If a market has a data gap, a tie or a night off, it doesn't count: no points either way.</p>
       </div>
       <div id="rules-pot" hidden>
         <h3>The pot</h3>
         <p>Every ticket costs the same, and a wallet can hold up to 5 tickets a night, each with its own picks. When the night's results are in, the top 3 tickets by that night's points split the pot 50/30/20, or 62.5/37.5 with two tickets. Ties go to the closer distance guess, then the earlier ticket. A bot pays out every hour. With one ticket or no result, the night is voided and tickets are refunded. If a night isn't paid out within 3 days, everyone can take their ticket back.</p>
       </div>
     </div>
-    <p class="care">Nothing here can make him run, and nothing should. He's never woken up to mine, and quiet nights are part of the game. If the operator's device reports wrong data, results follow it, which is one more reason this is for points only.</p>
+    <p class="care">Nothing here can make him run, and nothing should. He's never woken up to mine, and quiet nights are part of the game. If the operator's device reports wrong data, results follow it, which is one more reason the pot only uses test ETH.</p>
   </section>
 
   <footer>
@@ -1489,9 +1505,9 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
       return;
     }
     $("pot-num").innerHTML =
-      '<div><span class="label">Pot</span><span class="val gold">' + fmtEth(n.pot) + "</span></div>" +
-      '<div><span class="label">Ticket</span><span class="val">' + fmtEth(n.price) + " ETH</span></div>" +
-      '<div><span class="label">Tickets</span><span class="val">' + n.tickets.length + "</span></div>";
+      '<div><span class="label">Pot so far</span><span class="val gold">' + fmtEth(n.pot) + " ETH</span></div>" +
+      '<div><span class="label">Ticket price</span><span class="val">' + fmtEth(n.price) + " ETH</span></div>" +
+      '<div><span class="label">Tickets sold</span><span class="val">' + n.tickets.length + "</span></div>";
     $("pot-payouts").textContent = payoutLine(n.pot, n.tickets.length);
     var ln = P.nights.get(UI.live);
     $("pot-for").innerHTML = "For the night of <strong>" + esc(fmtNight(open)) + "</strong>." +
@@ -1547,9 +1563,9 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
       var mine = isMine(t);
       return "<tr" + (mine ? ' class="mine"' : "") + "><td>" + who(t.address) +
         (mine ? '<span class="tag">you</span>' : "") + '</td><td class="r num">' + fmtKm(t.distance_km) + "</td><td>" +
-        esc(fmtTime(blockStart(night, t.peak_block))) + "</td><td>" + (t.more_blocks ? "More" : "Fewer") + "</td>" + (extraCol ? extraCol(t) : "") + "</tr>";
+        esc(blockLabel(night, t.peak_block)) + "</td><td>" + (t.more_blocks ? "More" : "Fewer") + "</td>" + (extraCol ? extraCol(t) : "") + "</tr>";
     }).join("");
-    return '<div class="table-wrap"><table><thead><tr><th>Wallet</th><th class="r">km</th><th>Window</th><th>Blocks</th>' +
+    return '<div class="table-wrap"><table><thead><tr><th>Wallet</th><th class="r">km</th><th>Peak window</th><th>Blocks</th>' +
       (extraCol ? '<th class="r">Payout</th>' : "") + "</tr></thead><tbody>" + rows + "</tbody></table></div>" +
       (tickets.length > 25 ? '<p class="hint">And ' + (tickets.length - 25) + " more.</p>" : "");
   }
@@ -1559,8 +1575,8 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     if (!(P.on || P.demo)) { cp.innerHTML = ""; rp.innerHTML = ""; return; }
     var live = UI.live, n = P.nights.get(live);
     if (!n) cp.innerHTML = "";
-    else if (!n.tickets.length) cp.innerHTML = '<div class="pot-list"><h3>Pot</h3><p class="hint">No pot tickets this night.</p></div>';
-    else cp.innerHTML = '<div class="pot-list"><h3>Pot · ' + fmtEth(n.pot) + " ETH from " + n.tickets.length + " ticket" + (n.tickets.length === 1 ? "" : "s") + "</h3>" + ticketTable(live, n.tickets) + "</div>";
+    else if (!n.tickets.length) cp.innerHTML = '<div class="pot-list"><h3>Pot tickets for tonight</h3><p class="hint">No pot tickets this night.</p></div>';
+    else cp.innerHTML = '<div class="pot-list"><h3>Pot tickets for tonight · ' + fmtEth(n.pot) + " ETH from " + n.tickets.length + " ticket" + (n.tickets.length === 1 ? "" : "s") + "</h3>" + ticketTable(live, n.tickets) + "</div>";
 
     var night = addDays(live, -1), rn = P.nights.get(night);
     if (!rn) { rp.innerHTML = ""; return; }
@@ -1686,9 +1702,9 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     var net = won + back - spentDone;
     var stats = '<div class="stats">' +
       '<div class="stat"><span class="label">Tickets</span><span class="val">' + count + "</span></div>" +
-      '<div class="stat"><span class="label">In play</span><span class="val">' + fmtEth(inPlay) + " ETH</span></div>" +
+      '<div class="stat"><span class="label">Still in play</span><span class="val">' + fmtEth(inPlay) + " ETH</span></div>" +
       '<div class="stat"><span class="label">Won</span><span class="val' + (won > 0n ? " pos" : "") + '">' + fmtEth(won) + " ETH</span></div>" +
-      '<div class="stat"><span class="label">Net, finished nights</span><span class="val' + (net > 0n ? " pos" : net < 0n ? " neg" : "") + '">' +
+      '<div class="stat"><span class="label">Net on finished nights</span><span class="val' + (net > 0n ? " pos" : net < 0n ? " neg" : "") + '">' +
         (net > 0n ? "+" : net < 0n ? "−" : "") + fmtEth(net < 0n ? -net : net) + " ETH</span></div></div>";
     var notice = P.owed > 0n ? '<div class="notice" style="margin-top:14px"><span>A payout of ' + fmtEth(P.owed) + ' ETH couldn\'t be sent to your wallet automatically.</span>' +
       '<button class="secondary" type="button" data-dash="collect"' + (P.busy ? " disabled" : "") + ">Collect</button></div>" : "";
@@ -1783,7 +1799,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
       $(x[1]).tabIndex = on ? 0 : -1;
       $(x[2]).hidden = !on;
     });
-    $("board-h").textContent = tab === "pot" ? "Last " + HISTORY_NIGHTS + " nights" : "Last " + BOARD_NIGHTS + " nights";
+    $("board-h").textContent = tab === "pot" ? "Pot winners, last " + HISTORY_NIGHTS + " nights" : "Points game, last " + BOARD_NIGHTS + " nights";
   }
 
   // Redraws the parts that show names and avatars, after ENS answers arrive.
@@ -1999,13 +2015,17 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     var km = fresh ? s.distKm : (n ? n.distanceKm : null);
     $("m-dist").textContent = fmtKm(km);
     $("m-speed").textContent = s && state !== "offline" ? s.speedKmh.toFixed(1) : "–";
-    $("m-height").textContent = s && s.height != null ? fmtInt(s.height) : "–";
+    // Tonight's settled blocks (what the blocks pick is about), with the all-time count under it.
+    var tb = H.blocks.get(live);
+    $("m-height").textContent = tb != null ? fmtInt(tb) : "–";
+    $("m-height-all").textContent = s && s.height != null ? fmtInt(s.height) + " in total" : "";
   }
 
   function renderLive(now) {
     var live = UI.live;
-    $("live-night").textContent = "· night of " + fmtNight(live);
+    $("live-night").textContent = fmtDayTime(nightStart(live)) + " to " + fmtDayTime(nightEnd(live));
     $("night-bounds").textContent = fmtDayTime(nightStart(live)) + " to " + fmtDayTime(nightEnd(live));
+    $("rules-local").textContent = " (" + fmtTime(nightStart(live)) + " to " + fmtTime(nightEnd(live)) + " your time)";
     renderStatus();
     renderChart(now);
   }
@@ -2083,7 +2103,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
   function renderTicket(now) {
     var open = UI.open, live = UI.live;
     $("open-night").textContent = fmtNight(open);
-    $("lock-line").innerHTML = "Closes " + esc(fmtDayTime(nightStart(open))) + ' · <span class="num">in ' + esc(fmtIn(nightStart(open) - now)) + "</span>";
+    $("lock-line").innerHTML = "Picks close " + esc(fmtDayTime(nightStart(open))) + ", when that night starts" + ' · <span class="num">in ' + esc(fmtIn(nightStart(open) - now)) + "</span>";
     $("join").hidden = !!G.me;
 
     var recent = [];
@@ -2111,7 +2131,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
         html += '<button type="button" class="opt" data-block="' + b + '" aria-pressed="false">' +
           "<span>" + esc(blockLabel(open, b)) + "</span>" +
           '<span class="share"><i style="width:' + shares[b] + '%"></i></span>' +
-          '<span class="pct">' + (H.typical ? shares[b] + "% typical" : "&nbsp;") + "</span></button>";
+          '<span class="pct">' + (H.typical ? "usually " + shares[b] + "%" : "&nbsp;") + "</span></button>";
       }
       $("pick-peak").innerHTML = html;
       UI.peakKey = key;
@@ -2123,8 +2143,8 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
       btn.setAttribute("aria-pressed", String(UI.draft.more === (btn.dataset.more === "true")));
     });
     var liveBlocks = H.blocks.get(live);
-    $("hint-blocks").innerHTML = liveBlocks == null ? "Compared with the night of " + esc(fmtNight(live)) + "."
-      : "The night before (" + esc(fmtNight(live)) + ") has <span class=\"num\">" + fmtInt(liveBlocks) + "</span> blocks so far. Its count is final at " + esc(fmtTime(nightEnd(live))) + ".";
+    $("hint-blocks").innerHTML = liveBlocks == null ? "The night before is tonight, " + esc(fmtNight(live)) + "."
+      : "The night before is tonight, " + esc(fmtNight(live)) + ': <span class="num">' + fmtInt(liveBlocks) + "</span> blocks so far, final at " + esc(fmtDayTime(nightEnd(live))) + ".";
     renderSave();
   }
 
@@ -2137,7 +2157,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
 
   function renderSave() {
     var btn = $("save"), v = draftValid(), saved = myPick(UI.open);
-    if (!G.me) { btn.disabled = true; btn.textContent = "Join to save points picks"; return; }
+    if (!G.me) { btn.disabled = true; btn.textContent = "Pick a nickname above to save"; return; }
     btn.disabled = UI.saving || !v.ok || (saved && !UI.dirty);
     btn.textContent = UI.saving ? "Saving…" : saved ? (UI.dirty ? "Update picks" : "Picks saved") : "Save picks";
   }
@@ -2145,10 +2165,11 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
   // ---------- Render: crowd (the live night, locked) ----------
   function renderCrowd(now) {
     var live = UI.live, picks = picksFor(live), el = $("crowd");
-    $("crowd-sub").textContent = "Night of " + fmtNight(live) + ". Locked at " + fmtTime(nightStart(live)) + ".";
+    $("crowd-sub").textContent = "Picks from the free points game for the night of " + fmtNight(live) + ", locked at " + fmtTime(nightStart(live)) +
+      ". Watch how they compare with what he's doing.";
     var n = H.nights.get(live);
     if (!picks.length) {
-      el.innerHTML = '<p class="empty">Nobody picked this night for points. Picks for ' + esc(fmtNight(UI.open)) + " are open on your ticket.</p>";
+      el.innerHTML = '<p class="empty">Nobody in the points game picked this night. Picks for ' + esc(fmtNight(UI.open)) + " are open in Your picks.</p>";
       return;
     }
     var avg = picks.reduce(function (a, p) { return a + p.distance_km; }, 0) / picks.length;
@@ -2163,16 +2184,16 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     var liveBlocks = H.blocks.get(live), prevBlocks = H.blocks.get(addDays(live, -1));
     var pctMore = Math.round(more / picks.length * 100);
     var html =
-      '<div class="kv"><span class="k">Distance</span><span class="v">avg ' + fmtKm(avg) + ' km</span><span class="d">So far ' + fmtKm(n ? n.distanceKm : null) + " km.</span></div>" +
-      '<div class="kv"><span class="k">Peak window</span><span class="v">' + picks.length + " pick" + (picks.length === 1 ? "" : "s") + "</span>" +
-      '<div class="mini" role="img" aria-label="Peak picks per window">' + mini + "</div>" +
-      '<span class="d">' + (soFarPeak >= 0 ? "Busiest so far: " + esc(blockLabel(live, soFarPeak)) + "." : "No spins yet.") + "</span></div>" +
-      '<div class="kv"><span class="k">Blocks</span><span class="v">' + pctMore + "% more</span>" +
-      '<div class="split" role="img" aria-label="' + pctMore + '% picked more"><i style="width:' + pctMore + '%"></i><i style="width:' + (100 - pctMore) + '%"></i></div>' +
-      '<span class="d">' + (liveBlocks != null && prevBlocks != null ? fmtInt(liveBlocks) + " so far vs " + fmtInt(prevBlocks) + " the night before." : "Block counts load with settlement data.") + "</span></div>";
+      '<div class="kv"><span class="k">Average distance guess</span><span class="v">' + fmtKm(avg) + ' km</span><span class="d">He has run ' + fmtKm(n ? n.distanceKm : null) + " km so far.</span></div>" +
+      '<div class="kv"><span class="k">Peak window picks</span><span class="v">' + picks.length + " player" + (picks.length === 1 ? "" : "s") + "</span>" +
+      '<div class="mini" role="img" aria-label="How many players picked each window">' + mini + "</div>" +
+      '<span class="d">Each bar is how many players picked that window. ' + (soFarPeak >= 0 ? "His busiest so far: " + esc(blockLabel(live, soFarPeak)) + "." : "No spins yet tonight.") + "</span></div>" +
+      '<div class="kv"><span class="k">More blocks than the night before?</span><span class="v">' + pctMore + "% said more</span>" +
+      '<div class="split" role="img" aria-label="' + pctMore + '% said more"><i style="width:' + pctMore + '%"></i><i style="width:' + (100 - pctMore) + '%"></i></div>' +
+      '<span class="d">' + (liveBlocks != null && prevBlocks != null ? "Tonight " + fmtInt(liveBlocks) + " blocks so far, the night before " + fmtInt(prevBlocks) + "." : "Block counts load with settlement data.") + "</span></div>";
     var mine = myPick(live);
     if (mine) {
-      html += '<div class="yours">Your picks: <strong>' + fmtKm(mine.distance_km) + " km</strong>, <strong>" + esc(blockLabel(live, mine.peak_block)) +
+      html += '<div class="yours">Your points picks: <strong>' + fmtKm(mine.distance_km) + " km</strong>, <strong>" + esc(blockLabel(live, mine.peak_block)) +
         "</strong>, <strong>" + (mine.more_blocks ? "more" : "fewer") + "</strong> blocks.</div>";
     }
     el.innerHTML = html;
@@ -2184,7 +2205,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     $("results-sub").textContent = "Night of " + fmtNight(night) + ".";
     function cell(m, text) {
       if (m.state === "resolved") return '<span class="v">' + text + "</span>";
-      if (m.state === "void") return '<span class="v void">Void</span>';
+      if (m.state === "void") return '<span class="v void">No call</span>';
       return '<span class="v wait">Counting</span>';
     }
     function note(m, text) {
@@ -2196,7 +2217,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
       '<div class="kv"><span class="k">Distance</span>' + cell(res.distance, res.distance.km != null ? fmtKm(res.distance.km) + " km" : "") + note(res.distance, "") + "</div>" +
       '<div class="kv"><span class="k">Peak window</span>' + cell(res.peak, res.peak.winners ? res.peak.winners.map(function (i) { return esc(blockLabel(night, i)); }).join(", ") : "") +
       note(res.peak, res.peak.spins ? fmtInt(res.peak.spins) + " spins in those 3 hours." : "") + "</div>" +
-      '<div class="kv"><span class="k">Blocks</span>' + cell(res.blocks, res.blocks.state === "resolved" ? (res.blocks.more ? "More" : "Fewer") : "") +
+      '<div class="kv"><span class="k">Blocks vs the night before</span>' + cell(res.blocks, res.blocks.state === "resolved" ? (res.blocks.more ? "More" : "Fewer") : "") +
       note(res.blocks, res.blocks.state === "resolved" ? fmtInt(res.blocks.cur) + " blocks vs " + fmtInt(res.blocks.prev) + " the night before." : "") + "</div>";
 
     var scores = L.scoreNight(res, picks);
@@ -2213,7 +2234,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
       if (ranked.length && ranked[0][1].counted) {
         html += '<div class="table-wrap"><table><thead><tr><th>Top guesses, points game</th><th class="r">Points</th></tr></thead><tbody>' +
           ranked.map(function (e) {
-            return "<tr" + (e[0] === G.uid ? ' class="mine"' : "") + '><td><span class="who">' + dotAvatar(e[0]) + '<span class="nm">' + esc(nameOf(e[0])) + "</span></span>" + (G.sample.has(e[0]) ? '<span class="tag">sample</span>' : "") +
+            return "<tr" + (e[0] === G.uid ? ' class="mine"' : "") + '><td><span class="who">' + dotAvatar(e[0]) + '<span class="nm">' + esc(nameOf(e[0])) + "</span>" + (G.sample.has(e[0]) ? '<span class="tag">sample</span>' : "") + "</span>" +
               '</td><td class="r num">' + e[1].total + "</td></tr>";
           }).join("") + "</tbody></table></div>";
       }
@@ -2253,19 +2274,19 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
       UI.points.set(r[0], { points: r[1].points, rank: rank });
       if (i < 50 || r[0] === G.uid) out.push([rank, r]);
     });
-    el.innerHTML = note + '<div class="table-wrap"><table><thead><tr><th class="rank">#</th><th>Player</th><th class="r">Points</th><th class="r">Nights</th><th class="r">Best</th></tr></thead><tbody>' +
+    el.innerHTML = note + '<div class="table-wrap"><table><thead><tr><th class="rank">#</th><th>Player</th><th class="r">Points</th><th class="r">Nights played</th><th class="r">Best night</th></tr></thead><tbody>' +
       out.map(function (x) {
         var id = x[1][0], t = x[1][1];
-        return "<tr" + (id === G.uid ? ' class="mine"' : "") + '><td class="rank num">' + x[0] + '</td><td><span class="who">' + dotAvatar(id) + '<span class="nm">' + esc(nameOf(id)) + "</span></span>" +
-          (G.sample.has(id) ? '<span class="tag">sample</span>' : "") + (id === G.uid ? '<span class="tag">you</span>' : "") +
+        return "<tr" + (id === G.uid ? ' class="mine"' : "") + '><td class="rank num">' + x[0] + '</td><td><span class="who">' + dotAvatar(id) + '<span class="nm">' + esc(nameOf(id)) + "</span>" +
+          (G.sample.has(id) ? '<span class="tag">sample</span>' : "") + (id === G.uid ? '<span class="tag">you</span>' : "") + "</span>" +
           '</td><td class="r num">' + t.points + '</td><td class="r num">' + t.nights + '</td><td class="r num">' + t.best + "</td></tr>";
       }).join("") + "</tbody></table></div>";
   }
 
   function renderMe() {
     var el = $("me"), html;
-    if (G.me) html = "<span>Playing as <strong>" + esc(G.me.nickname) + "</strong></span>" + (G.mode === "local" ? '<span class="chip">this browser</span>' : "");
-    else html = '<span class="chip">' + (H.demo ? "Preview" : "Not playing yet") + "</span>";
+    if (G.me) html = "<span>Points game: <strong>" + esc(G.me.nickname) + "</strong></span>" + (G.mode === "local" ? '<span class="chip">this browser</span>' : "");
+    else html = H.demo ? '<span class="chip">Preview</span>' : '<a class="chip" href="#join-anchor">Join the free points game</a>';
     if (P.on || P.demo) {
       if (!P.account) html += '<button class="wallet-btn connect" type="button" data-wallet="connect">Connect wallet</button>';
       else html += '<button class="wallet-btn" type="button" data-wallet="account" title="' + esc(P.account) + '">' + avatar(P.account) +
