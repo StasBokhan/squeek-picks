@@ -1257,6 +1257,31 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
   // Checks the transaction over the page's own Sepolia connection, then hands it straight
   // to the wallet so its confirmation window opens at once, and waits for it on Sepolia.
   // tx: { to?, data, value? }   after(result): runs once it's confirmed.
+  // Asks for the receipt every 2 seconds: a receipt means the transaction is in a block.
+  // (Waiting for a "new block" instead can miss a block that landed a moment earlier.)
+  function waitReceipt(hash, timeoutMs) {
+    var until = Date.now() + timeoutMs, wallet = null;
+    function get() {
+      return P.rpc.getTransactionReceipt(hash).catch(function () {
+        // The page's own Sepolia connection is down: ask the wallet instead.
+        wallet = wallet || new P.E.BrowserProvider(eth());
+        return wallet.getTransactionReceipt(hash);
+      });
+    }
+    return new Promise(function (resolve) {
+      (function tick() {
+        get().then(function (r) {
+          if (r) return resolve(r);
+          if (Date.now() > until) return resolve(null);
+          setTimeout(tick, 2000);
+        }, function () {
+          if (Date.now() > until) return resolve(null);
+          setTimeout(tick, 4000);
+        });
+      })();
+    });
+  }
+
   function sendTx(msg, doneText, tx, after) {
     if (!eth() || !P.account) { msg("Connect your wallet first.", "err"); return; }
     if (!P.rpc) { msg("The wallet library is still loading. Try again in a moment.", "err"); return; }
@@ -1283,9 +1308,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     }).then(function (hash) {
       clearTimeout(nudge);
       msg("Sent. Waiting for Sepolia to confirm (usually under a minute). " + txLink(hash), "", true);
-      return P.rpc.waitForTransaction(hash, 1, 10 * 60e3).catch(function () {
-        return new P.E.BrowserProvider(eth()).waitForTransaction(hash, 1, 10 * 60e3);
-      }).then(function (receipt) {
+      return waitReceipt(hash, 10 * 60e3).then(function (receipt) {
         if (!receipt) throw new Error("Not confirmed after 10 minutes. It may still go through, so check it on Etherscan before trying again.");
         if (receipt.status !== 1) throw new Error("The transaction failed on Sepolia.");
         return { hash: hash, receipt: receipt };
