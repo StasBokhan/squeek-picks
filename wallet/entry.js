@@ -26,13 +26,12 @@ function create(opts) {
       icons: [opts.icon],
     },
     features: { analytics: false, email: false, socials: false, swaps: false, onramp: false, send: false, history: false },
-    themeMode: "dark",
+    // Follows the page: dark by default, light when the visitor switched.
+    themeMode: opts.theme === "light" ? "light" : "dark",
     themeVariables: {
-      "--w3m-accent": "#e9b44c",
-      "--w3m-color-mix": "#14141b",
-      "--w3m-color-mix-strength": 20,
-      "--w3m-border-radius-master": "2px",
-      "--w3m-font-family": "Onest, system-ui, sans-serif",
+      "--w3m-accent": "#FF8A2A",
+      "--w3m-border-radius-master": "4px",
+      "--w3m-font-family": "'Nunito Sans', system-ui, sans-serif",
       "--w3m-z-index": 1000,
     },
     allowUnsupportedChain: false,
@@ -65,6 +64,7 @@ function create(opts) {
     state: read,
     subscribe(fn) { listeners.add(fn); fn(read()); return () => listeners.delete(fn); },
     switchToSepolia: () => kit.switchNetwork(sepolia),
+    setTheme: (mode) => kit.setThemeMode(mode === "light" ? "light" : "dark"),
   };
 }
 

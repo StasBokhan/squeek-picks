@@ -26,7 +26,7 @@ const page = `<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#14141b">
+<meta name="theme-color" content="#171A21">
 ${head.trim()}
 </head>
 <body>
