@@ -7,6 +7,10 @@ window.SQUEEK_CONFIG = {
   // The nightly pot on Sepolia, deployed from index.html?admin
   POT_ADDRESS: "0x10fC2c8CCe2FFAceb619c3F1A1E38e253264B81B",
 
+  // Reown project for the wallet picker (dashboard.reown.com). Public by design;
+  // the project's allowed domain is what stops other sites using it.
+  REOWN_PROJECT_ID: "33e4c95be5c69df8c0651de82a7a1288",
+
   // Optional: a different Sepolia RPC endpoint for reading the pot.
   // RPC_URL: "https://ethereum-sepolia-rpc.publicnode.com",
 };
