@@ -18,7 +18,9 @@ const env = process.env;
 const RPC_URL = env.SEPOLIA_RPC_URL || "https://ethereum-sepolia-rpc.publicnode.com";
 const CONFIG_FILE = env.CONFIG_FILE || new URL("../config.js", import.meta.url);
 const FILE = env.STATS_FILE || fileURLToPath(new URL("../data/stats.json", import.meta.url));
-const FIRST_SCAN_DAYS = Number(env.FIRST_SCAN_DAYS || 45);
+// A pot's first scan starts this many days back. Public endpoints only keep about a week
+// or two of event history, and a new pot is added to config.js when it's deployed.
+const FIRST_SCAN_DAYS = Number(env.FIRST_SCAN_DAYS || 10);
 const BLOCKS_PER_DAY = 7200; // Sepolia: a block every 12 seconds
 const ABI = {
   1: JSON.parse(readFileSync(new URL("../contracts/SqueekPotV1.json", import.meta.url), "utf8")).abi,
@@ -67,6 +69,12 @@ for (const addr of addrs) {
     let logs;
     try { logs = await provider.getLogs({ address: addr, fromBlock: from, toBlock: to }); }
     catch (e) {
+      const msg = JSON.stringify((e.info && (e.info.error || e.info.responseBody)) || e.error || e.message || String(e));
+      if (/pruned|history/i.test(msg)) {
+        // Blocks this old are gone from the endpoint; skip ahead and note it.
+        console.log(`::warning::Blocks ${from}-${to} of pot ${addr} are no longer available from the RPC; counting from later blocks.`);
+        p.scannedTo = to; from = to + 1; continue;
+      }
       if (chunk <= 500) {
         const why = JSON.stringify((e.info && (e.info.error || e.info.responseBody)) || e.error || e.shortMessage || e.message || String(e)).slice(0, 400);
         if (publicProvider && provider !== publicProvider) { console.log(`Event reads failed on SEPOLIA_RPC_URL (${why}); using the public endpoint.`); provider = publicProvider; chunk = 10000; continue; }
