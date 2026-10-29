@@ -113,6 +113,7 @@ async function main() {
       continue;
     }
     console.log(`Pot ${addr} (version ${version})`);
+    const seen = [];
     for (let k = 1; k <= 3; k++) {
       const night = L.addDays(live, -k);
       const day = L.nightToDay(night);
@@ -122,9 +123,12 @@ async function main() {
       const tickets = L.potTickets(version, n);
       const status = STATUS[Number(n.status)];
       console.log(`  Night ${night}: ${tickets.length} tickets, pot ${ethers.formatEther(n.pot)}, ${status}`);
+      seen.push(`${night} ${tickets.length} tickets ${tickets.length ? status : ""}`.trim());
       if (status !== "open" || tickets.length === 0) continue;
       candidates.push({ addr, version, pot, night, day, tickets });
     }
+    // Shown on the run's page in GitHub Actions, so you can see each night's state at a glance.
+    if (seen.length) console.log(`::notice::Pot ${addr.slice(0, 8)}… (version ${version}): ${seen.join("; ")}`);
   }
 
   if (candidates.length) {
@@ -148,12 +152,13 @@ async function main() {
           `blocks ${res.blocks.state}${res.blocks.state === "resolved" ? (res.blocks.more ? " more" : " fewer") : ""}`;
         console.log(`Pot ${c.addr.slice(0, 8)}… night ${c.night}: ${answers} -> ${out.action}${out.reason ? " (" + out.reason + ")" : ""}`);
 
-        if (out.action === "wait") continue;
+        if (out.action === "wait") { console.log(`::notice::Night ${c.night} on pot ${c.addr.slice(0, 8)}… is waiting: ${out.reason}`); continue; }
         if (out.action === "void") {
           if (DRY_RUN) { console.log("  dry run: would void"); continue; }
           const tx = await c.pot.voidNight(c.day);
           await tx.wait();
           console.log(`  voided in ${tx.hash}`);
+          console.log(`::notice::Night ${c.night} cancelled on pot ${c.addr.slice(0, 8)}…, tickets can be refunded (${tx.hash})`);
           continue;
         }
         const byId = new Map(c.tickets.map((t) => [t.player_id, t]));
@@ -167,10 +172,12 @@ async function main() {
         const tx = await c.pot.settle(c.day, winners, out.bps);
         await tx.wait();
         console.log(`  paid out in ${tx.hash}`);
+        console.log(`::notice::Night ${c.night} settled on pot ${c.addr.slice(0, 8)}…, winners sent their share (${tx.hash})`);
       }
     }
   } else {
     console.log("Nothing to pay out.");
+    console.log("::notice::Nothing to pay out: every finished night with tickets is already settled.");
   }
 
   if (problems.length) {
