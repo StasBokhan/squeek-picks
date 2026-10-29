@@ -1,33 +1,62 @@
 {
- "about": "All-time numbers for the stats line on the page, updated once a day. Pot numbers come from the pots' events on Sepolia; players and calls from the points game.",
+ "about": "All-time numbers for the stats line on the page, updated once a day. Pot numbers come from each pot's state on Sepolia; players and calls from the points game.",
  "players": 4,
  "calls": 5,
- "potTickets": 0,
- "potWallets": 0,
+ "potTickets": 5,
+ "potWallets": 3,
  "paidWei": "20000000000000000",
  "refundedWei": "0",
  "nightsPaid": 1,
  "pots": {
   "0x10fC2c8CCe2FFAceb619c3F1A1E38e253264B81B": {
    "version": 1,
-   "scannedTo": 12022729,
-   "tickets": 0,
-   "wallets": [],
+   "tickets": 3,
    "paidWei": "20000000000000000",
    "refundedWei": "0",
    "nightsPaid": 1,
-   "nightsCancelled": 0
+   "nightsCancelled": 0,
+   "nights": {
+    "2026-10-28": {
+     "status": 1,
+     "tickets": 2,
+     "wallets": [
+      "0x93ee59b236fd1af89619b3b420e4f96718efe1fa",
+      "0x835d97dbb012ee1614e7775814fa2aacd032190f"
+     ],
+     "potWei": "20000000000000000",
+     "refundedWei": "0"
+    },
+    "2026-10-29": {
+     "status": 0,
+     "tickets": 1,
+     "wallets": [
+      "0x93ee59b236fd1af89619b3b420e4f96718efe1fa"
+     ],
+     "potWei": "10000000000000000",
+     "refundedWei": "0"
+    }
+   }
   },
   "0x845AC45012405B8Fa1Ff017320304b665b915F86": {
    "version": 2,
-   "scannedTo": 12022729,
-   "tickets": 0,
-   "wallets": [],
+   "tickets": 2,
    "paidWei": "0",
    "refundedWei": "0",
    "nightsPaid": 0,
-   "nightsCancelled": 0
+   "nightsCancelled": 0,
+   "nights": {
+    "2026-10-29": {
+     "status": 0,
+     "tickets": 2,
+     "wallets": [
+      "0x2b0201f79efe415871afed2b6b76e464ea23a41d",
+      "0x93ee59b236fd1af89619b3b420e4f96718efe1fa"
+     ],
+     "potWei": "20000000000000000",
+     "refundedWei": "0"
+    }
+   }
   }
  },
- "updatedAt": "2026-10-29T23:13:20.061Z"
+ "updatedAt": "2026-10-29T23:17:12.651Z"
 }
