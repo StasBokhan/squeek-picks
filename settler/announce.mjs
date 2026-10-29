@@ -15,6 +15,7 @@
 //   SEPOLIA_RPC_URL, POT_ADDRESS, API_BASE, CONFIG_FILE  as for the payout bot
 //   TELEGRAM_API        Telegram's address (optional, for tests)
 //   MAINNET_RPC_URL     for ENS names (optional; empty to skip them)
+//   TELEGRAM_TEST=true  also send a short test post (the workflow's "Run workflow" box)
 //   DRY_RUN=1           print the posts instead of sending them
 //   NOW_MS              override the clock, for tests only
 
@@ -53,7 +54,7 @@ const CALL_FROM = 100 * 60e3, CALL_UNTIL = 5 * 60e3;
 process.on("unhandledRejection", (e) => { console.error(`::error::${e && e.message || e}`); process.exit(1); });
 
 if (!DRY_RUN && (!TOKEN || !CHAT)) {
-  console.log("Telegram isn't set up (TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID), so nothing to post.");
+  console.log((env.TELEGRAM_TEST === "true" ? "::warning::" : "") + "Telegram isn't set up yet: add the TELEGRAM_BOT_TOKEN secret and the TELEGRAM_CHAT_ID variable.");
   process.exit(0);
 }
 
@@ -295,6 +296,11 @@ async function lastCallPost(open, H, pots) {
 }
 
 // ----- main -----
+// "Run workflow" with the test box ticked: one short post, to check the setup.
+if (env.TELEGRAM_TEST === "true") {
+  await send(`🐹 Squeek Picks is connected. Results will appear here after each night, and a last call before picks close.\n${SITE}`);
+  console.log("::notice::Sent a test post to Telegram.");
+}
 const state = loadState();
 state.results = state.results || {};
 state.calls = state.calls || {};

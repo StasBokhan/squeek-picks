@@ -4,7 +4,12 @@ on:
   schedule:
     - cron: "25 * * * *"   # every hour at :25 (UTC)
     - cron: "45 10 * * *"  # once more before picks close at 12:00 UTC, for the Telegram last call
-  workflow_dispatch: {}      # lets you run it by hand from the Actions tab
+  workflow_dispatch:          # lets you run it by hand from the Actions tab
+    inputs:
+      telegram_test:
+        description: "Also send a test post to Telegram"
+        type: boolean
+        default: false
 
 concurrency:
   group: settle
@@ -49,6 +54,7 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ vars.TELEGRAM_CHAT_ID }}
           SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
           POT_ADDRESS: ${{ vars.POT_ADDRESS }}
+          TELEGRAM_TEST: ${{ inputs.telegram_test }}
         run: node announce.mjs
       - name: Remember what was posted
         if: always() && hashFiles('.bot-state/**') != ''
