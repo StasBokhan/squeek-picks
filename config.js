@@ -15,6 +15,9 @@ window.SQUEEK_CONFIG = {
   // the project's allowed domain is what stops other sites using it.
   REOWN_PROJECT_ID: "33e4c95be5c69df8c0651de82a7a1288",
 
+  // The Telegram channel the announcer bot posts to; shows a Telegram button on the page.
+  TELEGRAM_URL: "https://t.me/squeekpicks",
+
   // Optional: a different Sepolia RPC endpoint for reading the pot.
   // RPC_URL: "https://ethereum-sepolia-rpc.publicnode.com",
 };
