@@ -401,7 +401,8 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
 /* Leaderboard tabs */
 .board-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
 .tabs { display: inline-flex; padding: 4px; gap: 4px; border-radius: 14px; background: var(--raise); }
-.tabs button { appearance: none; cursor: pointer; border: 0; background: transparent; color: var(--ink-2); font: 700 14px/1 var(--font-body); padding: 11px 16px; border-radius: 11px; }
+.tabs button { appearance: none; cursor: pointer; border: 0; background: transparent; color: var(--ink-2); font: 700 14px/1 var(--font-body); padding: 11px 16px; border-radius: 11px; white-space: nowrap; }
+@media (max-width: 420px) { .tabs button { padding: 10px 11px; font-size: 13px; } }
 .tabs button[aria-selected="true"] { background: var(--seg-on); color: var(--ink); font-weight: 800; box-shadow: 0 1px 3px rgba(23, 32, 58, .14); }
 
 /* My tickets */
@@ -442,6 +443,18 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
 }
 .dash-empty { display: grid; gap: 12px; justify-items: start; margin-top: 18px; }
 .dash-points { margin: 16px 0 0; font-size: 14px; color: var(--ink-2); }
+
+/* Streaks and badges */
+.save-row .streak-note { flex-basis: 100%; }
+.streak-note { margin: 0; padding: 10px 14px; border-radius: 14px; background: var(--gold-soft); color: var(--ink-2); font-size: 14px; }
+.streak-note strong { color: var(--accent-ink); }
+.badge { margin-left: 0; font: 800 11px var(--font-body); border-radius: 999px; padding: 2px 8px; white-space: nowrap; background: var(--raise); color: var(--ink-2); }
+.badge.hot { background: color-mix(in srgb, var(--gold) 16%, transparent); color: var(--accent-ink); }
+.badge.gold { background: color-mix(in srgb, #FFB020 18%, transparent); color: var(--accent-ink); }
+.badges { display: flex; flex-wrap: wrap; gap: 4px; margin: 5px 0 0 36px; }
+.champ { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 14px; margin-top: 14px; border-radius: 16px; background: color-mix(in srgb, #FFB020 10%, transparent); font-size: 14px; color: var(--ink-2); }
+.champ strong { color: var(--ink); }
+.board-note { margin: 10px 0 0; font-size: 13px; color: var(--ink-3); }
 
 /* All-time numbers under the header */
 .proof { margin: -10px 0 0; display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 14px; color: var(--ink-3); font-weight: 600; }
@@ -867,6 +880,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
           <button class="primary" type="submit" id="save">Save picks</button>
           <p class="msg" id="save-msg" role="status"></p>
           <p class="hint save-note">Free. Saved picks score on the points leaderboard. They don't buy a pot ticket.</p>
+          <p class="streak-note" id="streak-note" hidden></p>
         </div>
       </form>
     </section>
@@ -922,12 +936,14 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
           <span class="eyebrow">Leaderboard</span>
           <h2 id="board-h">Points game, last 28 nights</h2>
         </div>
-        <div class="tabs" role="tablist" aria-label="Leaderboard" id="board-tabs" hidden>
-          <button type="button" role="tab" id="tab-points" aria-controls="board" aria-selected="true">Points</button>
-          <button type="button" role="tab" id="tab-pot" aria-controls="board-pot" aria-selected="false" tabindex="-1">Pot winners</button>
+        <div class="tabs" role="tablist" aria-label="Leaderboard" id="board-tabs">
+          <button type="button" role="tab" id="tab-week" aria-controls="board-week" aria-selected="true">This week</button>
+          <button type="button" role="tab" id="tab-points" aria-controls="board" aria-selected="false" tabindex="-1">28 nights</button>
+          <button type="button" role="tab" id="tab-pot" aria-controls="board-pot" aria-selected="false" tabindex="-1" hidden>Pot winners</button>
         </div>
       </div>
-      <div id="board" role="tabpanel" aria-labelledby="tab-points"></div>
+      <div id="board-week" role="tabpanel" aria-labelledby="tab-week"></div>
+      <div id="board" role="tabpanel" aria-labelledby="tab-points" hidden></div>
       <div id="board-pot" role="tabpanel" aria-labelledby="tab-pot" hidden></div>
     </section>
   </div>
@@ -2628,16 +2644,17 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
       (P.demo ? '<p class="hint">Sample wallets in the preview.</p>' : "");
   }
 
+  function boardTabsShown() { return P.on || P.demo ? ["week", "points", "pot"] : ["week", "points"]; }
   function renderBoardTabs() {
-    var show = P.on || P.demo, tab = show ? UI.boardTab : "points";
-    $("board-tabs").hidden = !show;
-    [["points", "tab-points", "board"], ["pot", "tab-pot", "board-pot"]].forEach(function (x) {
+    var tabs = boardTabsShown(), tab = tabs.indexOf(UI.boardTab) >= 0 ? UI.boardTab : "week";
+    $("tab-pot").hidden = tabs.indexOf("pot") < 0;
+    [["week", "tab-week", "board-week"], ["points", "tab-points", "board"], ["pot", "tab-pot", "board-pot"]].forEach(function (x) {
       var on = tab === x[0];
       $(x[1]).setAttribute("aria-selected", String(on));
       $(x[1]).tabIndex = on ? 0 : -1;
       $(x[2]).hidden = !on;
     });
-    $("board-h").textContent = tab === "pot" ? "Pot winners, last " + HISTORY_NIGHTS + " nights" : "Points game, last " + BOARD_NIGHTS + " nights";
+    $("board-h").textContent = tab === "pot" ? "Pot winners, last " + HISTORY_NIGHTS + " nights" : tab === "week" ? "Points game, this week" : "Points game, last " + BOARD_NIGHTS + " nights";
   }
 
   // Redraws the parts that show names and avatars, after ENS answers arrive.
@@ -2806,8 +2823,8 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
   }
 
   // ---------- UI state ----------
-  var UI = { open: null, live: null, draft: { distance: "", peak: null, more: null }, draftNight: null, dirty: false, saving: false, points: null, boardTab: "points" };
-  try { if (localStorage.getItem("squeekpicks.boardtab") === "pot") UI.boardTab = "pot"; } catch (x) { /* storage blocked */ }
+  var UI = { open: null, live: null, draft: { distance: "", peak: null, more: null }, draftNight: null, dirty: false, saving: false, points: null, boardTab: "week" };
+  try { var bt = localStorage.getItem("squeekpicks.boardtab"); if (bt === "pot" || bt === "points" || bt === "week") UI.boardTab = bt; } catch (x) { /* storage blocked */ }
   UI.raceTab = null; UI.raceAll = false;
   try { var rt = localStorage.getItem("squeekpicks.racetab"); if (rt === "pot" || rt === "points") UI.raceTab = rt; } catch (x) { /* storage blocked */ }
 
@@ -3013,6 +3030,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
 
   function renderSave() {
     var btn = $("save"), v = draftValid(), saved = myPick(UI.open);
+    renderStreak();
     if (!G.me) { btn.disabled = true; btn.textContent = "Pick a nickname above to save"; return; }
     btn.disabled = UI.saving || !v.ok || (saved && !UI.dirty);
     btn.textContent = UI.saving ? "Saving…" : saved ? (UI.dirty ? "Update picks" : "Picks saved") : "Save picks";
@@ -3929,43 +3947,122 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     shareMsg("Picture downloaded. Attach it to your post.", "ok");
   }
 
-  // ---------- Render: leaderboard ----------
+  // ---------- Render: leaderboards ----------
+  // Points per player over some nights, with what the badges need.
+  function pointsTotals(nights, now) {
+    var totals = new Map();
+    nights.forEach(function (night) {
+      var picks = picksFor(night);
+      if (!picks.length) return;
+      L.scoreNight(resolve(night, now), picks).forEach(function (s, id) {
+        if (!s.counted) return;
+        var t = totals.get(id) || { points: 0, nights: 0, best: 0, perfect: 0, closest: 0 };
+        t.points += s.total; t.nights++; t.best = Math.max(t.best, s.total);
+        if (s.total === MAX_POINTS) t.perfect++;
+        if (s.closest) t.closest++;
+        totals.set(id, t);
+      });
+    });
+    return totals;
+  }
+  function ranked(totals) {
+    var rows = Array.from(totals.entries()).sort(function (a, b) {
+      return b[1].points - a[1].points || a[1].nights - b[1].nights || nameOf(a[0]).localeCompare(nameOf(b[0]));
+    });
+    var rank = 0, last = null;
+    return rows.map(function (r, i) { if (r[1].points !== last) { rank = i + 1; last = r[1].points; } return { id: r[0], t: r[1], rank: rank }; });
+  }
+  // Weeks of nights run Monday to Sunday, so a new week starts with Monday's night.
+  function weekStart(night) { return addDays(night, -((new Date(night + "T00:00:00Z").getUTCDay() + 6) % 7)); }
+  function weekNights(start, upTo) {
+    var out = [];
+    for (var k = 0; k < 7; k++) { var n = addDays(start, k); if (n <= upTo) out.push(n); }
+    return out;
+  }
+  // A finished week's champion: null while its last night's results are still coming in.
+  function weekChampion(start, now) {
+    var last = addDays(start, 6), r = resolve(last, now);
+    if ([r.distance, r.peak, r.blocks].some(function (m) { return m.state === "wait" || m.state === "live"; })) return null;
+    var rows = ranked(pointsTotals(weekNights(start, last), now));
+    if (!rows.length || rows[0].t.points <= 0) return { none: true };
+    return { ids: rows.filter(function (x) { return x.rank === 1; }).map(function (x) { return x.id; }), points: rows[0].t.points };
+  }
+  // Nights in a row with a pick, counting back from `upTo`.
+  function pickedNights() {
+    var m = new Map();
+    G.picks.forEach(function (p) { var set = m.get(p.player_id) || new Set(); set.add(p.night); m.set(p.player_id, set); });
+    return m;
+  }
+  function streakOf(set, upTo) { var n = 0; while (set && set.has(upTo)) { n++; upTo = addDays(upTo, -1); } return n; }
+
+  function badgesFor(id, t, ctx) {
+    var out = [], streak = streakOf(ctx.picked.get(id), UI.live);
+    if (streak >= 3) out.push('<span class="badge hot" title="Nights in a row with a pick">' + streak + "-night streak</span>");
+    var champ = ctx.champs.get(id) || 0;
+    if (champ) out.push('<span class="badge gold" title="Won the points game for a week">Week champion' + (champ > 1 ? " ×" + champ : "") + "</span>");
+    if (t && t.perfect) out.push('<span class="badge gold" title="Scored all 75 points in one night">Perfect night' + (t.perfect > 1 ? " ×" + t.perfect : "") + "</span>");
+    if (t && t.closest >= 2) out.push('<span class="badge" title="Closest distance guess of the night">Closest ×' + t.closest + "</span>");
+    return out.length ? '<div class="badges">' + out.join("") + "</div>" : "";
+  }
+  function boardTable(rows, ctx, cols) {
+    return '<div class="table-wrap"><table><thead><tr><th class="rank">#</th><th>Player</th><th class="r">Points</th><th class="r">Nights played</th><th class="r">Best night</th></tr></thead><tbody>' +
+      rows.map(function (x) {
+        var id = x.id, t = x.t;
+        return "<tr" + (id === G.uid ? ' class="mine"' : "") + '><td class="rank num">' + x.rank + '</td><td><span class="who">' + dotAvatar(id) + '<span class="nm">' + esc(nameOf(id)) + "</span>" +
+          (G.sample.has(id) ? '<span class="tag">sample</span>' : "") + (id === G.uid ? '<span class="tag">you</span>' : "") + "</span>" + badgesFor(id, t, ctx) +
+          '</td><td class="r num">' + t.points + '</td><td class="r num">' + t.nights + '</td><td class="r num">' + t.best + "</td></tr>";
+      }).join("") + "</tbody></table></div>";
+  }
+
   function renderBoard(now) {
     var el = $("board");
     var localOnly = G.mode === "local" && !H.demo;
     var note = localOnly ? '<p class="empty">The game database isn\'t connected, so only your own picks are here and they stay in this browser. Connect Supabase to see everyone.</p>' : "";
-    var totals = new Map();
-    for (var k = 1; k <= BOARD_NIGHTS; k++) {
-      var night = addDays(UI.live, -k), picks = picksFor(night);
-      if (!picks.length) continue;
-      L.scoreNight(resolve(night, now), picks).forEach(function (s, id) {
-        if (!s.counted) return;
-        var t = totals.get(id) || { points: 0, nights: 0, best: 0 };
-        t.points += s.total; t.nights++; t.best = Math.max(t.best, s.total);
-        totals.set(id, t);
-      });
+    var nights = [];
+    for (var k = 1; k <= BOARD_NIGHTS; k++) nights.push(addDays(UI.live, -k));
+    // Week champions inside the loaded nights, for the badge.
+    var ws = weekStart(UI.live), champs = new Map(), cur = null;
+    for (var w = 1; w <= 3; w++) {
+      var c = weekChampion(addDays(ws, -7 * w), now);
+      if (w === 1) cur = c;
+      if (c && c.ids) c.ids.forEach(function (id) { champs.set(id, (champs.get(id) || 0) + 1); });
     }
-    var rows = Array.from(totals.entries()).sort(function (a, b) {
-      return b[1].points - a[1].points || a[1].nights - b[1].nights || nameOf(a[0]).localeCompare(nameOf(b[0]));
-    });
+    var ctx = { picked: pickedNights(), champs: champs };
+    var rows = ranked(pointsTotals(nights, now));
     UI.points = new Map();
-    if (!rows.length) {
-      el.innerHTML = note || '<p class="empty">No scored nights yet. Points appear here once a night you picked has settled.</p>';
-      return;
+    rows.forEach(function (x) { UI.points.set(x.id, { points: x.t.points, rank: x.rank }); });
+    if (!rows.length) el.innerHTML = note || '<p class="empty">No scored nights yet. Points appear here once a night you picked has settled.</p>';
+    else el.innerHTML = note + boardTable(rows.filter(function (x, i) { return i < 50 || x.id === G.uid; }), ctx);
+    renderWeek(now, ctx, cur, note);
+  }
+
+  // This week's board, and last week's champion.
+  function renderWeek(now, ctx, champ, note) {
+    var el = $("board-week"), ws = weekStart(UI.live), last = addDays(UI.live, -1);
+    var rows = ranked(pointsTotals(weekNights(ws, last), now));
+    var champLine = "";
+    if (champ && champ.ids) {
+      champLine = '<div class="champ"><span class="badge gold">Last week\'s champion</span><span><strong>' + esc(champ.ids.map(nameOf).join(" and ")) + "</strong> with " + champ.points + " points.</span></div>";
+    } else if (!champ) {
+      champLine = '<div class="champ"><span class="badge gold">Last week\'s champion</span><span>Decided once Sunday night\'s results are in.</span></div>';
     }
-    var rank = 0, last = null, out = [];
-    rows.forEach(function (r, i) {
-      if (r[1].points !== last) { rank = i + 1; last = r[1].points; }
-      UI.points.set(r[0], { points: r[1].points, rank: rank });
-      if (i < 50 || r[0] === G.uid) out.push([rank, r]);
-    });
-    el.innerHTML = note + '<div class="table-wrap"><table><thead><tr><th class="rank">#</th><th>Player</th><th class="r">Points</th><th class="r">Nights played</th><th class="r">Best night</th></tr></thead><tbody>' +
-      out.map(function (x) {
-        var id = x[1][0], t = x[1][1];
-        return "<tr" + (id === G.uid ? ' class="mine"' : "") + '><td class="rank num">' + x[0] + '</td><td><span class="who">' + dotAvatar(id) + '<span class="nm">' + esc(nameOf(id)) + "</span>" +
-          (G.sample.has(id) ? '<span class="tag">sample</span>' : "") + (id === G.uid ? '<span class="tag">you</span>' : "") + "</span>" +
-          '</td><td class="r num">' + t.points + '</td><td class="r num">' + t.nights + '</td><td class="r num">' + t.best + "</td></tr>";
-      }).join("") + "</tbody></table></div>";
+    var body = !rows.length ? '<p class="empty">' + (ws > last ? "A new week starts with tonight's night. Points show up here after it ends, " + esc(fmtDayTime(nightEnd(UI.live))) + "."
+        : "No points yet this week. Each night's points show up after it ends.") + "</p>"
+      : boardTable(rows.filter(function (x, i) { return i < 50 || x.id === G.uid; }), ctx);
+    el.innerHTML = note + champLine + body + '<p class="board-note">Nights from ' + esc(fmtNight(ws)) + " to " + esc(fmtNight(addDays(ws, 6))) +
+      ". A new week starts every Monday at " + esc(fmtTime(nightStart(ws))) + ", and its top player becomes week champion.</p>";
+  }
+
+  // Your streak, under Save picks.
+  function renderStreak() {
+    var el = $("streak-note");
+    if (!G.me || !G.uid) { el.hidden = true; return; }
+    var set = pickedNights().get(G.uid), withOpen = set && set.has(UI.open);
+    var n = withOpen ? streakOf(set, UI.open) : streakOf(set, UI.live);
+    if (withOpen && n >= 2) el.innerHTML = "You've called <strong>" + n + " nights in a row</strong>, this one included. Keep it going tomorrow.";
+    else if (!withOpen && n >= 1) el.innerHTML = "You've called <strong>" + n + (n === 1 ? " night" : " nights in a row") + "</strong>. Save picks for " + esc(fmtNight(UI.open)) + " to make it " + (n + 1) + ".";
+    else { el.hidden = true; return; }
+    el.hidden = false;
   }
 
   function renderMe() {
@@ -4087,16 +4184,17 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
       UI.boardTab = tab;
       try { localStorage.setItem("squeekpicks.boardtab", tab); } catch (x) { /* storage blocked */ }
       renderBoardTabs();
-      if (focus) $(tab === "pot" ? "tab-pot" : "tab-points").focus();
+      if (focus) $("tab-" + tab).focus();
     }
     $("board-tabs").addEventListener("click", function (e) {
       var btn = e.target.closest("button[role=tab]"); if (!btn) return;
-      pickTab(btn.id === "tab-pot" ? "pot" : "points");
+      pickTab(btn.id.replace("tab-", ""));
     });
     $("board-tabs").addEventListener("keydown", function (e) {
       if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
       e.preventDefault();
-      pickTab(UI.boardTab === "pot" ? "points" : "pot", true);
+      var tabs = boardTabsShown(), i = tabs.indexOf(UI.boardTab);
+      pickTab(tabs[(i + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length], true);
     });
     // Who's winning: tabs and the full list
     function pickRaceTab(tab, focus) {
