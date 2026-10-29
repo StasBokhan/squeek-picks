@@ -3,6 +3,7 @@ name: Pay out the nightly pot
 on:
   schedule:
     - cron: "25 * * * *"   # every hour at :25 (UTC)
+    - cron: "45 10 * * *"  # once more before picks close at 12:00 UTC, for the Telegram last call
   workflow_dispatch: {}      # lets you run it by hand from the Actions tab
 
 concurrency:
@@ -31,3 +32,27 @@ jobs:
           SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
           POT_ADDRESS: ${{ vars.POT_ADDRESS }}
         run: node settle.mjs
+      # Telegram: results and the last call. Does nothing until TELEGRAM_BOT_TOKEN (secret)
+      # and TELEGRAM_CHAT_ID (variable) are set. Runs even if the payout step failed.
+      - name: Load what was already posted
+        if: always()
+        uses: actions/cache/restore@v4
+        with:
+          path: .bot-state
+          key: announce-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: announce-
+      - name: Post to Telegram
+        if: always()
+        working-directory: settler
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ vars.TELEGRAM_CHAT_ID }}
+          SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
+          POT_ADDRESS: ${{ vars.POT_ADDRESS }}
+        run: node announce.mjs
+      - name: Remember what was posted
+        if: always() && hashFiles('.bot-state/**') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: .bot-state
+          key: announce-${{ github.run_id }}-${{ github.run_attempt }}

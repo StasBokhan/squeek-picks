@@ -255,6 +255,82 @@
     return rows;
   }
 
+  // ---------- Diary: what happened in a night ----------
+  // Runs (half hours in a row with spins), when he started and stopped, his busiest window.
+  // A half hour with fewer than 30 spins (a few metres) doesn't count as running.
+  var RUN_MIN_SPINS = 30;
+  function nightFacts(n) {
+    var win = new Array(8).fill(0), runs = [], cur = null, first = -1, last = -1, max = 0, maxAt = -1;
+    for (var i = 0; i < 48; i++) {
+      var v = n.slots[i] || 0;
+      win[Math.floor(i / 6)] += v;
+      if (v > max) { max = v; maxAt = i; }
+      if (v >= RUN_MIN_SPINS) {
+        if (first < 0) first = i;
+        last = i;
+        if (cur) cur.end = i + 1; else { cur = { start: i, end: i + 1 }; runs.push(cur); }
+      } else cur = null;
+    }
+    var top = Math.max.apply(null, win), longest = null;
+    runs.forEach(function (r) { if (!longest || r.end - r.start > longest.end - longest.start) longest = r; });
+    return {
+      win: win, runs: runs, first: first, last: last, longest: longest, maxSlot: max, maxAt: maxAt,
+      busiest: top > 0 ? win.indexOf(top) : -1
+    };
+  }
+  function joinList(a) { return a.length < 2 ? a.join("") : a.slice(0, -1).join(", ") + " and " + a[a.length - 1]; }
+  // What he usually does, over the last 30 nights in the diary.
+  function diaryHabits(nights) {
+    var list = nights.slice(-30), n = list.length;
+    var counts = new Array(8).fill(0), wakes = {}, sleeps = [], kms = [], flips = [];
+    list.forEach(function (x) {
+      var f = x.facts;
+      if (f.busiest >= 0) counts[f.busiest]++;
+      if (f.first >= 0) { wakes[f.first] = (wakes[f.first] || 0) + 1; sleeps.push(f.last + 1); }
+      kms.push(x.km);
+      if (x.blocks != null && x.prevBlocks != null && x.blocks !== x.prevBlocks) flips.push(x.blocks > x.prevBlocks);
+    });
+    var wake = -1, wakeN = 0;
+    Object.keys(wakes).forEach(function (k) { if (wakes[k] > wakeN) { wakeN = wakes[k]; wake = Number(k); } });
+    var top = Math.max.apply(null, counts);
+    return {
+      n: n, list: list, counts: counts, top: top, topIdx: top > 0 ? counts.indexOf(top) : -1,
+      ran: list.filter(function (x) { return x.facts.busiest >= 0; }).length,
+      wake: wake, wakeN: wakeN, woke: Object.keys(wakes).reduce(function (a, k) { return a + wakes[k]; }, 0),
+      sleepMin: sleeps.length ? Math.min.apply(null, sleeps) : -1, sleepMax: sleeps.length ? Math.max.apply(null, sleeps) : -1,
+      kmMin: kms.length ? Math.min.apply(null, kms) : null, kmMax: kms.length ? Math.max.apply(null, kms) : null,
+      kmAvg: kms.length ? kms.reduce(function (a, b) { return a + b; }, 0) / kms.length : null,
+      over10: kms.filter(function (k) { return k >= 10; }).length,
+      flips: flips, more: flips.filter(Boolean).length
+    };
+  }
+
+  // A few plain sentences about one night, from its half-hour data.
+  // t(i) formats half hour i of the night as a clock time; ft(ms) formats a timestamp.
+  // ctx: { habits (from diaryHabits), firstNight, rec: { run, halfHour, halfHourAt } }
+  function describeNight(n, ctx, t, ft) {
+    var f = n.facts, night = n.night, out = [];
+    if (night === ctx.firstNight) out.push("The camera's first night.");
+    if (f.first < 0) { out.push("He took the night off. Not a single spin."); return out.join(" "); }
+    var L = f.longest, firstRun = f.runs[0], usual = night !== ctx.firstNight && ctx.habits.n >= 3 && ctx.habits.wake === f.first && ctx.habits.wakeN >= 2;
+    var longMin = (L.end - L.start) * 30;
+    var recRun = ctx.rec.run === night ? ", his longest run yet" : "";
+    if (firstRun === L && longMin >= 60) out.push("Up at " + t(f.first) + (usual ? " as usual" : "") + " and ran non-stop until " + t(L.end) + recRun + ".");
+    else {
+      out.push("Up at " + t(f.first) + (usual ? " as usual" : "") + ((firstRun.end - firstRun.start) >= 2 ? " and ran until " + t(firstRun.end) : "") + ".");
+      if (longMin >= 60) out.push("Then ran non-stop from " + t(L.start) + " to " + t(L.end) + recRun + ".");
+      else if (f.runs.length > 1) out.push("He ran in short bursts, none longer than " + longMin + " minutes.");
+    }
+    var others = f.runs.filter(function (r) { return r !== L && r !== firstRun; }).map(function (r) { return t(r.start); });
+    if (others.length > 3) out.push("Several shorter runs after that.");
+    else if (others.length) out.push((others.length === 1 ? "One more run at " : "More runs at ") + joinList(others) + ".");
+    if (ctx.rec.halfHour === night && ctx.rec.halfHourAt) out.push("His busiest half hour ever came at " + ft(ctx.rec.halfHourAt) + ".");
+    out.push("Asleep by " + t(f.last + 1) + ".");
+    if (n.coverageBps < 9500 && night !== ctx.firstNight) out.push("Part of this night's data is missing.");
+    return out.join(" ");
+  }
+
+
   // Pot tickets in one shape for both contract versions. Version 1 sells one ticket per
   // wallet, so the wallet is the ticket's id; version 2 numbers tickets within the night.
   // The page and the bot both use this, so ties break the same way in both.
@@ -282,6 +358,7 @@
     parseStats: parseStats, parseSettlements: parseSettlements,
     resolveNight: resolveNight, distancePoints: distancePoints, scoreNight: scoreNight, potPayouts: potPayouts,
     potTicketId: potTicketId, potTickets: potTickets,
-    provisionalResult: provisionalResult, liveStandings: liveStandings
+    provisionalResult: provisionalResult, liveStandings: liveStandings,
+    RUN_MIN_SPINS: RUN_MIN_SPINS, nightFacts: nightFacts, diaryHabits: diaryHabits, describeNight: describeNight
   };
 });

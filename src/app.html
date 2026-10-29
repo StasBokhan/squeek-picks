@@ -6,8 +6,12 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700;6..12,800&display=swap">
 <script>
+  // ?view=overlay is the stream overlay: transparent, nothing but the strip.
+  if (/[?&]view=overlay(&|$)/.test(location.search)) document.documentElement.setAttribute("data-view", "overlay");
   // Dark is the default; a visitor who switched to light keeps it. Runs before the page paints.
   try {
+    if (/[?&]theme=light(&|$)/.test(location.search)) localStorage.setItem("squeekpicks.theme", "light");
+    if (/[?&]theme=dark(&|$)/.test(location.search)) localStorage.removeItem("squeekpicks.theme");
     if (localStorage.getItem("squeekpicks.theme") === "light") {
       document.documentElement.setAttribute("data-theme", "light");
       var tc = document.querySelector('meta[name="theme-color"]');
@@ -442,6 +446,41 @@ a.nav-btn {
   font: 800 14px/1 var(--font-body); text-decoration: none; box-shadow: var(--shadow); white-space: nowrap;
 }
 a.nav-btn:hover { border-color: var(--ink-3); }
+
+/* Stream overlay */
+:root:not([data-view="overlay"]) .overlay-only { display: none !important; }
+html[data-view="overlay"], html[data-view="overlay"] body { background: transparent !important; }
+html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { display: none !important; }
+.ov {
+  display: grid; grid-template-columns: auto auto auto minmax(0, 1fr) auto; align-items: center;
+  gap: 0 2vw; margin: 0; padding: 1.1vw 1.6vw; border-radius: 1.4vw; box-sizing: border-box; width: 100%;
+  background: rgba(23, 26, 33, .9); color: #EEF1F7; border: 1px solid rgba(255, 255, 255, .08);
+  font: 600 1.15vw/1.25 var(--font-body);
+}
+:root[data-theme="light"] .ov { background: rgba(255, 255, 255, .94); color: #1C2233; border-color: rgba(23, 32, 58, .1); }
+.ov-brand { display: flex; align-items: center; gap: .8vw; }
+.ov-logo { width: 3vw; height: 3vw; border-radius: .9vw; background: rgba(255, 138, 42, .18); color: #FFB074; display: flex; align-items: center; justify-content: center; flex: none; }
+:root[data-theme="light"] .ov-logo { color: #B24F08; }
+.ov-logo svg { width: 1.9vw; height: 1.9vw; }
+.ov-brand strong { display: block; font: 600 1.5vw/1.15 var(--font-display); white-space: nowrap; }
+.ov-state { display: inline-flex; align-items: center; gap: .45vw; font-weight: 800; color: #98A1B3; white-space: nowrap; }
+.ov-state::before { content: ""; width: .6vw; height: .6vw; border-radius: 50%; background: currentColor; }
+.ov-state[data-state="running"] { color: #5FD69E; }
+.ov-state[data-state="resting"] { color: #8FB0FF; }
+:root[data-theme="light"] .ov-state[data-state="running"] { color: #13804F; }
+:root[data-theme="light"] .ov-state[data-state="resting"] { color: #2F6BFF; }
+.ov-cell, .ov-cta { display: grid; gap: .15vw; min-width: 0; padding-left: 2vw; border-left: 1px solid rgba(152, 161, 179, .3); }
+.ov-label { font-weight: 800; font-size: 1vw; color: #98A1B3; text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:root[data-theme="light"] .ov-label { color: #596277; }
+.ov-val { font: 600 2vw/1.15 var(--font-display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.ov-lead .ov-val { color: #FFB074; }
+.ov-lead .ov-val small { font: 700 1.25vw var(--font-body); color: #B4BCCB; margin-left: .3vw; }
+:root[data-theme="light"] .ov-lead .ov-val small { color: #4F586C; }
+:root[data-theme="light"] .ov-lead .ov-val { color: #B24F08; }
+.ov-cta { justify-items: end; text-align: right; }
+.ov-cta .ov-label { text-transform: none; letter-spacing: 0; font-size: 1.05vw; }
+.ov-url { padding: .35vw 1vw; border-radius: 999px; background: #FF8A2A; color: #171A21; font: 800 1.35vw/1.3 var(--font-body); white-space: nowrap; }
+@media (prefers-reduced-motion: no-preference) { .ov-val { transition: color .3s; } }
 
 /* Squeektoshi's diary */
 .dy-hero { display: flex; flex-wrap: wrap; gap: 24px; align-items: center; padding: 24px; }
@@ -916,6 +955,7 @@ a.nav-btn:hover { border-color: var(--ink-3); }
         </ul>
       </div>
     </div>
+    <p class="care"><strong>Streaming Squeektoshi?</strong> Add <a href="overlay.html" target="_blank" rel="noopener">squeekpicks.xyz/overlay</a> as a Browser source in OBS (1600 × 140 works well). It shows tonight's distance, who's winning and when picks close, and updates by itself. Add <code>?theme=light</code> for a light strip.</p>
     <p class="care">Nothing here can make him run, and nothing should. He's never woken up to mine, and quiet nights are part of the game. If the operator's device reports wrong data, results follow it, which is one more reason the pot only uses test ETH.</p>
   </section>
 
@@ -923,6 +963,18 @@ a.nav-btn:hover { border-color: var(--ink-3); }
     <span>Hamster data from the public Squeekchain API on the Sepolia testnet.</span>
     <a href="https://docs.squeekchain.com/" target="_blank" rel="noopener">Squeekchain docs</a>
   </footer>
+</div>
+
+<!-- Stream overlay (?view=overlay): one strip for an OBS browser source -->
+<div class="ov overlay-only" id="ov">
+  <div class="ov-brand">
+    <span class="ov-logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.2"/><path d="M12 3v6.8M12 14.2V21M3 12h6.8M14.2 12H21"/></svg></span>
+    <div><strong>Squeek Picks</strong><span class="ov-state" id="ov-state" data-state="offline">Loading</span></div>
+  </div>
+  <div class="ov-cell"><span class="ov-label">Tonight</span><span class="ov-val" id="ov-km">–</span></div>
+  <div class="ov-cell"><span class="ov-label">Busiest so far</span><span class="ov-val" id="ov-peak">–</span></div>
+  <div class="ov-cell ov-lead"><span class="ov-label" id="ov-lead-label">Winning right now</span><span class="ov-val" id="ov-lead">–</span></div>
+  <div class="ov-cta"><span class="ov-label" id="ov-close"></span><span class="ov-url" id="ov-url">squeekpicks.xyz</span></div>
 </div>
 
 <dialog class="share-dlg" id="share" aria-labelledby="share-h">
@@ -2388,6 +2440,7 @@ a.nav-btn:hover { border-color: var(--ink-3); }
     var tb = H.blocks.get(live);
     $("m-height").textContent = tb != null ? fmtInt(tb) : "–";
     $("m-height-all").textContent = s && s.height != null ? fmtInt(s.height) + " in total" : "";
+    if (currentView() === "overlay") renderOverlay(Date.now());
   }
 
   // Tonight's distance: the wheel's own reading while it's fresh, else the half-hour stats.
@@ -2488,7 +2541,7 @@ a.nav-btn:hover { border-color: var(--ink-3); }
       if (r.distance.state === "resolved") recent.push(r.distance.km);
     }
     // Hints from his diary, with a link to it.
-    var dn = diaryNights(now), dh = diaryHabits(dn), dlink = ' <a href="#diary">His diary</a>';
+    var dn = diaryNights(now), dh = L.diaryHabits(dn), dlink = ' <a href="#diary">His diary</a>';
     if (dn.length >= recent.length) recent = dn.slice(-7).map(function (n) { return n.km; });
     if (recent.length) {
       var sorted = recent.slice().sort(function (a, b) { return a - b; });
@@ -2771,90 +2824,17 @@ a.nav-btn:hover { border-color: var(--ink-3); }
       m.set(k, { night: k, km: n.distanceKm, coverageBps: n.coverageBps, work: n.work, slots: n.slots, blocks: b });
     });
     var out = Array.from(m.values()).sort(function (a, b) { return a.night < b.night ? -1 : 1; });
-    out.forEach(function (n, i) { var p = out[i - 1]; n.prevBlocks = p && p.night === addDays(n.night, -1) ? p.blocks : null; n.facts = nightFacts(n); });
+    out.forEach(function (n, i) { var p = out[i - 1]; n.prevBlocks = p && p.night === addDays(n.night, -1) ? p.blocks : null; n.facts = L.nightFacts(n); });
     return out;
   }
-  // Runs (half hours in a row with spins), when he started and stopped, his busiest window.
-  // A half hour with fewer than 30 spins (a few metres) doesn't count as running.
-  var RUN_MIN_SPINS = 30;
-  function nightFacts(n) {
-    var win = new Array(8).fill(0), runs = [], cur = null, first = -1, last = -1, max = 0, maxAt = -1;
-    for (var i = 0; i < 48; i++) {
-      var v = n.slots[i] || 0;
-      win[Math.floor(i / 6)] += v;
-      if (v > max) { max = v; maxAt = i; }
-      if (v >= RUN_MIN_SPINS) {
-        if (first < 0) first = i;
-        last = i;
-        if (cur) cur.end = i + 1; else { cur = { start: i, end: i + 1 }; runs.push(cur); }
-      } else cur = null;
-    }
-    var top = Math.max.apply(null, win), longest = null;
-    runs.forEach(function (r) { if (!longest || r.end - r.start > longest.end - longest.start) longest = r; });
-    return {
-      win: win, runs: runs, first: first, last: last, longest: longest, maxSlot: max, maxAt: maxAt,
-      busiest: top > 0 ? win.indexOf(top) : -1
-    };
-  }
   function slotTime(night, i) { return fmtTime(nightStart(night) + i * SLOT_MS); }
-  function joinList(a) { return a.length < 2 ? a.join("") : a.slice(0, -1).join(", ") + " and " + a[a.length - 1]; }
-  // The night a record belongs to, from the API's record timestamp.
+    // The night a record belongs to, from the API's record timestamp.
   function recordNight(rec) { var t = rec && Date.parse(rec.occurredAt); return t ? liveNightAt(t) : null; }
   function diaryRecords() { return H.records || (D.file && D.file.records) || null; }
   function diaryLifetime() { return H.lifetime || (D.file && D.file.lifetime) || null; }
   function firstRecorded() {
     var t = (diaryLifetime() && Date.parse(diaryLifetime().firstObservedAt)) || H.firstAt || 0;
     return t ? liveNightAt(t) : null;
-  }
-
-  // What he usually does, over the last 30 nights in the diary.
-  function diaryHabits(nights) {
-    var list = nights.slice(-30), n = list.length;
-    var counts = new Array(8).fill(0), wakes = {}, sleeps = [], kms = [], flips = [];
-    list.forEach(function (x) {
-      var f = x.facts;
-      if (f.busiest >= 0) counts[f.busiest]++;
-      if (f.first >= 0) { wakes[f.first] = (wakes[f.first] || 0) + 1; sleeps.push(f.last + 1); }
-      kms.push(x.km);
-      if (x.blocks != null && x.prevBlocks != null && x.blocks !== x.prevBlocks) flips.push(x.blocks > x.prevBlocks);
-    });
-    var wake = -1, wakeN = 0;
-    Object.keys(wakes).forEach(function (k) { if (wakes[k] > wakeN) { wakeN = wakes[k]; wake = Number(k); } });
-    var top = Math.max.apply(null, counts);
-    return {
-      n: n, list: list, counts: counts, top: top, topIdx: top > 0 ? counts.indexOf(top) : -1,
-      ran: list.filter(function (x) { return x.facts.busiest >= 0; }).length,
-      wake: wake, wakeN: wakeN, woke: Object.keys(wakes).reduce(function (a, k) { return a + wakes[k]; }, 0),
-      sleepMin: sleeps.length ? Math.min.apply(null, sleeps) : -1, sleepMax: sleeps.length ? Math.max.apply(null, sleeps) : -1,
-      kmMin: kms.length ? Math.min.apply(null, kms) : null, kmMax: kms.length ? Math.max.apply(null, kms) : null,
-      kmAvg: kms.length ? kms.reduce(function (a, b) { return a + b; }, 0) / kms.length : null,
-      over10: kms.filter(function (k) { return k >= 10; }).length,
-      flips: flips, more: flips.filter(Boolean).length
-    };
-  }
-
-  // A few plain sentences about one night, from its half-hour data.
-  function diaryText(n, ctx) {
-    var f = n.facts, night = n.night, out = [];
-    if (night === ctx.firstNight) out.push("The camera's first night.");
-    if (f.first < 0) { out.push("He took the night off. Not a single spin."); return out.join(" "); }
-    var t = function (i) { return slotTime(night, i); };
-    var L = f.longest, firstRun = f.runs[0], usual = night !== ctx.firstNight && ctx.habits.n >= 3 && ctx.habits.wake === f.first && ctx.habits.wakeN >= 2;
-    var longMin = (L.end - L.start) * 30;
-    var recRun = ctx.rec.run === night ? ", his longest run yet" : "";
-    if (firstRun === L && longMin >= 60) out.push("Up at " + t(f.first) + (usual ? " as usual" : "") + " and ran non-stop until " + t(L.end) + recRun + ".");
-    else {
-      out.push("Up at " + t(f.first) + (usual ? " as usual" : "") + ((firstRun.end - firstRun.start) >= 2 ? " and ran until " + t(firstRun.end) : "") + ".");
-      if (longMin >= 60) out.push("Then ran non-stop from " + t(L.start) + " to " + t(L.end) + recRun + ".");
-      else if (f.runs.length > 1) out.push("He ran in short bursts, none longer than " + longMin + " minutes.");
-    }
-    var others = f.runs.filter(function (r) { return r !== L && r !== firstRun; }).map(function (r) { return t(r.start); });
-    if (others.length > 3) out.push("Several shorter runs after that.");
-    else if (others.length) out.push((others.length === 1 ? "One more run at " : "More runs at ") + joinList(others) + ".");
-    if (ctx.rec.halfHour === night && ctx.rec.halfHourAt) out.push("His busiest half hour ever came at " + fmtTime(ctx.rec.halfHourAt) + ".");
-    out.push("Asleep by " + t(f.last + 1) + ".");
-    if (n.coverageBps < 9500 && night !== ctx.firstNight) out.push("Part of this night's data is missing.");
-    return out.join(" ");
   }
 
   // Who won that night, where the page has the data (the last 2 to 4 weeks).
@@ -2884,7 +2864,7 @@ a.nav-btn:hover { border-color: var(--ink-3); }
 
   var DIARY_SHOWN = 7;
   function renderDiary(now) {
-    var nights = diaryNights(now), habits = diaryHabits(nights), recs = diaryRecords() || {}, life = diaryLifetime();
+    var nights = diaryNights(now), habits = L.diaryHabits(nights), recs = diaryRecords() || {}, life = diaryLifetime();
     var firstNight = firstRecorded() || (nights[0] && nights[0].night);
     var rec = {
       run: recordNight(recs.longestActiveWindowMinutes), halfHour: recordNight(recs.mostWorkHalfHour),
@@ -2928,7 +2908,7 @@ a.nav-btn:hover { border-color: var(--ink-3); }
         return '<article class="dy-entry" aria-label="' + esc(fmtNight(n.night)) + '">' +
           '<div class="dy-day"><span class="dy-date">' + esc(fmtNight(n.night)) + '</span><span class="dy-km">' + fmtKm(n.km) + "<small>km</small></span>" +
           (kmNote ? '<span class="dy-kmnote">' + kmNote + "</span>" : "") + "</div>" +
-          '<div class="dy-body"><p class="dy-text">' + esc(diaryText(n, ctx)) + "</p>" +
+          '<div class="dy-body"><p class="dy-text">' + esc(L.describeNight(n, ctx, function (i) { return slotTime(n.night, i); }, fmtTime)) + "</p>" +
           '<div class="dy-chart" role="img" aria-label="' + esc("Spins per half hour" + (f.busiest >= 0 ? ", busiest " + blockLabel(n.night, f.busiest) : "")) + '"><div class="dy-bars">' + bars + '</div><div class="dy-ticks">' + ticks + "</div></div>" +
           (tags.length ? '<div class="dy-tags">' + tags.join("") + "</div>" : "") +
           (who ? '<p class="dy-who">' + esc(who) + "</p>" : "") + "</div></article>";
@@ -3017,18 +2997,51 @@ a.nav-btn:hover { border-color: var(--ink-3); }
   }
 
   // ----- Views: the game, or the diary at #diary -----
-  function currentView() { return location.hash === "#diary" ? "diary" : "game"; }
+  function currentView() { return /[?&]view=overlay(&|$)/.test(location.search) ? "overlay" : location.hash === "#diary" ? "diary" : "game"; }
   function applyView(moveFocus) {
     var v = currentView();
     if (document.body.dataset.view === v && !moveFocus) return;
     document.body.dataset.view = v;
-    document.title = v === "diary" ? "Squeektoshi's diary · Squeek Picks" : "Squeek Picks";
+    document.title = v === "diary" ? "Squeektoshi's diary · Squeek Picks" : v === "overlay" ? "Squeek Picks overlay" : "Squeek Picks";
+    if (v === "overlay") { if (UI.live) renderOverlay(Date.now()); return; }
     if (v === "diary" && UI.live) renderDiary(Date.now());
     if (moveFocus) {
       window.scrollTo(0, 0);
       if (v === "diary") $("diary-h").focus({ preventScroll: true });
     }
     if (v === "game" && location.hash === "#game") history.replaceState(null, "", location.pathname + location.search);
+  }
+
+  // ----- Stream overlay -----
+  function renderOverlay(now) {
+    if (currentView() !== "overlay" || !UI.live) return;
+    var live = UI.live, s = H.status, age = readingAge();
+    var state = !s ? "offline" : age != null && age > 120e3 ? "offline" : s.state;
+    var el = $("ov-state");
+    el.dataset.state = state;
+    el.textContent = !s ? (H.apiError ? "No data" : "Loading") : { running: "Running", resting: "Resting", offline: "Offline", fault: "Sensor fault" }[state] +
+      (state === "running" && s.speedKmh ? " · " + s.speedKmh.toFixed(1) + " km/h" : "");
+    $("ov-km").textContent = fmtKm(tonightKm()) + " km";
+    var st = liveState(now, now);
+    $("ov-peak").textContent = st && st.busiest.length ? blockLabel(live, st.busiest[0]) : "No spins yet";
+    // Who's winning: the pot when it has tickets tonight, else the points game.
+    var potN = (P.on || P.demo) ? P.nights.get(live) : null, tab = potN && potN.tickets.length ? "pot" : "points";
+    var res = L.provisionalResult(live, st || { km: null, busiest: [], blocks: null, prevBlocks: null });
+    var entries = raceEntries(tab) || [], rows = L.liveStandings(res, entries), lead = "";
+    if (rows.length && rows[0].score.total > 0) {
+      var e = rows[0].entry, top = rows.filter(function (r) { return r.place === 1; }).length;
+      var name = e.kind === "pot" ? (P.demo && e.mine ? "Preview wallet" : ensName(e.address) || shortAddr(e.address)) + (e.tno ? " #" + e.tno : "") : nameOf(e.player_id);
+      var more = rows[0].score.total + " pts";
+      if (tab === "pot") {
+        var out = L.potPayouts(res, entries);
+        if (out.action === "settle") more += " · " + fmtEth(potN.pot * BigInt(out.bps[0]) / BPS) + " ETH";
+      }
+      lead = esc(top > 1 ? top + " tied" : name) + "<small>" + esc(more) + "</small>";
+    } else lead = entries.length ? "Everyone level so far" : "No picks yet tonight";
+    $("ov-lead-label").textContent = tab === "pot" ? "Winning the pot right now" : "Winning right now";
+    $("ov-lead").innerHTML = lead;
+    $("ov-close").textContent = "Picks close in " + fmtIn(nightStart(UI.open) - now);
+    $("ov-url").textContent = siteHost();
   }
 
   // ---------- Render: results for the last finished night ----------
@@ -3562,6 +3575,7 @@ a.nav-btn:hover { border-color: var(--ink-3); }
     renderBanner(); renderMe(); renderLive(now); renderTicket(now); renderRace(now); renderResults(now); renderBoard(now);
     renderPot(); renderDash(); renderPotBoard(); renderBoardTabs(); renderAdmin();
     if (currentView() === "diary") renderDiary(now);
+    renderOverlay(now);
   }
 
   // ---------- Events ----------
