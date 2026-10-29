@@ -40,7 +40,10 @@ function load() { try { return JSON.parse(readFileSync(FILE, "utf8")); } catch (
 const CONFIG = readConfig();
 const old = load();
 const pots = Object.assign({}, old.pots || {});
-const provider = new ethers.JsonRpcProvider(RPC_URL);
+// Some RPC plans limit event reads; the public endpoint is the fallback for those.
+const PUBLIC_RPC = "https://ethereum-sepolia-rpc.publicnode.com";
+const publicProvider = RPC_URL === PUBLIC_RPC ? null : new ethers.JsonRpcProvider(PUBLIC_RPC);
+let provider = new ethers.JsonRpcProvider(RPC_URL);
 let latest;
 try { latest = await provider.getBlockNumber(); }
 catch (e) { console.log(`::error::Couldn't reach the Sepolia RPC: ${(e.shortMessage || e.message || e).toString().slice(0, 300)}`); process.exit(1); }
@@ -64,7 +67,11 @@ for (const addr of addrs) {
     let logs;
     try { logs = await provider.getLogs({ address: addr, fromBlock: from, toBlock: to }); }
     catch (e) {
-      if (chunk <= 500) { console.log(`::error::Reading pot ${addr} events failed: ${(e.shortMessage || e.message || e).toString().slice(0, 300)}`); process.exit(1); }
+      if (chunk <= 500) {
+        const why = JSON.stringify((e.info && (e.info.error || e.info.responseBody)) || e.error || e.shortMessage || e.message || String(e)).slice(0, 400);
+        if (publicProvider && provider !== publicProvider) { console.log(`Event reads failed on SEPOLIA_RPC_URL (${why}); using the public endpoint.`); provider = publicProvider; chunk = 10000; continue; }
+        console.log(`::error::Reading pot ${addr} events failed: ${why}`); process.exit(1);
+      }
       chunk = Math.floor(chunk / 4); continue;
     }
     for (const log of logs) {
