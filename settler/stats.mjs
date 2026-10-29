@@ -26,6 +26,7 @@ const ABI = {
 };
 
 process.on("unhandledRejection", (e) => { console.error(`::error::${e && e.message || e}`); process.exit(1); });
+process.on("uncaughtException", (e) => { console.error(`::error::${e && e.message || e}`); process.exit(1); });
 
 function readConfig() {
   try {
@@ -40,7 +41,9 @@ const CONFIG = readConfig();
 const old = load();
 const pots = Object.assign({}, old.pots || {});
 const provider = new ethers.JsonRpcProvider(RPC_URL);
-const latest = await provider.getBlockNumber();
+let latest;
+try { latest = await provider.getBlockNumber(); }
+catch (e) { console.log(`::error::Couldn't reach the Sepolia RPC: ${(e.shortMessage || e.message || e).toString().slice(0, 300)}`); process.exit(1); }
 
 const addrs = [];
 for (const a of [env.POT_ADDRESS, CONFIG.POT_ADDRESS].concat(Array.isArray(CONFIG.OLD_POTS) ? CONFIG.OLD_POTS : [])) {
@@ -60,7 +63,10 @@ for (const addr of addrs) {
     const to = Math.min(latest, from + chunk - 1);
     let logs;
     try { logs = await provider.getLogs({ address: addr, fromBlock: from, toBlock: to }); }
-    catch (e) { if (chunk <= 500) throw e; chunk = Math.floor(chunk / 4); continue; }
+    catch (e) {
+      if (chunk <= 500) { console.log(`::error::Reading pot ${addr} events failed: ${(e.shortMessage || e.message || e).toString().slice(0, 300)}`); process.exit(1); }
+      chunk = Math.floor(chunk / 4); continue;
+    }
     for (const log of logs) {
       let ev;
       try { ev = iface.parseLog(log); } catch { continue; }
