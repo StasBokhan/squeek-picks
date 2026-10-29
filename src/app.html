@@ -437,6 +437,10 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
 .dash-empty { display: grid; gap: 12px; justify-items: start; margin-top: 18px; }
 .dash-points { margin: 16px 0 0; font-size: 14px; color: var(--ink-2); }
 
+/* All-time numbers under the header */
+.proof { margin: -10px 0 0; display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 14px; color: var(--ink-3); font-weight: 600; }
+.proof b { color: var(--ink); font: 600 17px/1.2 var(--font-display); font-variant-numeric: tabular-nums; margin-right: 4px; }
+
 /* Views: the game, or Squeektoshi's diary (#diary) */
 body:not([data-view="diary"]) .diary-only { display: none !important; }
 body[data-view="diary"] .game-only { display: none !important; }
@@ -692,6 +696,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     </div>
   </header>
 
+  <p class="proof game-only" id="proof" hidden></p>
   <div class="banner" id="banner" role="status" hidden></div>
 
   <!-- Squeektoshi's diary: shown instead of the game at #diary -->
@@ -1323,7 +1328,9 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
       fetchAll(function () {
         return G.sb.from("picks").select("player_id,night,distance_km,peak_block,more_blocks")
           .gte("night", since).order("night").order("player_id");
-      })
+      }),
+      // All-time calls, for the numbers under the header (locked nights plus your own).
+      G.sb.from("picks").select("night", { count: "exact", head: true }).then(function (r) { G.calls = r && r.count != null ? r.count : null; }, function () {})
     ]).then(function (r) {
       G.players = new Map(r[0].map(function (p) { return [p.id, p.nickname]; }));
       G.picks = r[1].map(function (p) {
@@ -1591,6 +1598,27 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     P.payouts = payouts;
   }
 
+  // A paid-out night whose payout event is too old for the RPC: what it paid follows from
+  // the same rules the payout bot used, so work it out (the rounding dust went to the first).
+  function fillPayouts() {
+    var now = Date.now();
+    P.pots.forEach(function (s) {
+      s.nights.forEach(function (rec, night) {
+        if (rec.status !== 1 || s.payouts.has(night) || !rec.tickets.length) return;
+        var out = L.potPayouts(resolve(night, now), rec.tickets.filter(function (t) { return !t.refunded; }));
+        if (out.action !== "settle") return;
+        var byId = new Map(rec.tickets.map(function (t) { return [t.player_id, t]; }));
+        var amounts = out.bps.map(function (b) { return rec.pot * BigInt(b) / BPS; });
+        amounts[0] += rec.pot - amounts.reduce(function (a, x) { return a + x; }, 0n);
+        s.payouts.set(night, {
+          tickets: s.version >= 2 ? out.winners.map(function (w) { return byId.get(w).index; }) : null,
+          winners: out.winners.map(function (w) { return byId.get(w).address; }),
+          amounts: amounts, tx: null, computed: true
+        });
+      });
+    });
+  }
+
   function potRefresh() {
     if (!P.cur) return Promise.resolve();
     var nights = potNights();
@@ -1625,6 +1653,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
       }
       return Promise.all(jobs);
     }).then(function () {
+      fillPayouts();
       mergeNights(); // payouts may have arrived since
       // Look up ENS names for every wallet the page shows.
       var addrs = [];
@@ -1662,6 +1691,8 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
           s.logsTo = end;
           return step(end + 1);
         }, function (e) {
+          // Public endpoints keep only a few hours of events: skip what's gone.
+          if (/pruned|history/i.test(String(e && (e.message || e)))) { s.logsTo = end; return step(end + 1); }
           if (chunk <= 1000) throw e;
           chunk = Math.floor(chunk / 4);
           s.logChunk = chunk;
@@ -2025,7 +2056,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
         var paid = paidMap(s);
         var winners = rn.tickets.filter(function (t) { return paid.has(t.player_id); })
           .sort(function (a, b) { return Number(paid.get(b.player_id) - paid.get(a.player_id)); });
-        body = ticketTable(night, winners, amountCol(paid)) + '<p class="hint">Paid out. ' + txLink(s.tx) + "</p>";
+        body = ticketTable(night, winners, amountCol(paid)) + '<p class="hint">Paid out. ' + (s.tx ? txLink(s.tx) : addrLink(rn.src.addr, "See the pot on Etherscan")) + "</p>";
         var got = 0n, wins = 0;
         mineIds.forEach(function (id) { if (paid.has(id)) { got += paid.get(id); wins++; } });
         if (got > 0n) {
@@ -2821,8 +2852,12 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
   var D = { file: null, all: false };
   function loadDiary() {
     if (H.demo || typeof fetch !== "function") return Promise.resolve();
-    return fetch("data/diary.json", { cache: "no-cache" }).then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (j) { if (j && j.nights) D.file = j; }, function () { /* no saved nights yet */ });
+    return Promise.all([
+      fetch("data/diary.json", { cache: "no-cache" }).then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { if (j && j.nights) D.file = j; }, function () { /* no saved nights yet */ }),
+      fetch("data/stats.json", { cache: "no-cache" }).then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { if (j) D.stats = j; }, function () { /* not counted yet */ })
+    ]);
   }
   function hasData(n) { return n && (n.coverageBps || n.work); }
   function diaryNights(now) {
@@ -3055,6 +3090,20 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     $("ov-lead").innerHTML = lead;
     $("ov-close").textContent = "Picks close in " + fmtIn(nightStart(UI.open) - now);
     $("ov-url").textContent = siteHost();
+  }
+
+  // ----- All-time numbers under the header -----
+  function renderProof() {
+    var st = D.stats || {}, parts = [];
+    var players = G.mode !== "local" && G.players.size ? G.players.size : null;
+    var calls = G.calls != null ? G.calls : st.calls;
+    if (players) parts.push("<span><b>" + fmtInt(players) + "</b>" + (players === 1 ? "player" : "players") + "</span>");
+    if (calls) parts.push("<span><b>" + fmtInt(calls) + "</b>" + (calls === 1 ? "call made" : "calls made") + "</span>");
+    if (st.potTickets) parts.push("<span><b>" + fmtInt(st.potTickets) + "</b>pot " + (st.potTickets === 1 ? "ticket" : "tickets") + "</span>");
+    if (st.paidWei && st.paidWei !== "0") parts.push("<span><b>" + fmtEth(BigInt(st.paidWei)) + "</b>test ETH won</span>");
+    var el = $("proof");
+    el.hidden = H.demo || parts.length < 2;
+    el.innerHTML = parts.join("");
   }
 
   // ---------- Render: results for the last finished night ----------
@@ -3589,6 +3638,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     renderPot(); renderDash(); renderPotBoard(); renderBoardTabs(); renderAdmin();
     if (currentView() === "diary") renderDiary(now);
     renderOverlay(now);
+    renderProof();
   }
 
   // ---------- Events ----------

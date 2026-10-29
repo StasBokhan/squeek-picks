@@ -1,34 +1,42 @@
 // All-time numbers for the page's stats line, saved to data/stats.json once a day:
 // pot tickets sold, wallets that played, test ETH paid to winners and refunded, nights
-// paid out. It reads each pot's events from the chain, picking up where the last run
-// stopped, so every run only reads the newest blocks.
+// paid out, plus the points game's players and calls.
+//
+// Pot numbers come from each pot's own state, night by night (public RPC endpoints only
+// keep a few hours of event history, so events can't be counted later). Nights older than
+// 30 days are kept as they were saved; newer ones are read again each run, since refunds
+// can still come in.
 //
 // Settings (environment variables):
 //   SEPOLIA_RPC_URL, POT_ADDRESS, CONFIG_FILE   as for the payout bot
-//   STATS_FILE   where to write (optional, data/stats.json in the repository)
-//   FIRST_SCAN_DAYS  how far back a pot's first scan starts (optional, 45)
+//   STATS_FILE        where to write (optional, data/stats.json in the repository)
+//   FIRST_SCAN_NIGHTS how many nights back a pot's first scan starts (optional, 45)
+//   NOW_MS            override the clock, for tests only
 
+import { createRequire } from "node:module";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import vm from "node:vm";
 import { ethers } from "ethers";
 
+const require = createRequire(import.meta.url);
+const L = require("../src/logic.js");
 const env = process.env;
 const RPC_URL = env.SEPOLIA_RPC_URL || "https://ethereum-sepolia-rpc.publicnode.com";
 const CONFIG_FILE = env.CONFIG_FILE || new URL("../config.js", import.meta.url);
 const FILE = env.STATS_FILE || fileURLToPath(new URL("../data/stats.json", import.meta.url));
-// A pot's first scan starts this many days back. Public endpoints only keep about a week
-// or two of event history, and a new pot is added to config.js when it's deployed.
-const FIRST_SCAN_DAYS = Number(env.FIRST_SCAN_DAYS || 10);
-const BLOCKS_PER_DAY = 7200; // Sepolia: a block every 12 seconds
+const FIRST_SCAN_NIGHTS = Number(env.FIRST_SCAN_NIGHTS || 45);
+const NOW = env.NOW_MS ? Number(env.NOW_MS) : Date.now();
+const FROZEN_AFTER = 30; // nights; older ones are final
 const ABI = {
   1: JSON.parse(readFileSync(new URL("../contracts/SqueekPotV1.json", import.meta.url), "utf8")).abi,
   2: JSON.parse(readFileSync(new URL("../contracts/SqueekPot.json", import.meta.url), "utf8")).abi,
 };
 
-process.on("unhandledRejection", (e) => { console.error(`::error::${e && e.message || e}`); process.exit(1); });
-process.on("uncaughtException", (e) => { console.error(`::error::${e && e.message || e}`); process.exit(1); });
+const fail = (m) => { console.log(`::error::${String(m).slice(0, 400)}`); process.exit(1); };
+process.on("unhandledRejection", (e) => fail(e && (e.shortMessage || e.message) || e));
+process.on("uncaughtException", (e) => fail(e && (e.shortMessage || e.message) || e));
 
 function readConfig() {
   try {
@@ -41,75 +49,60 @@ function load() { try { return JSON.parse(readFileSync(FILE, "utf8")); } catch (
 
 const CONFIG = readConfig();
 const old = load();
-const pots = Object.assign({}, old.pots || {});
-// Some RPC plans limit event reads; the public endpoint is the fallback for those.
-const PUBLIC_RPC = "https://ethereum-sepolia-rpc.publicnode.com";
-const publicProvider = RPC_URL === PUBLIC_RPC ? null : new ethers.JsonRpcProvider(PUBLIC_RPC);
-let provider = new ethers.JsonRpcProvider(RPC_URL);
-let latest;
-try { latest = await provider.getBlockNumber(); }
-catch (e) { console.log(`::error::Couldn't reach the Sepolia RPC: ${(e.shortMessage || e.message || e).toString().slice(0, 300)}`); process.exit(1); }
+const provider = new ethers.JsonRpcProvider(RPC_URL);
+const live = L.liveNightAt(NOW), frozenBefore = L.addDays(live, -FROZEN_AFTER);
 
 const addrs = [];
 for (const a of [env.POT_ADDRESS, CONFIG.POT_ADDRESS].concat(Array.isArray(CONFIG.OLD_POTS) ? CONFIG.OLD_POTS : [])) {
   if (a && ethers.isAddress(a) && !addrs.includes(ethers.getAddress(a))) addrs.push(ethers.getAddress(a));
 }
 
+const pots = {};
 for (const addr of addrs) {
   if ((await provider.getCode(addr)) === "0x") { console.log(`No contract at ${addr}, skipped.`); continue; }
   let version = 1;
   try { version = Number(await new ethers.Contract(addr, ["function VERSION() view returns (uint256)"], provider).VERSION()); } catch { /* version 1 */ }
-  const iface = new ethers.Interface(ABI[version] || ABI[2]);
-  const p = pots[addr] || { version, scannedTo: Math.max(0, latest - FIRST_SCAN_DAYS * BLOCKS_PER_DAY), tickets: 0, wallets: [], paidWei: "0", refundedWei: "0", nightsPaid: 0, nightsCancelled: 0 };
-  const wallets = new Set(p.wallets.map((w) => w.toLowerCase()));
-  let paid = BigInt(p.paidWei), refunded = BigInt(p.refundedWei), chunk = 10000;
-  let from = p.scannedTo + 1;
-  while (from <= latest) {
-    const to = Math.min(latest, from + chunk - 1);
-    let logs;
-    try { logs = await provider.getLogs({ address: addr, fromBlock: from, toBlock: to }); }
-    catch (e) {
-      const msg = JSON.stringify((e.info && (e.info.error || e.info.responseBody)) || e.error || e.message || String(e));
-      if (/pruned|history/i.test(msg)) {
-        // Blocks this old are gone from the endpoint; skip ahead and note it.
-        console.log(`::warning::Blocks ${from}-${to} of pot ${addr} are no longer available from the RPC; counting from later blocks.`);
-        p.scannedTo = to; from = to + 1; continue;
-      }
-      if (chunk <= 500) {
-        const why = JSON.stringify((e.info && (e.info.error || e.info.responseBody)) || e.error || e.shortMessage || e.message || String(e)).slice(0, 400);
-        if (publicProvider && provider !== publicProvider) { console.log(`Event reads failed on SEPOLIA_RPC_URL (${why}); using the public endpoint.`); provider = publicProvider; chunk = 10000; continue; }
-        console.log(`::error::Reading pot ${addr} events failed: ${why}`); process.exit(1);
-      }
-      chunk = Math.floor(chunk / 4); continue;
-    }
-    for (const log of logs) {
-      let ev;
-      try { ev = iface.parseLog(log); } catch { continue; }
-      if (!ev) continue;
-      if (ev.name === "TicketBought") { p.tickets++; wallets.add(String(ev.args.player).toLowerCase()); }
-      else if (ev.name === "NightSettled") { p.nightsPaid++; for (const a of ev.args.amounts) paid += BigInt(a); }
-      else if (ev.name === "NightVoided") p.nightsCancelled++;
-      else if (ev.name === "Refunded") refunded += BigInt(ev.args.amount);
-    }
-    p.scannedTo = to;
-    from = to + 1;
+  const pot = new ethers.Contract(addr, ABI[version] || ABI[2], provider);
+  const prev = (old.pots && old.pots[addr]) || {};
+  const nights = Object.assign({}, prev.nights || {});
+  const saved = Object.keys(nights).sort();
+  // From the earliest saved night (or FIRST_SCAN_NIGHTS back) to tonight; frozen nights stay.
+  let night = saved.length ? saved[0] : L.addDays(live, -FIRST_SCAN_NIGHTS);
+  for (; night <= live; night = L.addDays(night, 1)) {
+    if (night < frozenBefore && nights[night]) continue;
+    const n = await pot.getNight(L.nightToDay(night));
+    const tickets = L.potTickets(version, n);
+    if (!tickets.length) { delete nights[night]; continue; }
+    const price = BigInt(n.price);
+    nights[night] = {
+      status: Number(n.status),
+      tickets: tickets.length,
+      wallets: [...new Set(tickets.map((t) => t.address.toLowerCase()))],
+      potWei: BigInt(n.pot).toString(),
+      // A refund pays back each of the wallet's tickets at the night's price.
+      refundedWei: (price * BigInt(tickets.filter((t) => t.refunded).length)).toString(),
+    };
   }
-  p.version = version;
-  p.wallets = [...wallets].sort();
-  p.paidWei = paid.toString();
-  p.refundedWei = refunded.toString();
-  pots[addr] = p;
-  console.log(`Pot ${addr} (version ${version}): ${p.tickets} tickets, ${ethers.formatEther(paid)} ETH paid, scanned to block ${p.scannedTo}.`);
+  const list = Object.values(nights);
+  pots[addr] = {
+    version,
+    tickets: list.reduce((a, x) => a + x.tickets, 0),
+    paidWei: list.filter((x) => x.status === 1).reduce((a, x) => a + BigInt(x.potWei), 0n).toString(),
+    refundedWei: list.reduce((a, x) => a + BigInt(x.refundedWei), 0n).toString(),
+    nightsPaid: list.filter((x) => x.status === 1).length,
+    nightsCancelled: list.filter((x) => x.status === 2).length,
+    nights: Object.fromEntries(Object.keys(nights).sort().map((k) => [k, nights[k]])),
+  };
+  console.log(`Pot ${addr} (version ${version}): ${pots[addr].tickets} tickets, ${ethers.formatEther(pots[addr].paidWei)} ETH paid out.`);
 }
 
-// The free points game, from Supabase (only picks for nights that have started are public).
+// The free points game, from Supabase (picks are public once their night has started).
 async function count(table) {
   if (!CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_ANON_KEY) return null;
   const res = await fetch(CONFIG.SUPABASE_URL.replace(/\/$/, "") + "/rest/v1/" + table + "?select=*&limit=1", {
     headers: { apikey: CONFIG.SUPABASE_ANON_KEY, authorization: "Bearer " + CONFIG.SUPABASE_ANON_KEY, prefer: "count=exact" },
   });
-  const range = res.headers.get("content-range") || "";
-  const n = Number(range.split("/")[1]);
+  const n = Number((res.headers.get("content-range") || "").split("/")[1]);
   return res.ok && Number.isFinite(n) ? n : null;
 }
 let players = null, calls = null;
@@ -117,23 +110,23 @@ try { [players, calls] = await Promise.all([count("players"), count("picks")]); 
 catch (e) { console.log(`::warning::Points game counts unavailable (${e.message}).`); }
 
 const all = Object.values(pots);
-const wallets = new Set(all.flatMap((p) => p.wallets));
+const nightsAll = all.flatMap((p) => Object.values(p.nights));
 const next = {
-  about: "All-time numbers for the stats line on the page, updated once a day. Pot numbers come from the pots' events on Sepolia; players and calls from the points game.",
+  about: "All-time numbers for the stats line on the page, updated once a day. Pot numbers come from each pot's state on Sepolia; players and calls from the points game.",
   players: players != null ? players : old.players != null ? old.players : null,
   calls: calls != null ? calls : old.calls != null ? old.calls : null,
   potTickets: all.reduce((a, p) => a + p.tickets, 0),
-  potWallets: wallets.size,
+  potWallets: new Set(nightsAll.flatMap((x) => x.wallets)).size,
   paidWei: all.reduce((a, p) => a + BigInt(p.paidWei), 0n).toString(),
   refundedWei: all.reduce((a, p) => a + BigInt(p.refundedWei), 0n).toString(),
   nightsPaid: all.reduce((a, p) => a + p.nightsPaid, 0),
   pots,
 };
-const strip = (o) => JSON.stringify(Object.assign({}, o, { updatedAt: undefined, pots: Object.fromEntries(Object.entries(o.pots || {}).map(([k, v]) => [k, Object.assign({}, v, { scannedTo: 0 })])) }));
+const strip = (o) => JSON.stringify(Object.assign({}, o, { updatedAt: undefined }));
 if (strip(old) === strip(next)) {
   console.log("Stats unchanged.");
 } else {
-  next.updatedAt = new Date().toISOString();
+  next.updatedAt = new Date(NOW).toISOString();
   mkdirSync(dirname(FILE), { recursive: true });
   writeFileSync(FILE, JSON.stringify(next, null, 1) + "\n");
   console.log(`Saved: ${next.players} players, ${next.calls} calls, ${next.potTickets} pot tickets, ${ethers.formatEther(next.paidWei)} ETH paid out.`);
