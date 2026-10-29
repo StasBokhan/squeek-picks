@@ -47,6 +47,7 @@ jobs:
           key: announce-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: announce-
       - name: Post to Telegram
+        id: post
         if: always()
         working-directory: settler
         env:
@@ -55,9 +56,17 @@ jobs:
           SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
           POT_ADDRESS: ${{ vars.POT_ADDRESS }}
           TELEGRAM_TEST: ${{ inputs.telegram_test }}
-        run: node announce.mjs
+        # Its memory is only saved when it changed, so frequent runs don't pile up copies.
+        run: |
+          before=$(sha1sum ../.bot-state/announce.json 2>/dev/null || true)
+          set +e
+          node announce.mjs
+          code=$?
+          after=$(sha1sum ../.bot-state/announce.json 2>/dev/null || true)
+          if [ "$before" != "$after" ]; then echo "changed=true" >> "$GITHUB_OUTPUT"; fi
+          exit $code
       - name: Remember what was posted
-        if: always() && hashFiles('.bot-state/**') != ''
+        if: always() && steps.post.outputs.changed == 'true'
         uses: actions/cache/save@v4
         with:
           path: .bot-state
