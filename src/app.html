@@ -297,13 +297,6 @@ button.primary:disabled { background: var(--raise); color: var(--ink-3); cursor:
 .kv .v { font: 600 20px var(--font-display); font-variant-numeric: tabular-nums; text-align: right; }
 .kv .d { grid-column: 1 / -1; font-size: 13px; color: var(--ink-3); }
 .kv .v.void, .kv .v.wait { color: var(--ink-3); font: 700 14px var(--font-body); }
-.mini { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; align-items: end; height: 54px; margin-top: 6px; grid-column: 1 / -1; }
-.mini div { display: grid; align-content: end; gap: 3px; height: 100%; }
-.mini i { display: block; background: var(--mark-blue); border-radius: 4px 4px 1px 1px; min-height: 2px; }
-.mini span { font: 600 10px var(--font-body); color: var(--ink-3); text-align: center; }
-.split { height: 8px; border-radius: 4px; background: var(--rule); overflow: hidden; display: flex; gap: 2px; grid-column: 1 / -1; margin-top: 6px; }
-.split i { display: block; height: 100%; background: var(--mark-blue); }
-.split i + i { background: var(--mark-typical); }
 .yours { padding: 14px 16px; border-radius: 16px; background: var(--blue-soft); font-size: 14px; color: var(--ink-2); }
 .yours strong { color: var(--ink); }
 .pts { font: 600 30px/1 var(--font-display); color: var(--ink); }
@@ -326,13 +319,19 @@ tr.mine td:last-child { border-radius: 0 12px 12px 0; }
 /* Rules */
 .rules-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 22px; margin-top: 16px; }
 
+/* Your picks and the pot, side by side; the pot drops under the picks on narrow screens. */
+.picks-row { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+.picks-row > .ticket { flex: 999 1 560px; }
+.picks-row > .pot { flex: 1 1 340px; }
+
 /* Pot */
-.pot { margin-top: 22px; padding: 20px; border-radius: 20px; background: var(--pot-bg); border: 1px solid var(--gold-soft); display: grid; gap: 14px; }
+.pot { display: grid; gap: 14px; align-content: start; }
 .pot-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
-.pot-head h3 { margin: 0; font: 600 21px/1.2 var(--font-display); }
-.pot-for { margin: -6px 0 0; font-size: 14px; color: var(--ink-2); }
+.pot .pot-head h2 { font-size: 22px; }
+.pot-for { margin: 0; font-size: 14px; color: var(--ink-2); }
 .pot-for strong { color: var(--ink); }
-.pot-num { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.pot-num { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 16px; border-radius: 18px; background: var(--pot-bg); border: 1px solid var(--gold-soft); }
+.pot-num div:first-child { grid-column: 1 / -1; }
 .pot-num div { display: grid; gap: 2px; min-width: 0; }
 .pot-num .label { font-size: 13px; font-weight: 700; color: var(--ink-3); }
 .pot-num .val { font: 600 22px/1.2 var(--font-display); font-variant-numeric: tabular-nums; }
@@ -433,6 +432,107 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
 }
 .dash-empty { display: grid; gap: 12px; justify-items: start; margin-top: 18px; }
 .dash-points { margin: 16px 0 0; font-size: 14px; color: var(--ink-2); }
+
+/* Who's winning right now */
+.race { display: grid; gap: 22px; }
+.race-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 14px; }
+.race-title { display: grid; gap: 4px; min-width: 0; flex: 1 1 320px; }
+.race .race-title h2 { font-size: clamp(24px, 4vw, 30px); }
+.live-pill { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; background: color-mix(in srgb, var(--good) 14%, transparent); color: var(--good); font: 800 14px/1.2 var(--font-body); white-space: nowrap; }
+.live-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; animation: pulse 1.6s ease-out infinite; }
+.live-pill.wait { color: var(--ink-3); }
+.live-pill.wait .dot { animation: none; }
+@media (prefers-reduced-motion: reduce) { .live-pill .dot { animation: none; } }
+.race-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.rt { background: var(--raise); border-radius: 18px; padding: 14px 16px; display: grid; gap: 2px; align-content: start; min-width: 0; }
+.rt .label { font-size: 13px; color: var(--ink-3); font-weight: 700; }
+.rt .val { font: 600 30px/1.15 var(--font-display); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.rt .val small { font: 700 16px var(--font-body); color: var(--ink-3); margin-left: 4px; }
+.rt .note { font-size: 12px; color: var(--ink-3); font-weight: 700; }
+.track-wrap { display: grid; gap: 8px; }
+.track-cap { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 12px; }
+.track-cap strong { font-weight: 800; font-size: 16px; }
+.track-cap span { font-size: 13px; color: var(--ink-3); }
+.track { position: relative; height: 104px; margin: 0 30px; }
+.track::before { content: ""; position: absolute; left: 0; right: 0; top: 64px; height: 8px; border-radius: 4px; background: var(--raise); }
+.track .run { position: absolute; left: 0; top: 64px; height: 8px; border-radius: 4px; background: var(--gold); }
+.pin { position: absolute; bottom: 40px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; }
+.pin .av { width: 26px; height: 26px; box-shadow: 0 0 0 2px var(--panel); }
+.pin i { width: 2px; background: var(--rule); }
+.pin.passed { opacity: .45; }
+.pin.you { z-index: 1; }
+.pin.you .av { box-shadow: 0 0 0 2px var(--panel), 0 0 0 4px var(--blue); }
+.ham { position: absolute; top: 51px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 3px; z-index: 2; }
+.ham img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; object-position: 45% 45%; box-shadow: 0 0 0 3px var(--gold); background: #000; }
+.ham span { padding: 1px 9px; border-radius: 999px; background: var(--gold); color: var(--on-gold); font: 800 12px/1.5 var(--font-body); white-space: nowrap; }
+.track-scale { position: relative; height: 18px; margin: 0 30px; font: 700 12px/1.5 var(--font-body); color: var(--ink-3); }
+.track-scale span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
+.stand-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
+.stand-head h3 { margin: 0; font: 600 22px/1.2 var(--font-display); }
+.slist { display: grid; gap: 6px; }
+.srow { display: grid; grid-template-columns: 30px 36px minmax(0, 1fr) auto 48px; grid-template-areas: "rank move who chips total"; align-items: center; gap: 8px 14px; padding: 12px 14px; border-radius: 16px; }
+.srow.has-prize { grid-template-columns: 30px 36px minmax(0, 1fr) auto 48px 104px; grid-template-areas: "rank move who chips total prize"; }
+.srow.first { background: color-mix(in srgb, #FFB020 8%, transparent); }
+.srow.you { background: var(--blue-soft); }
+.srow .rk { grid-area: rank; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font: 800 14px/1 var(--font-body); background: var(--rule); color: var(--ink); }
+.srow.first .rk { background: #FFB020; color: #171A21; }
+.srow .mv { grid-area: move; font: 800 12px/1.2 var(--font-body); color: var(--ink-3); white-space: nowrap; }
+.srow .mv.up { color: var(--good); }
+.srow .mv.down { color: var(--bad); }
+.srow .ent { grid-area: who; display: grid; gap: 2px; min-width: 0; }
+.srow .sw-name { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
+.srow .sw-name .who { font-weight: 800; }
+.srow .sw-name .tno, .srow .sw-name .tag { margin: 0; }
+.srow .picks { font-size: 13px; color: var(--ink-3); }
+.srow .chips { grid-area: chips; display: flex; flex-wrap: wrap; gap: 6px; }
+.pt { padding: 4px 9px; border-radius: 999px; font: 800 12px/1.4 var(--font-body); background: var(--raise); color: var(--ink-3); white-space: nowrap; }
+.pt.on { background: color-mix(in srgb, var(--gold) 16%, transparent); color: var(--accent-ink); }
+.srow .tot { grid-area: total; font: 600 24px/1 var(--font-display); text-align: right; font-variant-numeric: tabular-nums; }
+.srow .prize { grid-area: prize; text-align: right; font: 800 14px/1.3 var(--font-body); color: var(--accent-ink); }
+.srow .prize.none { color: var(--ink-3); }
+@media (max-width: 760px) {
+  .srow, .srow.has-prize { grid-template-columns: 30px minmax(0, 1fr) auto; grid-template-areas: "rank who total" "move who prize" ". chips chips"; gap: 6px 12px; padding: 12px; }
+  .srow .mv { text-align: center; align-self: start; }
+  .srow .prize { align-self: start; }
+  .pt { padding: 3px 8px; font-size: 11.5px; }
+}
+@media (max-width: 560px) {
+  .race-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .race-tiles .rt:last-child { grid-column: 1 / -1; }
+  .rt { padding: 12px 14px; }
+  .rt .val { font-size: 24px; }
+  .pin .av { width: 22px; height: 22px; }
+}
+.race-foot { margin: 0; font-size: 13px; color: var(--ink-3); }
+.race-more { justify-self: start; }
+
+/* Last night's results header and the share window */
+.res-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.share-btn {
+  appearance: none; cursor: pointer; flex: none;
+  display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 16px;
+  border: 0; border-radius: 14px; background: var(--gold); color: var(--on-gold); font: 800 15px/1 var(--font-body);
+}
+.share-btn:hover { filter: brightness(1.05); }
+.share-dlg {
+  width: min(740px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); box-sizing: border-box; overflow: auto;
+  padding: 26px; border-radius: 26px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, .5);
+}
+.share-dlg[open] { display: grid; gap: 16px; }
+.share-dlg::backdrop { background: rgba(10, 12, 16, .6); }
+.sd-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.sd-head h2 { margin: 0; font: 600 26px/1.2 var(--font-display); }
+.sd-head .icon-btn { width: 40px; height: 40px; }
+.share-dlg .tabs { justify-self: start; }
+.sd-card { display: block; width: 100%; height: auto; aspect-ratio: 1200 / 675; border-radius: 16px; background: #171A21; box-shadow: 0 0 0 1px var(--rule); }
+.sd-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.sd-actions > * { flex: 1 1 150px; height: 52px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 16px; padding: 0 18px; }
+.sd-actions > .primary { flex-basis: 200px; }
+.btn-2 { background: var(--raise); color: var(--ink); border: 1px solid var(--rule); font: 800 16px/1.2 var(--font-body); text-decoration: none; }
+.btn-2:hover { border-color: var(--ink-3); }
+.btn-2[aria-disabled="true"] { color: var(--ink-3); pointer-events: none; }
+@media (max-width: 560px) { .share-dlg { padding: 18px; border-radius: 20px; gap: 14px; } .sd-head h2 { font-size: 22px; } }
 </style>
 <!-- BODY -->
 <div class="wrap">
@@ -502,7 +602,33 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     </figure>
   </section>
 
-  <div class="grid-2">
+  <section class="panel race" id="race" aria-labelledby="race-h">
+    <div class="race-head">
+      <div class="race-title">
+        <span class="eyebrow" id="race-night">Tonight</span>
+        <h2 id="race-h">Who's winning right now</h2>
+        <p class="sub" id="race-sub"></p>
+      </div>
+      <span class="live-pill" id="race-pill"><span class="dot" aria-hidden="true"></span><span id="race-pill-text">Live</span></span>
+    </div>
+    <div class="race-tiles" id="race-tiles"></div>
+    <div class="track-wrap" id="track-wrap">
+      <div class="track-cap"><strong>The distance race</strong><span>Every pin is a distance guess. The guess closest to his final distance wins the distance points.</span></div>
+      <div class="track" id="track" role="img"></div>
+      <div class="track-scale" id="track-scale" aria-hidden="true"></div>
+    </div>
+    <div class="stand-head">
+      <h3>Standings</h3>
+      <div class="tabs" role="tablist" aria-label="Standings" id="race-tabs" hidden>
+        <button type="button" role="tab" id="rtab-pot" aria-controls="race-list" aria-selected="false" tabindex="-1">Pot tickets</button>
+        <button type="button" role="tab" id="rtab-points" aria-controls="race-list" aria-selected="true">Points game</button>
+      </div>
+    </div>
+    <div id="race-list"></div>
+    <p class="race-foot" id="race-foot"></p>
+  </section>
+
+  <div class="picks-row">
     <section class="panel ticket" aria-labelledby="ticket-h">
       <div class="ticket-head">
         <span class="eyebrow">Your picks for the next night</span>
@@ -556,28 +682,20 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
           <p class="hint save-note">Free. Saved picks score on the points leaderboard. They don't buy a pot ticket.</p>
         </div>
       </form>
-
-      <div class="pot" id="pot" hidden>
-        <div class="pot-head">
-          <h3>Nightly pot</h3>
-          <span class="chip">Sepolia testnet</span>
-        </div>
-        <p class="pot-for" id="pot-for"></p>
-        <div class="pot-num" id="pot-num"></div>
-        <p class="payouts" id="pot-payouts"></p>
-        <div id="pot-me"></div>
-        <div class="row" id="pot-actions"></div>
-        <p class="msg" id="pot-msg" role="status"></p>
-        <p class="hint">Tickets cost Sepolia test ETH, which has no value. A ticket uses the three picks above, and everyone can see pot picks on the blockchain.</p>
-      </div>
     </section>
 
-    <section class="panel" aria-labelledby="crowd-h">
-      <span class="eyebrow">Tonight</span>
-      <h2 id="crowd-h">What players predicted</h2>
-      <p class="sub" id="crowd-sub"></p>
-      <div class="stack" id="crowd"></div>
-      <div id="crowd-pot"></div>
+    <section class="panel pot" id="pot" aria-labelledby="pot-h" hidden>
+      <div class="pot-head">
+        <h2 id="pot-h">Nightly pot</h2>
+        <span class="chip">Sepolia testnet</span>
+      </div>
+      <p class="pot-for" id="pot-for"></p>
+      <div class="pot-num" id="pot-num"></div>
+      <p class="payouts" id="pot-payouts"></p>
+      <div id="pot-me"></div>
+      <div class="row" id="pot-actions"></div>
+      <p class="msg" id="pot-msg" role="status"></p>
+      <p class="hint">Tickets cost Sepolia test ETH, which has no value. A ticket uses your three picks, and everyone can see pot picks on the blockchain.</p>
     </section>
   </div>
 
@@ -596,9 +714,17 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
 
   <div class="grid-2">
     <section class="panel" aria-labelledby="results-h">
-      <span class="eyebrow">Results</span>
-      <h2 id="results-h">Last night's results</h2>
-      <p class="sub" id="results-sub"></p>
+      <div class="res-head">
+        <div>
+          <span class="eyebrow">Results</span>
+          <h2 id="results-h">Last night's results</h2>
+          <p class="sub" id="results-sub"></p>
+        </div>
+        <button type="button" class="share-btn" id="share-open" aria-haspopup="dialog">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5M5 14v5h14v-5"/></svg>
+          Share
+        </button>
+      </div>
       <div class="stack" id="results"></div>
       <div id="results-pot"></div>
     </section>
@@ -660,7 +786,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
           <li>Every ticket costs the same, and a wallet can hold up to 5 tickets a night, each with its own picks.</li>
           <li>When the night's results are in, the top 3 tickets by that night's points split the pot 50/30/20, or 62.5/37.5 with two tickets. Ties go to the closer distance guess, then the earlier ticket.</li>
           <li><strong>Winnings are sent to your wallet automatically.</strong> A bot checks every hour and pays the winners. There's nothing to claim.</li>
-          <li><strong>Refunds you take back yourself.</strong> With one ticket or no result, the night is voided and a "Take back" button shows on your ticket and in My tickets. It costs a little gas.</li>
+          <li><strong>Refunds you take back yourself.</strong> With one ticket or no result, the night is voided and a "Take back" button shows in the Nightly pot and in My tickets. It costs a little gas.</li>
           <li>If a night isn't paid out within 3 days, the same button appears, so money can't get stuck. Nobody, the owner included, can take the pot.</li>
         </ul>
       </div>
@@ -673,6 +799,30 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     <a href="https://docs.squeekchain.com/" target="_blank" rel="noopener">Squeekchain docs</a>
   </footer>
 </div>
+
+<dialog class="share-dlg" id="share" aria-labelledby="share-h">
+  <div class="sd-head">
+    <h2 id="share-h">Share last night</h2>
+    <button type="button" class="icon-btn" id="share-close" aria-label="Close">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="tabs" role="tablist" aria-label="Card" id="share-tabs">
+    <button type="button" role="tab" id="stab-night" aria-controls="share-canvas" aria-selected="true">The night</button>
+    <button type="button" role="tab" id="stab-mine" aria-controls="share-canvas" aria-selected="false" tabindex="-1">My result</button>
+  </div>
+  <canvas class="sd-card" id="share-canvas" width="1200" height="675" role="img" aria-label="Share card"></canvas>
+  <div class="sd-actions">
+    <button type="button" class="primary" id="share-native">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 8l5-5 5 5M5 14v5h14v-5"/></svg>
+      Share image
+    </button>
+    <a class="btn-2" id="share-dl" href="#" download="squeek-picks.png">Download</a>
+    <a class="btn-2" id="share-x" href="https://x.com/intent/post" target="_blank" rel="noopener">Post on X</a>
+  </div>
+  <p class="hint">On phones, Share image opens your apps (X, Telegram, WhatsApp…) with the picture attached. Post on X opens a ready post with the text and link; add the downloaded picture to it.</p>
+  <p class="msg" id="share-msg" role="status"></p>
+</dialog>
 
 <script src="config.js"></script>
 <script src="vendor/supabase-js-2.45.4.js"></script>
@@ -693,7 +843,8 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     API_BASE: "https://api.squeekchain.com",
     REOWN_PROJECT_ID: "",                                  // turns on the wallet picker
     MAINNET_RPC_URL: "https://ethereum-rpc.publicnode.com", // ENS names live on Ethereum mainnet
-    ENS_AVATAR_URL: "https://metadata.ens.domains/mainnet/avatar/"
+    ENS_AVATAR_URL: "https://metadata.ens.domains/mainnet/avatar/",
+    SITE_URL: ""                                           // the link in share posts; empty means this page's address
   }, window.SQUEEK_CONFIG || {});
   var POT_ABI = /*@@POT_ABI@@*/[];
   var POT_BYTECODE = /*@@POT_BYTECODE@@*/"";
@@ -1537,7 +1688,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     var v = draftValid(), open = UI.open, n = P.nights.get(open);
     if (kind === "connect") return connectWallet(potMsg);
     if (kind === "switch") return switchChain(potMsg);
-    if ((kind === "buy" || kind === "change") && !v.ok) { potMsg("Fill in all three picks above first.", "err"); return; }
+    if ((kind === "buy" || kind === "change") && !v.ok) { potMsg("Fill in all three of your picks first.", "err"); return; }
     if ((kind === "buy" || kind === "change") && Date.now() >= nightStart(open)) { renderAll(); return; }
     var deci = v.ok ? Math.round(v.km * 10) : 0;
     if (P.demo) return demoAction(kind, night, v, potMsg, ticket);
@@ -1624,7 +1775,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
         '<ul class="my-tix">' + mine.map(function (t, i) {
           var change = v.ok && draftDiffers(t) && !(P.cur && P.cur.version < 2 && mine.length > 1);
           return "<li><span>" + (mine.length > 1 ? '<span class="tno">#' + (i + 1) + "</span>" : "") + "<strong>" + esc(picksText(open, t)) + "</strong></span>" +
-            (change ? '<button class="secondary" type="button" data-pot="change" data-ticket="' + t.index + '"' + busy + ">Use the picks above</button>" : "") + "</li>";
+            (change ? '<button class="secondary" type="button" data-pot="change" data-ticket="' + t.index + '"' + busy + ">Use my current picks</button>" : "") + "</li>";
         }).join("") + "</ul>" +
         "<span>Paid " + fmtEth(n.price * BigInt(mine.length)) + " ETH. " + (mine.length === 1 ? "Your ticket wins a share if it finishes" : "Each ticket wins a share if it finishes") +
         " in the top 3 that night.</span></div>";
@@ -1638,8 +1789,8 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
       var same = v.ok && mine.some(function (t) { return !draftDiffers(t); });
       actions = '<button class="primary" type="button" data-pot="buy"' + (busy || (v.ok ? "" : " disabled")) + ">" +
         (mine.length ? "Buy another ticket for " : "Buy a ticket for ") + fmtEth(n.price) + " ETH</button>" +
-        (!v.ok ? '<span class="hint">Fill in all three picks above first.</span>'
-          : same ? '<span class="hint">You already have a ticket with these picks. Change them above to spread your guesses' +
+        (!v.ok ? '<span class="hint">Fill in all three of your picks first.</span>'
+          : same ? '<span class="hint">You already have a ticket with these picks. Change your picks to spread your guesses' +
             (mine.length ? " (" + (limit - mine.length) + " more allowed tonight)" : "") + ".</span>"
           : mine.length ? '<span class="hint">Up to ' + limit + " tickets per night, " + (limit - mine.length) + " left.</span>" : "");
     } else {
@@ -1662,14 +1813,9 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
   }
 
   function renderPotLists() {
-    var cp = $("crowd-pot"), rp = $("results-pot");
-    if (!(P.on || P.demo)) { cp.innerHTML = ""; rp.innerHTML = ""; return; }
-    var live = UI.live, n = P.nights.get(live);
-    if (!n) cp.innerHTML = "";
-    else if (!n.tickets.length) cp.innerHTML = '<div class="pot-list"><h3>Pot tickets for tonight</h3><p class="hint">No pot tickets this night.</p></div>';
-    else cp.innerHTML = '<div class="pot-list"><h3>Pot tickets for tonight · ' + fmtEth(n.pot) + " ETH from " + n.tickets.length + " ticket" + (n.tickets.length === 1 ? "" : "s") + "</h3>" + ticketTable(live, n.tickets) + "</div>";
-
-    var night = addDays(live, -1), rn = P.nights.get(night);
+    var rp = $("results-pot");
+    if (!(P.on || P.demo)) { rp.innerHTML = ""; return; }
+    var night = addDays(UI.live, -1), rn = P.nights.get(night);
     if (!rn) { rp.innerHTML = ""; return; }
     if (!rn.tickets.length) { rp.innerHTML = '<div class="pot-list"><h3>Pot</h3><p class="hint">No pot tickets this night.</p></div>'; return; }
     var head = "<h3>Pot · " + fmtEth(rn.pot) + " ETH from " + rn.tickets.length + " ticket" + (rn.tickets.length === 1 ? "" : "s") + "</h3>";
@@ -1699,7 +1845,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
         body = '<p class="hint">Paid out. See the winners on ' + addrLink(rn.src.addr, "Etherscan") + ".</p>";
       }
     } else if (rn.status === 2) {
-      body = '<p class="hint">Voided, so every ticket can be refunded' + (mineIds.size ? " from your ticket panel" : "") + ".</p>";
+      body = '<p class="hint">Voided, so every ticket can be refunded' + (mineIds.size ? " from the Nightly pot or My tickets" : "") + ".</p>";
     } else if (Date.now() >= nightEnd(night) + 3 * DAY) {
       body = '<p class="hint">Not paid out within 3 days, so every ticket can be refunded.</p>';
     } else if (out.action === "wait") {
@@ -1742,7 +1888,13 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
         : { pill: "lost", label: "No prize", note: place, tx: p.tx, settled: true };
     }
     if (now < nightStart(night)) return { pill: "open", label: "Open", note: "Picks can change until " + fmtDayTime(nightStart(night)) + ".", pending: true };
-    if (now < end) return { pill: "live", label: "Running", note: "The night ends " + fmtDayTime(end) + ".", pending: true };
+    if (now < end) {
+      // Tonight: where the ticket would finish if the night ended now.
+      var lr = night === UI.live ? liveRank(n, t, now) : null;
+      if (lr) return { pill: lr.bps ? "won" : "live", label: "#" + lr.place + " right now",
+        note: lr.points + " points so far" + (lr.bps ? ", worth " + fmtEth(lr.prize) + " ETH if it ended now" : "") + ". The night ends " + fmtDayTime(end) + ".", pending: true };
+      return { pill: "live", label: "Running", note: "The night ends " + fmtDayTime(end) + ".", pending: true };
+    }
     if (now >= end + 3 * DAY) return t.refunded ? { pill: "done", label: "Refunded", back: n.price, note: "Not paid out within 3 days." }
       : { pill: "refund", label: "Refund ready", action: "refund", note: "Not paid out within 3 days." };
     r = placeOf(night, n, t, now);
@@ -1802,7 +1954,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
 
     var table;
     if (!rows.length) {
-      table = '<p class="empty">No tickets in the last 2 weeks. Fill in your picks and buy one on your ticket above.</p>';
+      table = '<p class="empty">No tickets in the last 2 weeks. Fill in your picks and buy one in the Nightly pot above.</p>';
     } else {
       table = '<div class="table-wrap"><table class="dash-table"><thead><tr><th>Night</th><th>Your picks</th><th>Result</th><th class="r">ETH</th></tr></thead><tbody>' +
         rows.map(function (r) {
@@ -1894,7 +2046,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
   }
 
   // Redraws the parts that show names and avatars, after ENS answers arrive.
-  function renderIdentity() { renderMe(); renderPotLists(); renderDash(); renderPotBoard(); }
+  function renderIdentity() { renderMe(); renderRace(Date.now()); renderPotLists(); renderDash(); renderPotBoard(); }
 
   // ----- Owner settings (?admin) -----
   function parseEthInput(raw) {
@@ -2014,7 +2166,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     plan[addDays(live, -2)] = [mine(addDays(live, -2), Math.round((t2.km + 3.4) * 10) / 10, (t2.peak + 3) % 8, !t2.more)];
     plan[addDays(live, -4)] = [mine(addDays(live, -4), Math.round((t4.km - 0.6) * 10) / 10, t4.peak, t4.more)];
     plan[addDays(live, -6)] = [mine(addDays(live, -6), 8.4, 3, true)];
-    plan[live] = [mine(live, 9.1, 3, true)];
+    plan[live] = [mine(live, 9.1, 3, true), mine(live, 7.4, 4, false, 5400)];
 
     for (var k = 8; k >= 0; k--) {
       var night = addDays(live, -k), t = ticketsFor(night);
@@ -2061,6 +2213,8 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
   // ---------- UI state ----------
   var UI = { open: null, live: null, draft: { distance: "", peak: null, more: null }, draftNight: null, dirty: false, saving: false, points: null, boardTab: "points" };
   try { if (localStorage.getItem("squeekpicks.boardtab") === "pot") UI.boardTab = "pot"; } catch (x) { /* storage blocked */ }
+  UI.raceTab = null; UI.raceAll = false;
+  try { var rt = localStorage.getItem("squeekpicks.racetab"); if (rt === "pot" || rt === "points") UI.raceTab = rt; } catch (x) { /* storage blocked */ }
 
   function setBanner(html) { var b = $("banner"); b.innerHTML = html; b.hidden = !html; }
 
@@ -2101,15 +2255,19 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     st.dataset.state = state;
     st.textContent = s ? labels[state] : (H.apiError ? "No data" : "Loading");
     renderStamp();
-    var n = H.nights.get(live);
-    var fresh = s && state !== "offline" && s.observedAt && liveNightAt(s.observedAt) === live;
-    var km = fresh ? s.distKm : (n ? n.distanceKm : null);
-    $("m-dist").textContent = fmtKm(km);
+    $("m-dist").textContent = fmtKm(tonightKm());
     $("m-speed").textContent = s && state !== "offline" ? s.speedKmh.toFixed(1) : "–";
     // Tonight's settled blocks (what the blocks pick is about), with the all-time count under it.
     var tb = H.blocks.get(live);
     $("m-height").textContent = tb != null ? fmtInt(tb) : "–";
     $("m-height-all").textContent = s && s.height != null ? fmtInt(s.height) + " in total" : "";
+  }
+
+  // Tonight's distance: the wheel's own reading while it's fresh, else the half-hour stats.
+  function tonightKm() {
+    var s = H.status, live = UI.live, age = readingAge(), n = H.nights.get(live);
+    var fresh = s && s.state !== "offline" && !(age != null && age > 120e3) && s.observedAt && liveNightAt(s.observedAt) === live;
+    return fresh && s.distKm != null ? s.distKm : (n ? n.distanceKm : null);
   }
 
   function renderLive(now) {
@@ -2253,41 +2411,204 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     btn.textContent = UI.saving ? "Saving…" : saved ? (UI.dirty ? "Update picks" : "Picks saved") : "Save picks";
   }
 
-  // ---------- Render: crowd (the live night, locked) ----------
-  function renderCrowd(now) {
-    var live = UI.live, picks = picksFor(live), el = $("crowd");
-    $("crowd-sub").textContent = "Picks from the free points game for the night of " + fmtNight(live) + ", locked at " + fmtTime(nightStart(live)) +
-      ". Watch how they compare with what he's doing.";
-    var n = H.nights.get(live);
-    if (!picks.length) {
-      el.innerHTML = '<p class="empty">Nobody in the points game picked this night. Picks for ' + esc(fmtNight(UI.open)) + " are open in Your picks.</p>";
-      return;
+  // ---------- Render: who's winning right now ----------
+  // Tonight scored as if it ended at `at`, with the same rules as the payouts: distance run
+  // so far, the busiest 3 hours so far, and tonight's blocks against last night's final count.
+  // For an hour ago (the movement arrows) it rebuilds the night from the half-hour stats.
+  var SLOT_MS = 30 * 60e3;
+  function liveState(at, now) {
+    var live = UI.live, start = nightStart(live), n = H.nights.get(live);
+    if (at <= start) return null;
+    var st = { km: null, busiest: [], blocks: H.blocks.get(live), prevBlocks: H.blocks.get(addDays(live, -1)) };
+    if (!n) { if (at >= now) st.km = tonightKm(); return st; }
+    var win = n.blocks, km;
+    if (at < now) {
+      var upto = Math.min(48, Math.floor((at - start) / SLOT_MS)), work = 0;
+      win = new Array(8).fill(0);
+      for (var i = 0; i < upto; i++) { var v = n.slots[i] || 0; work += v; win[Math.floor(i / 6)] += v; }
+      km = n.work > 0 ? n.distanceKm * work / n.work : 0;
+    } else {
+      km = tonightKm();
     }
-    var avg = picks.reduce(function (a, p) { return a + p.distance_km; }, 0) / picks.length;
-    var counts = new Array(8).fill(0), more = 0;
-    picks.forEach(function (p) { counts[p.peak_block]++; if (p.more_blocks) more++; });
-    var maxC = Math.max.apply(null, counts) || 1;
-    var mini = "";
-    for (var b = 0; b < 8; b++) {
-      mini += '<div title="' + esc(blockLabel(live, b)) + ": " + counts[b] + '"><i style="height:' + Math.round(counts[b] / maxC * 40) + 'px"></i><span>' + esc(fmtTime(blockStart(live, b)).replace(/:00/, "")) + "</span></div>";
+    var max = Math.max.apply(null, win);
+    st.km = km;
+    st.busiest = max > 0 ? win.map(function (v, i) { return v === max ? i : -1; }).filter(function (i) { return i >= 0; }) : [];
+    return st;
+  }
+
+  // Tonight's entries for one tab: pot tickets, or points game picks.
+  function raceEntries(tab) {
+    var live = UI.live;
+    if (tab === "pot") {
+      var n = P.nights.get(live);
+      if (!n) return null;
+      var count = {}, seen = {};
+      n.tickets.forEach(function (t) { var k = t.address.toLowerCase(); count[k] = (count[k] || 0) + 1; });
+      return n.tickets.filter(function (t) { return !t.refunded; }).map(function (t) {
+        var k = t.address.toLowerCase();
+        seen[k] = (seen[k] || 0) + 1;
+        return Object.assign({}, t, { kind: "pot", tno: count[k] > 1 ? seen[k] : 0, mine: isMine(t) });
+      });
     }
-    var soFarPeak = n && n.work > 0 ? n.blocks.indexOf(Math.max.apply(null, n.blocks)) : -1;
-    var liveBlocks = H.blocks.get(live), prevBlocks = H.blocks.get(addDays(live, -1));
-    var pctMore = Math.round(more / picks.length * 100);
-    var html =
-      '<div class="kv"><span class="k">Average distance guess</span><span class="v">' + fmtKm(avg) + ' km</span><span class="d">He has run ' + fmtKm(n ? n.distanceKm : null) + " km so far.</span></div>" +
-      '<div class="kv"><span class="k">Peak window picks</span><span class="v">' + picks.length + " player" + (picks.length === 1 ? "" : "s") + "</span>" +
-      '<div class="mini" role="img" aria-label="How many players picked each window">' + mini + "</div>" +
-      '<span class="d">Each bar is how many players picked that window. ' + (soFarPeak >= 0 ? "His busiest so far: " + esc(blockLabel(live, soFarPeak)) + "." : "No spins yet tonight.") + "</span></div>" +
-      '<div class="kv"><span class="k">More blocks than the night before?</span><span class="v">' + pctMore + "% said more</span>" +
-      '<div class="split" role="img" aria-label="' + pctMore + '% said more"><i style="width:' + pctMore + '%"></i><i style="width:' + (100 - pctMore) + '%"></i></div>' +
-      '<span class="d">' + (liveBlocks != null && prevBlocks != null ? "Tonight " + fmtInt(liveBlocks) + " blocks so far, the night before " + fmtInt(prevBlocks) + "." : "Block counts load with settlement data.") + "</span></div>";
-    var mine = myPick(live);
-    if (mine) {
-      html += '<div class="yours">Your points picks: <strong>' + fmtKm(mine.distance_km) + " km</strong>, <strong>" + esc(blockLabel(live, mine.peak_block)) +
-        "</strong>, <strong>" + (mine.more_blocks ? "more" : "fewer") + "</strong> blocks.</div>";
+    return picksFor(live).map(function (p) {
+      return { player_id: p.player_id, distance_km: p.distance_km, peak_block: p.peak_block, more_blocks: p.more_blocks, kind: "points", mine: p.player_id === G.uid };
+    });
+  }
+
+  // Where one pot ticket stands right now, for My tickets. Null before anything is known.
+  function liveRank(n, t, now) {
+    var st = liveState(now, now);
+    if (!st) return null;
+    var res = L.provisionalResult(UI.live, st);
+    if (![res.distance, res.peak, res.blocks].some(function (m) { return m.state === "resolved"; })) return null;
+    var entries = n.tickets.filter(function (x) { return !x.refunded; });
+    var row = null;
+    L.liveStandings(res, entries).forEach(function (r) { if (r.entry.player_id === t.player_id) row = r; });
+    if (!row) return null;
+    var out = L.potPayouts(res, entries), bps = 0;
+    if (out.action === "settle") out.winners.forEach(function (w, i) { if (w === t.player_id) bps = out.bps[i]; });
+    return { place: row.place, points: row.score.total, bps: bps, prize: bps ? n.pot * BigInt(bps) / BPS : 0n };
+  }
+
+  var RACE_ROWS = 10;
+  function renderRace(now) {
+    var live = UI.live, potOn = P.on || P.demo, end = nightEnd(live);
+    $("race-night").textContent = "Tonight · " + fmtNight(live);
+    var st = liveState(now, now);
+    var res = L.provisionalResult(live, st || { km: null, busiest: [], blocks: null, prevBlocks: null });
+    var before = now - HOUR > nightStart(live) ? liveState(now - HOUR, now) : null;
+
+    $("race-sub").textContent = "Points as if the night ended now, at " + fmtTime(now) +
+      ". They change as he runs, and turn final once the night's data is in after " + fmtDayTime(end) + ".";
+    var stale = H.apiError && !H.nights.size;
+    $("race-pill").className = "live-pill" + (stale ? " wait" : "");
+    $("race-pill-text").textContent = stale ? "Waiting for data" : "Live";
+
+    // Tiles: the three things the picks are about, so far.
+    var km = st ? st.km : null, busy = st ? st.busiest : [];
+    var cur = st ? st.blocks : null, prev = st ? st.prevBlocks : null;
+    var blocksNote = cur == null || prev == null ? "Block counts load with settlement data."
+      : cur > prev ? "More than last night so far."
+      : cur < prev ? "Fewer than last night so far. It counts until " + fmtTime(end) + "."
+      : "Level with last night so far.";
+    $("race-tiles").innerHTML =
+      '<div class="rt"><span class="label">He has run</span><span class="val">' + fmtKm(km) + "<small>km</small></span></div>" +
+      '<div class="rt"><span class="label">Busiest 3 hours so far</span><span class="val">' +
+        (busy.length ? esc(blockLabel(live, busy[0])) : '<span style="font-size:22px">No spins yet</span>') + "</span>" +
+        (busy.length > 1 ? '<span class="note">Tied with ' + busy.slice(1).map(function (b) { return esc(blockLabel(live, b)); }).join(", ") + ".</span>" : "") + "</div>" +
+      '<div class="rt"><span class="label">Squeek blocks vs last night</span><span class="val">' + fmtInt(cur) + "<small>/ " + fmtInt(prev) + "</small></span>" +
+        '<span class="note">' + esc(blocksNote) + "</span></div>";
+
+    // Which list: pot tickets or points picks. The visitor's choice sticks; otherwise the
+    // pot when it has tickets tonight.
+    var potN = potOn ? P.nights.get(live) : null;
+    var tab = !potOn ? "points" : UI.raceTab || (potN && potN.tickets.length ? "pot" : "points");
+    $("race-tabs").hidden = !potOn;
+    [["pot", "rtab-pot"], ["points", "rtab-points"]].forEach(function (x) {
+      var on = tab === x[0];
+      $(x[1]).setAttribute("aria-selected", String(on));
+      $(x[1]).tabIndex = on ? 0 : -1;
+    });
+    // A tab panel only while the tabs show.
+    if (potOn) { $("race-list").setAttribute("role", "tabpanel"); $("race-list").setAttribute("aria-labelledby", tab === "pot" ? "rtab-pot" : "rtab-points"); }
+    else { $("race-list").removeAttribute("role"); $("race-list").removeAttribute("aria-labelledby"); }
+
+    var entries = raceEntries(tab) || [];
+    var rows = L.liveStandings(res, entries);
+    var was = new Map();
+    if (before) L.liveStandings(L.provisionalResult(live, before), entries).forEach(function (r) { was.set(r.entry.player_id, r.place); });
+    var prizes = new Map(), out = null;
+    if (tab === "pot" && potN) {
+      out = L.potPayouts(res, entries);
+      if (out.action === "settle") out.winners.forEach(function (w, i) { prizes.set(w, potN.pot * BigInt(out.bps[i]) / BPS); });
     }
-    el.innerHTML = html;
+    function nameOfEntry(e) { return e.kind === "pot" ? (P.demo && e.mine ? "Preview wallet" : ensName(e.address) || shortAddr(e.address)) : nameOf(e.player_id); }
+
+    renderTrack(live, km, rows);
+
+    var list = $("race-list");
+    if (tab === "pot" && !potN) {
+      list.innerHTML = '<p class="empty">' + esc(P.error || "Loading the pot…") + "</p>";
+    } else if (!rows.length) {
+      list.innerHTML = '<p class="empty">' + (tab === "pot" ? "No pot tickets tonight." : "Nobody in the points game picked tonight.") +
+        " Picks for " + esc(fmtNight(UI.open)) + " are open below.</p>";
+    } else {
+      var shown = UI.raceAll ? rows : rows.filter(function (r, i) { return i < RACE_ROWS || r.entry.mine; });
+      list.innerHTML = '<div class="slist">' + shown.map(function (r) {
+        var e = r.entry, s = r.score, mv = "", mvCls = "";
+        if (before && was.has(e.player_id)) {
+          var d = was.get(e.player_id) - r.place;
+          mv = d > 0 ? "▲ " + d : d < 0 ? "▼ " + (-d) : "–";
+          mvCls = d > 0 ? " up" : d < 0 ? " down" : "";
+        }
+        var whoHtml = e.kind === "pot" ? (P.demo && e.mine ? '<span class="who">' + avatar(e.address) + '<span class="nm">Preview wallet</span></span>' : who(e.address))
+          : '<span class="who">' + dotAvatar(e.player_id) + '<span class="nm">' + esc(nameOf(e.player_id)) + "</span></span>";
+        var tags = (e.tno ? '<span class="tno">#' + e.tno + "</span>" : "") + (G.sample.has(e.player_id) ? '<span class="tag">sample</span>' : "") + (e.mine ? '<span class="tag">you</span>' : "");
+        var dist = s.distance + s.closest;
+        function chip(label, v, title) { return '<span class="pt' + (v > 0 ? " on" : "") + '"' + (title ? ' title="' + esc(title) + '"' : "") + ">" + label + " " + v + "</span>"; }
+        var prize = "";
+        if (tab === "pot") {
+          var p = prizes.get(e.player_id);
+          prize = '<span class="prize' + (p ? "" : " none") + '">' + (p ? fmtEth(p) + " ETH" : "–") + "</span>";
+        }
+        var first = r.place === 1 && s.total > 0;
+        return '<div class="srow' + (tab === "pot" ? " has-prize" : "") + (first ? " first" : "") + (e.mine ? " you" : "") + '">' +
+          '<span class="rk">' + r.place + "</span>" +
+          '<span class="mv' + mvCls + '"' + (mv ? ' title="Place an hour ago: ' + was.get(e.player_id) + '"' : "") + ">" + mv + "</span>" +
+          '<div class="ent"><span class="sw-name">' + whoHtml + tags + "</span>" +
+          '<span class="picks">' + fmtKm(e.distance_km) + " km · " + esc(blockLabel(live, e.peak_block)) + " · " + (e.more_blocks ? "More" : "Fewer") + " blocks</span></div>" +
+          '<div class="chips">' + chip("Distance", dist, s.closest ? "Distance " + s.distance + " + closest guess 10" : "") + chip("Peak", s.peak) + chip("Blocks", s.blocks) + "</div>" +
+          '<span class="tot" aria-label="' + s.total + ' points">' + s.total + "</span>" + prize + "</div>";
+      }).join("") + "</div>" +
+        (rows.length > shown.length ? '<button type="button" class="secondary race-more" data-race="all">Show all ' + rows.length + "</button>"
+          : UI.raceAll && rows.length > RACE_ROWS ? '<button type="button" class="secondary race-more" data-race="less">Show the top ' + RACE_ROWS + "</button>" : "");
+    }
+
+    // One line on who leads and what isn't final yet.
+    var foot = "";
+    var known = [res.distance, res.peak, res.blocks].some(function (m) { return m.state === "resolved"; });
+    if (rows.length && !known) foot = "Nothing to score yet tonight, so everyone is level. Standings start moving once he runs.";
+    else if (rows.length) {
+      var top = rows.filter(function (r) { return r.place === 1; });
+      if (rows[0].score.total === 0) foot = "Nobody has points yet.";
+      else if (top.length > 1) foot = top.length + " " + (tab === "pot" ? "tickets" : "players") + " share the lead with " + rows[0].score.total + " points.";
+      else foot = nameOfEntry(rows[0].entry) + (rows[0].entry.tno ? " #" + rows[0].entry.tno : "") + " leads with " + rows[0].score.total + " points.";
+    }
+    if (tab === "pot" && potN && potN.tickets.length && out && out.action === "void" && potN.tickets.length < 2) foot += " The pot pays out once 2 or more tickets are in. With fewer, tickets are refunded.";
+    if (tab === "pot" && prizes.size) foot += " Prizes are what the pot would pay if it closed now.";
+    if (rows.length) foot += " Nothing is final until the night ends " + fmtDayTime(end) + ".";
+    $("race-foot").textContent = foot.trim();
+  }
+
+  // The distance race: a pin for every guess, the hamster running along the line.
+  var MAX_PINS = 60;
+  function renderTrack(live, km, rows) {
+    var guesses = rows.map(function (r) { return r.entry.distance_km; });
+    var top = Math.max.apply(null, [12, km || 0].concat(guesses));
+    var step = [2, 4, 5, 10, 20].filter(function (s) { return Math.ceil(top / s) <= 7; })[0] || 20;
+    var max = Math.max(12, Math.ceil(top / step) * step);
+    function pct(v) { return Math.max(0, Math.min(100, v / max * 100)).toFixed(2); }
+    var pins = rows.slice(0, MAX_PINS).map(function (r) { return r.entry; })
+      .concat(rows.slice(MAX_PINS).filter(function (r) { return r.entry.mine; }).map(function (r) { return r.entry; }))
+      .sort(function (a, b) { return a.distance_km - b.distance_km; });
+    var html = km != null ? '<div class="run" style="width:' + pct(km) + '%"></div>' : "";
+    html += pins.map(function (e, i) {
+      var stem = i % 2 ? 36 : 14;   // two heights, so neighbouring pins don't cover each other
+      var name = e.kind === "pot" ? (P.demo && e.mine ? "Preview wallet" : ensName(e.address) || shortAddr(e.address)) + (e.tno ? " #" + e.tno : "") : nameOf(e.player_id);
+      var face = e.kind === "pot" ? avatar(e.address) : dotAvatar(e.player_id);
+      return '<div class="pin' + (km != null && km > e.distance_km ? " passed" : "") + (e.mine ? " you" : "") + '" style="left:' + pct(e.distance_km) + '%" title="' +
+        esc(name + ": " + fmtKm(e.distance_km) + " km") + '">' + face + '<i style="height:' + stem + 'px"></i></div>';
+    }).join("");
+    if (km != null) {
+      html += '<div class="ham" style="left:' + pct(km) + '%"><img src="squeektoshi.jpg" alt="" width="34" height="34"><span>' + fmtKm(km) + " km</span></div>";
+    }
+    var tr = $("track");
+    tr.innerHTML = html;
+    tr.setAttribute("aria-label", (km != null ? "He has run " + fmtKm(km) + " km tonight. " : "No distance yet tonight. ") +
+      (guesses.length ? guesses.length + " distance guesses, from " + fmtKm(Math.min.apply(null, guesses)) + " to " + fmtKm(Math.max.apply(null, guesses)) + " km." : "No distance guesses yet."));
+    var scale = "";
+    for (var v = 0; v <= max; v += step) scale += '<span style="left:' + pct(v) + '%">' + v + (v === 0 || v === max ? " km" : "") + "</span>";
+    $("track-scale").innerHTML = scale;
   }
 
   // ---------- Render: results for the last finished night ----------
@@ -2333,6 +2654,412 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
       html += '<p class="empty">Nobody picked this night for points.</p>';
     }
     el.innerHTML = html;
+  }
+
+  // ---------- Share cards ----------
+  // A 1200x675 picture of last night, drawn on a canvas in the site's dark colours, plus a
+  // ready post for X. "My result" appears when this wallet or nickname played that night.
+  var SHARE = { kind: "night", seq: 0, url: null, blob: null, img: null, text: "", file: "squeek-picks.png" };
+  var MAX_POINTS = 75;
+  var CARD = {
+    bg: "#171A21", panel: "#20242E", chip: "#2E3442", ink: "#EEF1F7", ink2: "#B4BCCB", ink3: "#98A1B3",
+    gold: "#FF8A2A", accent: "#FFB074", medal: "#FFB020", good: "#5FD69E", goodBg: "rgba(52,199,127,.16)", bad: "#FF7B72",
+    display: "Fredoka, 'Nunito Sans', system-ui, sans-serif", body: "'Nunito Sans', system-ui, -apple-system, 'Segoe UI', sans-serif"
+  };
+  function siteUrl() {
+    if (CONFIG.SITE_URL) return CONFIG.SITE_URL;
+    if (H.demo || !/^https?:$/.test(location.protocol)) return "https://squeekpicks.xyz/";
+    return location.origin + location.pathname.replace(/index\.html$/, "");
+  }
+  function siteHost() { try { var u = new URL(siteUrl()); return (u.host + u.pathname).replace(/\/$/, ""); } catch (e) { return "squeekpicks.xyz"; } }
+  // The viewer's time zone as a short name ("CET", "EDT", or "GMT+1").
+  function tzName(ms) {
+    try {
+      var z = new Intl.DateTimeFormat(TIME_LOCALE, { timeZoneName: "short" }).formatToParts(new Date(ms)).filter(function (x) { return x.type === "timeZoneName"; })[0];
+      return z ? z.value : "";
+    } catch (e) { return ""; }
+  }
+  function walletLabel(addr) { return P.demo && P.account && addr.toLowerCase() === P.account.toLowerCase() ? "Preview wallet" : ensName(addr) || shortAddr(addr); }
+
+  // What the night card shows.
+  function nightCard(now) {
+    var night = addDays(UI.live, -1), res = resolve(night, now), tz = tzName(nightStart(night));
+    var d = { kind: "night", night: night, res: res, tz: tz, top: [], topLabel: "", pot: null };
+    var rn = (P.on || P.demo) ? P.nights.get(night) : null;
+    if (rn && rn.tickets.length) {
+      d.pot = rn;
+      var act = rn.tickets.filter(function (t) { return !t.refunded; });
+      var out = L.potPayouts(res, act);
+      d.potVoid = rn.status === 2 || out.action === "void";
+      if (out.action === "settle" && rn.status !== 2) {
+        var paid = rn.status === 1 ? paidMap(payoutOf(rn, night)) : null;
+        var byId = new Map(act.map(function (t) { return [t.player_id, t]; }));
+        d.topLabel = "Pot winners";
+        d.top = out.ranking.filter(function (r) { return r.bps > 0; }).slice(0, 3).map(function (r, i) {
+          var t = byId.get(r.player_id);
+          var eth = paid && paid.has(r.player_id) ? paid.get(r.player_id) : rn.pot * BigInt(r.bps) / BPS;
+          return { place: r.place, name: walletLabel(t.address), pts: r.points, eth: eth };
+        });
+      }
+    }
+    var picks = picksFor(night);
+    d.players = picks.length;
+    if (!d.top.length && picks.length) {
+      var rows = L.liveStandings(res, picks).filter(function (r) { return r.score.counted; });
+      if (rows.length) {
+        d.topLabel = "Top of the points game";
+        d.top = rows.slice(0, 3).map(function (r) { return { place: r.place, name: nameOf(r.entry.player_id), pts: r.score.total }; });
+      }
+    }
+    var km = res.distance.state === "resolved" ? res.distance.km : null;
+    d.headline = km != null ? "Squeektoshi ran " + fmtKm(km) + " km" : "Squeektoshi's night on the wheel";
+    d.peak = res.peak.state === "resolved" ? blockLabel(night, res.peak.winners[0]) : res.peak.state === "void" ? "No call" : "Counting";
+    d.text = (km != null ? "Squeektoshi ran " + fmtKm(km) + " km on his wheel last night" : "Squeektoshi's night on the wheel is in") +
+      (res.peak.state === "resolved" ? ", busiest " + d.peak + (tz ? " " + tz : "") : "") + ". " +
+      (d.top.length && d.pot && !d.potVoid ? d.top[0].name + " won the test-ETH pot. " : d.top.length ? d.top[0].name + " topped the points game. " : "") +
+      "Call tonight's run on Squeek Picks:";
+    d.alt = "Share card for the night of " + fmtNight(night) + ": " + d.headline + ".";
+    return d;
+  }
+
+  // What "My result" shows: the wallet's best pot ticket that night, else the points pick.
+  function mineCard(now) {
+    var night = addDays(UI.live, -1), res = resolve(night, now), tz = tzName(nightStart(night));
+    var d = { kind: "mine", night: night, res: res, tz: tz, won: 0n };
+    var rn = (P.on || P.demo) ? P.nights.get(night) : null;
+    var mine = rn && P.account ? rn.tickets.filter(function (t) { return isMine(t) && !t.refunded; }) : [];
+    var pick = G.uid ? picksFor(night).filter(function (p) { return p.player_id === G.uid; })[0] : null;
+    if (mine.length) {
+      var entries = rn.tickets.filter(function (t) { return !t.refunded; });
+      var rows = L.liveStandings(res, entries), best = null;
+      rows.forEach(function (r) { if (!best && r.entry.address && isMine(r.entry)) best = r; });
+      var out = L.potPayouts(res, entries);
+      d.potVoid = rn.status === 2 || out.action === "void";
+      if (rn.status === 1) {
+        var paid = paidMap(payoutOf(rn, night));
+        mine.forEach(function (t) { d.won += paid.get(t.player_id) || 0n; });
+      } else if (out.action === "settle" && rn.status !== 2) {
+        out.winners.forEach(function (w, i) { if (mine.some(function (t) { return t.player_id === w; })) d.won += rn.pot * BigInt(out.bps[i]) / BPS; });
+      }
+      d.src = "pot"; d.pick = best.entry; d.score = best.score; d.place = best.place; d.of = entries.length;
+      d.name = walletLabel(P.account); d.many = mine.length;
+    } else if (pick) {
+      var prow = null, picks = picksFor(night);
+      L.liveStandings(res, picks).forEach(function (r) { if (r.entry.player_id === G.uid) prow = r; });
+      d.src = "points"; d.pick = pick; d.score = prow.score; d.place = prow.place; d.of = picks.length; d.name = G.me ? G.me.nickname : nameOf(G.uid);
+    } else {
+      return null;
+    }
+    var s = d.score, counted = s.counted, perfect = s.total === MAX_POINTS;
+    d.counted = counted;
+    d.eyebrow = counted && d.place <= 3 && s.total > 0 ? "I called Squeektoshi's night" : "My night on Squeek Picks";
+    if (!counted) d.headline = "Still counting";
+    else if (d.src === "pot" && d.won > 0n) d.headline = "Finished #" + d.place + " and won " + fmtEth(d.won) + " test ETH";
+    else if (d.src === "pot" && d.potVoid) d.headline = "Scored " + s.total + " points";
+    else if (d.of > 1) d.headline = "Finished #" + d.place + " of " + d.of;
+    else d.headline = "Scored " + s.total + " points";
+    d.sub = d.name + " · " + (counted ? s.total + " of " + MAX_POINTS + " points" + (perfect ? ", a perfect night" : "") : "results for " + fmtNight(night) + " are on their way") +
+      (d.src === "pot" ? (d.potVoid ? " · pot refunded" : d.many > 1 ? " · best of " + d.many + " tickets" : "") : " · points game");
+
+    // The three picks against what happened.
+    var p = d.pick;
+    function state(m, yes, no) { return m.state === "resolved" ? yes : m.state === "void" ? no : "Still counting."; }
+    d.tiles = [
+      { label: "Distance", me: fmtKm(p.distance_km) + " km", pts: res.distance.state === "resolved" ? s.distance + s.closest : null,
+        note: state(res.distance, "He ran " + fmtKm(res.distance.km) + " km." + (s.closest ? " Closest guess." : ""), "No call for distance.") },
+      { label: "Busiest 3 hours", me: blockLabel(night, p.peak_block), pts: res.peak.state === "resolved" ? s.peak : null,
+        note: state(res.peak, s.peak === 20 ? "Spot on" + (tz ? " (" + tz + ")." : ".") : s.peak === 5 ? "Next to his busiest." :
+          "He peaked " + (res.peak.winners ? blockLabel(night, res.peak.winners[0]) : "") + ".", "No call for the peak.") },
+      { label: "Squeek blocks", me: p.more_blocks ? "More" : "Fewer", pts: res.blocks.state === "resolved" ? s.blocks : null,
+        note: state(res.blocks, fmtInt(res.blocks.cur) + " vs " + fmtInt(res.blocks.prev) + " the night before.", "No call for blocks.") }
+    ];
+    d.text = !counted ? "I called Squeektoshi's night on Squeek Picks. Results are coming in." :
+      d.src === "pot" && d.won > 0n ? "I finished #" + d.place + " on Squeek Picks and won " + fmtEth(d.won) + " test ETH calling Squeektoshi's night on the wheel. Think you can call tonight better?" :
+      "I scored " + s.total + " of " + MAX_POINTS + " points calling Squeektoshi's night on Squeek Picks" + (d.of > 1 ? " (#" + d.place + " of " + d.of + ")" : "") + ". Think you can call tonight better?";
+    d.alt = "Share card: " + d.headline + ". " + d.sub + ".";
+    return d;
+  }
+
+  // ----- Drawing helpers -----
+  function cFont(weight, px, display) { return weight + " " + px + "px " + (display ? CARD.display : CARD.body); }
+  // Picks the largest size from `px` down to `min` that fits; sets it on the context.
+  function cFit(ctx, text, maxW, weight, px, min, display) {
+    for (; px > min; px -= 2) { ctx.font = cFont(weight, px, display); if (ctx.measureText(text).width <= maxW) return px; }
+    ctx.font = cFont(weight, min, display);
+    return min;
+  }
+  function cClip(ctx, text, maxW) {
+    text = String(text);
+    if (ctx.measureText(text).width <= maxW) return text;
+    while (text.length > 1 && ctx.measureText(text + "…").width > maxW) text = text.slice(0, -1);
+    return text + "…";
+  }
+  function cRound(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  function cText(ctx, text, x, y, font, color, align) {
+    ctx.font = font; ctx.fillStyle = color; ctx.textAlign = align || "left"; ctx.textBaseline = "alphabetic";
+    ctx.fillText(text, x, y);
+  }
+  // A filled pill with text; returns its width. align "right" anchors x on the right edge.
+  function cPill(ctx, text, x, y, h, font, bg, fg, align) {
+    ctx.font = font;
+    var w = ctx.measureText(text).width + h * 0.82;
+    var left = align === "right" ? x - w : x;
+    cRound(ctx, left, y, w, h, h / 2); ctx.fillStyle = bg; ctx.fill();
+    ctx.fillStyle = fg; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(text, left + w / 2, y + h / 2 + 1);
+    ctx.textBaseline = "alphabetic";
+    return w;
+  }
+  function cCover(ctx, img, x, y, w, h, fx, fy) {
+    var s = Math.max(w / img.naturalWidth, h / img.naturalHeight), sw = w / s, sh = h / s;
+    ctx.drawImage(img, (img.naturalWidth - sw) * fx, (img.naturalHeight - sh) * fy, sw, sh, x, y, w, h);
+  }
+  var LOGO = typeof Path2D === "function" ? new Path2D("M12 3v6.8M12 14.2V21M3 12h6.8M14.2 12H21") : null;
+  function cBrand(ctx, x, y, night) {
+    cRound(ctx, x, y, 40, 40, 13); ctx.fillStyle = "rgba(255,138,42,.16)"; ctx.fill();
+    ctx.save(); ctx.translate(x + 8, y + 8);
+    ctx.strokeStyle = CARD.accent; ctx.lineWidth = 2; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.arc(12, 12, 9, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(12, 12, 2.2, 0, Math.PI * 2); ctx.stroke();
+    if (LOGO) ctx.stroke(LOGO);
+    ctx.restore();
+    cText(ctx, "Squeek Picks", x + 50, y + 29, cFont(600, 24, true), CARD.ink);
+  }
+  function cFooter(ctx, x0, x1, y, text, size) {
+    var w = cPill(ctx, siteHost(), x1, y, 44, cFont(800, size, false), CARD.gold, CARD.bg, "right");
+    ctx.font = cFont(400, size - 2, false);
+    cText(ctx, cClip(ctx, text, x1 - w - 16 - x0), x0, y + 28, cFont(400, size - 2, false), CARD.ink2);
+  }
+  function cEyebrow(ctx, text, x, y, px) {
+    ctx.save();
+    if ("letterSpacing" in ctx) ctx.letterSpacing = "0.8px";
+    cText(ctx, text.toUpperCase(), x, y, cFont(800, px, false), CARD.accent);
+    ctx.restore();
+  }
+
+  function drawNightCard(ctx, d, img) {
+    var W = 1200, Hh = 675, PW = 430;
+    ctx.fillStyle = CARD.bg; ctx.fillRect(0, 0, W, Hh);
+    if (img) cCover(ctx, img, 0, 0, PW, Hh, 0.42, 0.4);
+    else { ctx.fillStyle = CARD.panel; ctx.fillRect(0, 0, PW, Hh); }
+    // "night camera" label on the photo
+    ctx.font = cFont(800, 15, false);
+    var lw = ctx.measureText("Squeektoshi, night camera").width + 50;
+    cRound(ctx, 20, Hh - 20 - 36, lw, 36, 18); ctx.fillStyle = "rgba(23,26,33,.85)"; ctx.fill();
+    ctx.beginPath(); ctx.arc(20 + 18, Hh - 38, 4, 0, Math.PI * 2); ctx.fillStyle = "#FF5A4E"; ctx.fill();
+    cText(ctx, "Squeektoshi, night camera", 20 + 30, Hh - 33, cFont(800, 15, false), CARD.ink);
+
+    var x0 = PW + 48, x1 = W - 48, cw = x1 - x0, y = 40;
+    cBrand(ctx, x0, y);
+    cText(ctx, "Night of " + fmtNight(d.night), x1, y + 27, cFont(800, 15, false), CARD.ink3, "right");
+    y = 118;
+    cEyebrow(ctx, "Last night", x0, y, 16);
+    var hp = cFit(ctx, d.headline, cw, 600, 60, 36, true);
+    cText(ctx, d.headline, x0, y + 8 + Math.round(hp * 0.92), ctx.font, CARD.ink);
+    y = y + 8 + Math.round(hp * 1.1) + 18;
+
+    // Three tiles
+    var tw = (cw - 24) / 3, tiles = [];
+    var res = d.res;
+    tiles.push({ label: "Busiest 3 hours", val: d.peak, small: res.peak.state === "resolved" ? d.tz : "", smallColor: CARD.ink3 });
+    var blocks = res.blocks.state === "resolved" ? { val: fmtInt(res.blocks.cur), small: res.blocks.more ? "▲ more" : "▼ fewer", smallColor: res.blocks.more ? CARD.good : CARD.bad }
+      : { val: H.blocks.get(d.night) != null ? fmtInt(H.blocks.get(d.night)) : "–", small: res.blocks.state === "void" ? "no call" : "", smallColor: CARD.ink3 };
+    tiles.push({ label: "Squeek blocks", val: blocks.val, small: blocks.small, smallColor: blocks.smallColor });
+    if (d.pot) tiles.push({ label: "Test-ETH pot", val: d.potVoid ? "Refunded" : fmtEth(d.pot.pot), small: d.potVoid ? "" : "ETH · " + d.pot.tickets.length + (d.pot.tickets.length === 1 ? " ticket" : " tickets"), smallColor: CARD.ink3 });
+    else tiles.push({ label: "Points game", val: String(d.players), small: d.players === 1 ? "player" : "players", smallColor: CARD.ink3 });
+    tiles.forEach(function (t, i) {
+      var tx = x0 + i * (tw + 12);
+      cRound(ctx, tx, y, tw, 80, 18); ctx.fillStyle = CARD.panel; ctx.fill();
+      cText(ctx, t.label, tx + 16, y + 30, cFont(700, 14, false), CARD.ink3);
+      var inner = tw - 32;
+      ctx.font = cFont(800, 14, false);
+      var sw = t.small ? ctx.measureText(t.small).width + 6 : 0;
+      var vp = cFit(ctx, t.val, Math.max(40, inner - sw), 600, 26, 16, true);
+      var vw = ctx.measureText(t.val).width;
+      cText(ctx, t.val, tx + 16, y + 64, cFont(600, vp, true), CARD.ink);
+      if (t.small && vw + sw <= inner + 1) cText(ctx, t.small, tx + 16 + vw + 6, y + 64, cFont(800, 14, false), t.smallColor);
+    });
+    y += 80 + 26;
+
+    // Top 3
+    if (d.top.length) {
+      ctx.save(); if ("letterSpacing" in ctx) ctx.letterSpacing = "0.6px";
+      cText(ctx, d.topLabel.toUpperCase(), x0, y + 4, cFont(800, 13, false), CARD.ink3);
+      ctx.restore();
+      y += 16;
+      d.top.forEach(function (r, i) {
+        var ry = y + i * 54;
+        if (i === 0) { cRound(ctx, x0, ry, cw, 48, 14); ctx.fillStyle = "rgba(255,176,32,.08)"; ctx.fill(); }
+        ctx.beginPath(); ctx.arc(x0 + 14 + 15, ry + 24, 15, 0, Math.PI * 2); ctx.fillStyle = r.place === 1 ? CARD.medal : CARD.chip; ctx.fill();
+        cText(ctx, String(r.place), x0 + 29, ry + 29, cFont(800, 15, false), r.place === 1 ? CARD.bg : CARD.ink, "center");
+        var right = x1 - 14, ptsText = r.pts + " pts";
+        if (r.eth != null) {
+          cText(ctx, fmtEth(r.eth) + " ETH", right, ry + 31, cFont(600, 20, true), CARD.accent, "right");
+          right -= 130;
+          cText(ctx, ptsText, right, ry + 30, cFont(400, 15, false), CARD.ink3, "right");
+          ctx.font = cFont(400, 15, false); right -= ctx.measureText(ptsText).width + 16;
+        } else {
+          cText(ctx, ptsText, right, ry + 31, cFont(600, 20, true), CARD.accent, "right");
+          ctx.font = cFont(600, 20, true); right -= ctx.measureText(ptsText).width + 16;
+        }
+        ctx.font = cFont(800, 18, false);
+        cText(ctx, cClip(ctx, r.name, right - (x0 + 56)), x0 + 56, ry + 30, ctx.font, CARD.ink);
+      });
+    } else {
+      cText(ctx, "Nobody called this night. Be the first tonight.", x0, y + 24, cFont(600, 18, false), CARD.ink3);
+    }
+    cFooter(ctx, x0, x1, Hh - 40 - 44, "Call tonight's run for free, or play the test-ETH pot.", 18);
+  }
+
+  function drawMineCard(ctx, d, img) {
+    var W = 1200, Hh = 675, x0 = 52, x1 = W - 52, cw = x1 - x0;
+    ctx.fillStyle = CARD.bg; ctx.fillRect(0, 0, W, Hh);
+    cBrand(ctx, x0, 44);
+    cText(ctx, "Night of " + fmtNight(d.night), x1, 71, cFont(800, 15, false), CARD.ink3, "right");
+
+    // Photo in a ring, with the place on a medal.
+    var cx = x0 + 95, cy = 128 + 95;
+    ctx.beginPath(); ctx.arc(cx, cy, 101, 0, Math.PI * 2); ctx.fillStyle = CARD.gold; ctx.fill();
+    ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, 95, 0, Math.PI * 2); ctx.clip();
+    if (img) cCover(ctx, img, cx - 95, cy - 95, 190, 190, 0.45, 0.42); else { ctx.fillStyle = CARD.panel; ctx.fill(); }
+    ctx.restore();
+    if (d.counted && d.of > 1) {
+      var bx = x0 + 167, by = 128 + 161;
+      ctx.beginPath(); ctx.arc(bx, by, 34, 0, Math.PI * 2); ctx.fillStyle = CARD.bg; ctx.fill();
+      ctx.beginPath(); ctx.arc(bx, by, 29, 0, Math.PI * 2); ctx.fillStyle = d.place <= 3 ? CARD.medal : CARD.chip; ctx.fill();
+      var bp = cFit(ctx, "#" + d.place, 50, 600, 26, 16, true);
+      cText(ctx, "#" + d.place, bx, by + Math.round(bp * 0.36), cFont(600, bp, true), d.place <= 3 ? CARD.bg : CARD.ink, "center");
+    }
+
+    var tx = x0 + 190 + 40, tw = x1 - tx;
+    cEyebrow(ctx, d.eyebrow, tx, 168, 17);
+    var hp = cFit(ctx, d.headline, tw, 600, 62, 34, true);
+    cText(ctx, d.headline, tx, 176 + Math.round(hp * 0.95), ctx.font, CARD.ink);
+    ctx.font = cFont(400, 19, false);
+    cText(ctx, cClip(ctx, d.sub, tw), tx, 176 + Math.round(hp * 0.95) + 40, ctx.font, CARD.ink2);
+
+    var y = 366, w = (cw - 24) / 3;
+    d.tiles.forEach(function (t, i) {
+      var x = x0 + i * (w + 12);
+      cRound(ctx, x, y, w, 120, 18); ctx.fillStyle = CARD.panel; ctx.fill();
+      cText(ctx, t.label, x + 18, y + 34, cFont(800, 14, false), CARD.ink3);
+      if (t.pts != null) cPill(ctx, "+" + t.pts, x + w - 18, y + 15, 26, cFont(800, 13, false), t.pts > 0 ? CARD.goodBg : CARD.chip, t.pts > 0 ? "#6EDBA6" : CARD.ink3, "right");
+      ctx.font = cFont(400, 17, false);
+      var meW = ctx.measureText("Me ").width;
+      cText(ctx, "Me ", x + 18, y + 72, ctx.font, CARD.ink2);
+      var vp = cFit(ctx, t.me, w - 36 - meW, 600, 25, 16, true);
+      cText(ctx, t.me, x + 18 + meW, y + 72, cFont(600, vp, true), CARD.ink);
+      ctx.font = cFont(400, 15, false);
+      cText(ctx, cClip(ctx, t.note, w - 36), x + 18, y + 102, ctx.font, CARD.ink3);
+    });
+    cFooter(ctx, x0, x1, Hh - 44 - 44, "Think you can call tonight better?", 18);
+  }
+
+  function cardFonts() {
+    if (!document.fonts || !document.fonts.load) return Promise.resolve();
+    var want = ["600 60px Fredoka", "800 18px 'Nunito Sans'", "700 15px 'Nunito Sans'", "400 16px 'Nunito Sans'"];
+    return Promise.race([
+      Promise.all(want.map(function (f) { return document.fonts.load(f, "Squeek 0123456789"); })),
+      new Promise(function (r) { setTimeout(r, 1500); })
+    ]).catch(function () {});
+  }
+  function cardPhoto() {
+    if (SHARE.img) return Promise.resolve(SHARE.img);
+    return new Promise(function (resolve) {
+      var im = new Image();
+      im.onload = function () { SHARE.img = im; resolve(im); };
+      im.onerror = function () { resolve(null); };
+      im.src = "squeektoshi.jpg";
+    });
+  }
+
+  function shareMsg(text, kind) { say("share-msg", text, kind); }
+  function renderShareTabs(hasMine) {
+    $("share-tabs").hidden = !hasMine;
+    [["night", "stab-night"], ["mine", "stab-mine"]].forEach(function (x) {
+      var on = SHARE.kind === x[0];
+      $(x[1]).setAttribute("aria-selected", String(on));
+      $(x[1]).tabIndex = on ? 0 : -1;
+    });
+  }
+  function drawShare() {
+    var seq = ++SHARE.seq, now = Date.now();
+    var mine = mineCard(now);
+    if (!mine) SHARE.kind = "night";
+    renderShareTabs(!!mine);
+    var d = SHARE.kind === "mine" ? mine : nightCard(now);
+    var dl = $("share-dl");
+    dl.setAttribute("aria-disabled", "true");
+    $("share-native").disabled = true;
+    return Promise.all([cardFonts(), cardPhoto()]).then(function (r) {
+      if (seq !== SHARE.seq) return;
+      var c = $("share-canvas"), ctx = c.getContext("2d");
+      ctx.clearRect(0, 0, c.width, c.height);
+      (d.kind === "mine" ? drawMineCard : drawNightCard)(ctx, d, r[1]);
+      c.setAttribute("aria-label", d.alt);
+      SHARE.text = d.text;
+      SHARE.file = "squeek-picks-" + d.night + (d.kind === "mine" ? "-my-result" : "") + ".png";
+      $("share-x").href = "https://x.com/intent/post?text=" + encodeURIComponent(d.text) + "&url=" + encodeURIComponent(siteUrl());
+      return new Promise(function (resolve) {
+        try {
+          c.toBlob(function (blob) {
+            if (seq !== SHARE.seq) return resolve();
+            if (!blob) { shareMsg("This browser couldn't make the picture. Take a screenshot of the card instead.", "err"); return resolve(); }
+            if (SHARE.url) URL.revokeObjectURL(SHARE.url);
+            SHARE.blob = blob; SHARE.url = URL.createObjectURL(blob);
+            dl.href = SHARE.url; dl.download = SHARE.file; dl.removeAttribute("aria-disabled");
+            $("share-native").disabled = false;
+            resolve();
+          }, "image/png");
+        } catch (e) {
+          shareMsg("This browser couldn't make the picture. Take a screenshot of the card instead.", "err");
+          resolve();
+        }
+      });
+    });
+  }
+  function openShare() {
+    var dlg = $("share");
+    shareMsg("");
+    if (typeof dlg.showModal === "function") { if (!dlg.open) dlg.showModal(); }
+    else dlg.setAttribute("open", "");
+    drawShare();
+  }
+  function closeShare() {
+    var dlg = $("share");
+    if (typeof dlg.close === "function") dlg.close(); else dlg.removeAttribute("open");
+  }
+  function shareImage() {
+    if (!SHARE.blob) return;
+    var file = null;
+    try { file = new File([SHARE.blob], SHARE.file, { type: "image/png" }); } catch (e) { /* old browser */ }
+    if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file], text: SHARE.text + " " + siteUrl() }).then(function () {
+        shareMsg("Shared.", "ok");
+      }, function (e) {
+        if (e && e.name === "AbortError") return;
+        shareMsg("Sharing didn't work here. Use Download, then add the picture to your post.", "err");
+      });
+      return;
+    }
+    // Desktop browsers that can't hand files to apps: copy the picture, else download it.
+    if (navigator.clipboard && navigator.clipboard.write && window.ClipboardItem) {
+      navigator.clipboard.write([new window.ClipboardItem({ "image/png": SHARE.blob })]).then(function () {
+        shareMsg("Picture copied. Paste it into your post, or use Post on X.", "ok");
+      }, function () {
+        $("share-dl").click();
+        shareMsg("Picture downloaded. Attach it to your post.", "ok");
+      });
+      return;
+    }
+    $("share-dl").click();
+    shareMsg("Picture downloaded. Attach it to your post.", "ok");
   }
 
   // ---------- Render: leaderboard ----------
@@ -2412,7 +3139,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
         if (P.on) potRefresh().then(renderPot);
       }
     }
-    renderBanner(); renderMe(); renderLive(now); renderTicket(now); renderCrowd(now); renderResults(now); renderBoard(now);
+    renderBanner(); renderMe(); renderLive(now); renderTicket(now); renderRace(now); renderResults(now); renderBoard(now);
     renderPot(); renderDash(); renderPotBoard(); renderBoardTabs(); renderAdmin();
   }
 
@@ -2501,6 +3228,50 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
       e.preventDefault();
       pickTab(UI.boardTab === "pot" ? "points" : "pot", true);
     });
+    // Who's winning: tabs and the full list
+    function pickRaceTab(tab, focus) {
+      UI.raceTab = tab; UI.raceAll = false;
+      try { localStorage.setItem("squeekpicks.racetab", tab); } catch (x) { /* storage blocked */ }
+      renderRace(Date.now());
+      if (focus) $(tab === "pot" ? "rtab-pot" : "rtab-points").focus();
+    }
+    $("race-tabs").addEventListener("click", function (e) {
+      var btn = e.target.closest("button[role=tab]"); if (!btn) return;
+      pickRaceTab(btn.id === "rtab-pot" ? "pot" : "points");
+    });
+    $("race-tabs").addEventListener("keydown", function (e) {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      e.preventDefault();
+      pickRaceTab($("rtab-pot").getAttribute("aria-selected") === "true" ? "points" : "pot", true);
+    });
+    $("race-list").addEventListener("click", function (e) {
+      var btn = e.target.closest("button[data-race]"); if (!btn) return;
+      UI.raceAll = btn.dataset.race === "all";
+      renderRace(Date.now());
+    });
+    // Share window
+    $("share-open").addEventListener("click", openShare);
+    $("share-close").addEventListener("click", closeShare);
+    $("share").addEventListener("click", function (e) {
+      if (e.target !== this) return;   // a click on the dimmed area around the window
+      var r = this.getBoundingClientRect();
+      if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) closeShare();
+    });
+    function pickCard(kind, focus) {
+      SHARE.kind = kind; shareMsg(""); drawShare();
+      if (focus) $(kind === "mine" ? "stab-mine" : "stab-night").focus();
+    }
+    $("share-tabs").addEventListener("click", function (e) {
+      var btn = e.target.closest("button[role=tab]"); if (!btn) return;
+      pickCard(btn.id === "stab-mine" ? "mine" : "night");
+    });
+    $("share-tabs").addEventListener("keydown", function (e) {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      e.preventDefault();
+      pickCard(SHARE.kind === "mine" ? "night" : "mine", true);
+    });
+    $("share-native").addEventListener("click", shareImage);
+    $("share-dl").addEventListener("click", function (e) { if (!SHARE.url) e.preventDefault(); });
     document.addEventListener("visibilitychange", function () {
       if (document.visibilityState === "visible") refreshAll();
     });

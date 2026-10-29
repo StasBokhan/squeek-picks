@@ -219,6 +219,42 @@
     };
   }
 
+  // ---------- Live standings ----------
+  // The night so far, scored as if it ended right now: distance run so far, busiest
+  // window so far, and tonight's blocks against the night before's final count. Only for
+  // showing who's ahead. Payouts use resolveNight, after the night has ended.
+  // live: { km, busiest (window index or indexes; -1 or [] before he runs), blocks, prevBlocks }
+  function provisionalResult(night, live) {
+    var none = { state: "void", reason: "Not known yet" };
+    var busiest = Array.isArray(live.busiest) ? live.busiest : live.busiest != null && live.busiest >= 0 ? [live.busiest] : [];
+    return {
+      night: night, ended: true, provisional: true,
+      distance: live.km != null && live.km > 0 ? { state: "resolved", km: live.km } : none,
+      peak: busiest.length ? { state: "resolved", winners: busiest } : none,
+      blocks: live.blocks != null && live.prevBlocks != null && live.blocks !== live.prevBlocks
+        ? { state: "resolved", more: live.blocks > live.prevBlocks, cur: live.blocks, prev: live.prevBlocks } : none
+    };
+  }
+  // Orders entries the way the pot ranks tickets: points, then the closer distance guess,
+  // then the earlier ticket. Entries tied on all of those share a place.
+  // Returns [{ entry, score, place }].
+  function liveStandings(res, entries) {
+    var scores = scoreNight(res, entries);
+    function errKey(s) { return s.err == null ? 1e9 : s.err; }
+    var rows = entries.map(function (e) { return { entry: e, score: scores.get(e.player_id) }; });
+    rows.sort(function (a, b) {
+      return (b.score.total - a.score.total) || (errKey(a.score) - errKey(b.score)) ||
+        (Number(a.entry.boughtAt || 0) - Number(b.entry.boughtAt || 0)) ||
+        (a.entry.player_id < b.entry.player_id ? -1 : a.entry.player_id > b.entry.player_id ? 1 : 0);
+    });
+    rows.forEach(function (r, i) {
+      var p = rows[i - 1];
+      r.place = p && p.score.total === r.score.total && errKey(p.score) === errKey(r.score) &&
+        Number(p.entry.boughtAt || 0) === Number(r.entry.boughtAt || 0) ? p.place : i + 1;
+    });
+    return rows;
+  }
+
   // Pot tickets in one shape for both contract versions. Version 1 sells one ticket per
   // wallet, so the wallet is the ticket's id; version 2 numbers tickets within the night.
   // The page and the bot both use this, so ties break the same way in both.
@@ -245,6 +281,7 @@
     liveNightAt: liveNightAt, openNightAt: openNightAt, nightToDay: nightToDay, dayToNight: dayToNight, slotOf: slotOf,
     parseStats: parseStats, parseSettlements: parseSettlements,
     resolveNight: resolveNight, distancePoints: distancePoints, scoreNight: scoreNight, potPayouts: potPayouts,
-    potTicketId: potTicketId, potTickets: potTickets
+    potTicketId: potTicketId, potTickets: potTickets,
+    provisionalResult: provisionalResult, liveStandings: liveStandings
   };
 });
