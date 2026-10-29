@@ -46,9 +46,10 @@ function fail(message) {
 
 async function api(path) {
   for (let attempt = 0; ; attempt++) {
-    const res = await fetch(API_BASE + path, { headers: { accept: "application/json" } });
-    if ((res.status === 429 || res.status === 503) && attempt < 4) {
-      const wait = Number(res.headers.get("retry-after") || 5);
+    const res = await fetch(API_BASE + path, { headers: { accept: "application/json", "user-agent": "SqueekPicks-payout/1.0 (+https://squeekpicks.xyz)" } });
+    // 403 too: the API has refused a request now and then and answered the next one.
+    if ((res.status === 429 || res.status === 503 || res.status === 403) && attempt < 4) {
+      const wait = Number(res.headers.get("retry-after") || 5 * (attempt + 1));
       await new Promise((r) => setTimeout(r, wait * 1000));
       continue;
     }

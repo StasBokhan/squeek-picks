@@ -56,11 +56,15 @@ let settlements = null;
 try { settlements = L.parseSettlements(await api("/v1/settlements?range=30d")); }
 catch (e) { console.log(`Block counts not available this time (${e.message}); keeping the saved ones.`); }
 
+// Days before Squeekchain started recording come back empty; they aren't nights he had.
+function empty(n) { return !n || (!n.coverageBps && !n.work); }
 const old = load();
-const nights = Object.assign({}, old.nights || {});
+const nights = {};
+for (const [k, v] of Object.entries(old.nights || {})) if (!empty(v)) nights[k] = v;
 let added = 0, refreshed = 0;
 for (const [night, n] of stats.nights) {
   if (NOW < L.nightEnd(night)) continue;            // still running
+  if (empty(n)) continue;                            // no data at all for that day
   const prev = nights[night];
   const blocksFinal = NOW >= L.nightEnd(night) + BLOCKS_FINAL_AFTER;
   const blocks = settlements && blocksFinal && settlements.blocks.has(night) ? settlements.blocks.get(night) : prev ? prev.blocks : null;
