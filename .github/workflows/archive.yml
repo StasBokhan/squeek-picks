@@ -1,0 +1,37 @@
+name: Save Squeektoshi's nights
+
+# Once a day, after the night's block count is final, saves the finished nights from the
+# Squeekchain API to data/diary.json (the API itself only keeps 30 days). No secrets.
+on:
+  schedule:
+    - cron: "47 12 * * *"   # every day at 12:47 UTC
+  workflow_dispatch: {}      # lets you run it by hand from the Actions tab
+
+concurrency:
+  group: archive
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Save finished nights
+        run: node archive/archive.mjs
+      - name: Commit if anything changed
+        run: |
+          git add -N data/
+          if git diff --quiet -- data/; then echo "Nothing new to save."; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git commit -m "Diary: save Squeektoshi's nights up to $(date -u +%F)"
+          git pull --rebase --quiet origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
