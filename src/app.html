@@ -433,6 +433,89 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
 .dash-empty { display: grid; gap: 12px; justify-items: start; margin-top: 18px; }
 .dash-points { margin: 16px 0 0; font-size: 14px; color: var(--ink-2); }
 
+/* Views: the game, or Squeektoshi's diary (#diary) */
+body:not([data-view="diary"]) .diary-only { display: none !important; }
+body[data-view="diary"] .game-only { display: none !important; }
+a.nav-btn {
+  display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 16px; box-sizing: border-box;
+  border-radius: 999px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink);
+  font: 800 14px/1 var(--font-body); text-decoration: none; box-shadow: var(--shadow); white-space: nowrap;
+}
+a.nav-btn:hover { border-color: var(--ink-3); }
+
+/* Squeektoshi's diary */
+.dy-hero { display: flex; flex-wrap: wrap; gap: 24px; align-items: center; padding: 24px; }
+.dy-hero img { flex: 1 1 240px; max-width: 340px; width: 100%; height: 210px; object-fit: cover; object-position: 45% 40%; border-radius: 18px; background: #000; }
+.dy-hero-text { flex: 999 1 380px; min-width: 0; display: grid; gap: 8px; }
+.dy-hero h2 { font-size: clamp(30px, 5vw, 40px); line-height: 1.1; }
+.dy-hero h2:focus { outline: none; }
+.dy-eyebrow { color: var(--accent-ink); }
+.dy-intro { margin: 0; color: var(--ink-2); font-size: 16px; max-width: 62ch; }
+.dy-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.dy-chips span { padding: 5px 12px; border-radius: 999px; background: var(--raise); font: 800 13px/1.4 var(--font-body); color: var(--ink-2); }
+.dy-section { display: grid; gap: 14px; }
+.dy-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 12px; }
+.dy-head h2, .dy-habits h2 { margin: 0; font: 600 28px/1.2 var(--font-display); }
+.dy-list { display: grid; gap: 14px; }
+.dy-entry { background: var(--panel); border: 1px solid var(--card-line); box-shadow: var(--shadow); border-radius: 22px; padding: 22px 24px; display: flex; flex-wrap: wrap; gap: 16px 28px; }
+.dy-day { flex: 1 1 180px; display: grid; gap: 2px; align-content: start; min-width: 0; }
+.dy-date { font: 800 13px/1.4 var(--font-body); color: var(--ink-3); text-transform: uppercase; letter-spacing: .05em; }
+.dy-km { font: 600 38px/1.1 var(--font-display); font-variant-numeric: tabular-nums; }
+.dy-km small { font: 600 18px var(--font-display); color: var(--ink-3); margin-left: 6px; }
+.dy-kmnote { font-size: 13px; font-weight: 700; color: var(--ink-3); }
+.dy-body { flex: 999 1 440px; min-width: 0; display: grid; gap: 12px; }
+.dy-text { margin: 0; font-size: 16px; max-width: 70ch; }
+.dy-chart { display: grid; gap: 4px; }
+.dy-bars { display: flex; align-items: flex-end; gap: 2px; height: 46px; padding-bottom: 2px; border-bottom: 1px solid var(--rule); }
+.dy-bars i { flex: 1 1 0; min-width: 0; border-radius: 2px 2px 0 0; background: var(--mark-typical); }
+.dy-bars i.on { background: var(--ink-3); opacity: .7; }
+.dy-bars i.busy { background: var(--mark-gold); opacity: 1; }
+.dy-ticks { display: flex; justify-content: space-between; font: 700 11px/1.4 var(--font-body); color: var(--ink-3); }
+.dy-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.dy-tag { padding: 4px 10px; border-radius: 999px; font: 800 12px/1.4 var(--font-body); background: var(--raise); color: var(--ink-2); }
+.dy-tag.busy { background: color-mix(in srgb, var(--gold) 16%, transparent); color: var(--accent-ink); }
+.dy-tag.rec { background: color-mix(in srgb, #FFB020 16%, transparent); color: var(--accent-ink); }
+.dy-who { margin: 0; padding-top: 10px; border-top: 1px solid var(--rule); font-size: 14px; color: var(--ink-2); }
+.dy-more { justify-self: start; }
+.dy-habits { display: grid; gap: 18px; }
+.dy-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 760px) { .dy-tiles { grid-template-columns: minmax(0, 1fr); } }
+.dy-tile { background: var(--raise); border-radius: 18px; padding: 18px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.dy-tile-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.dy-tile-head strong { font-size: 16px; font-weight: 800; }
+.dy-tile-head span { font-size: 12px; font-weight: 800; color: var(--ink-3); }
+.dy-big { font: 600 30px/1.15 var(--font-display); font-variant-numeric: tabular-nums; }
+.dy-big small { font: 700 16px var(--font-body); color: var(--ink-3); margin-left: 4px; }
+.dy-tile p { margin: 0; font-size: 13px; color: var(--ink-2); }
+.dy-wins { display: grid; gap: 6px; }
+.dy-wins div { display: grid; grid-template-columns: minmax(96px, auto) minmax(0, 1fr) 64px; align-items: center; gap: 10px; font-size: 13px; font-weight: 700; color: var(--ink-3); }
+.dy-wins div.has { color: var(--ink); }
+.dy-wins b { height: 10px; border-radius: 5px; background: var(--panel); overflow: hidden; }
+.dy-wins b i { display: block; height: 100%; border-radius: 5px; background: var(--ink-3); }
+.dy-wins div.top b i { background: var(--mark-gold); }
+.dy-wins em { font-style: normal; text-align: right; font-weight: 800; }
+.dy-strip { position: relative; height: 30px; margin: 0 8px; }
+.dy-strip::before { content: ""; position: absolute; left: 0; right: 0; top: 13px; height: 4px; border-radius: 2px; background: var(--panel); }
+.dy-strip i { position: absolute; top: 8px; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; background: var(--mark-gold); box-shadow: 0 0 0 2px var(--raise); }
+.dy-scale { display: flex; justify-content: space-between; margin: 0 8px; font: 700 11px/1.4 var(--font-body); color: var(--ink-3); }
+.dy-flips { display: flex; flex-wrap: wrap; gap: 4px; }
+.dy-flips i { width: 18px; height: 18px; border-radius: 5px; background: var(--ink-3); color: var(--ground); font: 800 11px/18px var(--font-body); text-align: center; font-style: normal; }
+.dy-flips i.up { background: var(--good); }
+.dy-records { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+.dy-rec { background: var(--panel); border: 1px solid var(--card-line); box-shadow: var(--shadow); border-radius: 20px; padding: 18px 20px; display: grid; gap: 4px; align-content: start; }
+.dy-rec .label { font-size: 13px; font-weight: 800; color: var(--ink-3); }
+.dy-rec .val { font: 600 32px/1.15 var(--font-display); font-variant-numeric: tabular-nums; }
+.dy-rec .val small { font: 700 16px var(--font-body); color: var(--ink-3); margin-left: 6px; }
+.dy-rec .when { font-size: 13px; color: var(--ink-2); }
+.dy-foot { margin: 0; text-align: center; font-size: 13px; color: var(--ink-3); }
+.opt .pct.on { color: var(--accent-ink); }
+@media (max-width: 560px) {
+  .dy-entry { padding: 18px; }
+  .dy-km { font-size: 32px; }
+  .dy-hero { padding: 18px; }
+  .dy-hero img { height: 180px; max-width: none; }
+}
+
 /* Who's winning right now */
 .race { display: grid; gap: 22px; }
 .race-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 14px; }
@@ -547,6 +630,14 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
       </div>
     </div>
     <div class="top-right">
+      <a class="nav-btn game-only" href="#diary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/></svg>
+        His diary
+      </a>
+      <a class="nav-btn diary-only" href="#game">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+        Back to the game
+      </a>
       <button type="button" class="icon-btn" id="theme-btn" aria-label="Switch to light mode" title="Light mode">
         <svg class="i-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6 6 6M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/></svg>
         <svg class="i-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>
@@ -557,7 +648,41 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
 
   <div class="banner" id="banner" role="status" hidden></div>
 
-  <section class="panel live" aria-labelledby="live-h">
+  <!-- Squeektoshi's diary: shown instead of the game at #diary -->
+  <section class="panel dy-hero diary-only" aria-labelledby="diary-h">
+    <img src="squeektoshi.jpg" width="665" height="413" alt="Squeektoshi sitting in front of his wheel on the night camera">
+    <div class="dy-hero-text">
+      <span class="eyebrow dy-eyebrow">Diary</span>
+      <h2 id="diary-h" tabindex="-1">Squeektoshi's diary</h2>
+      <p class="dy-intro" id="dy-intro"></p>
+      <div class="dy-chips" id="dy-chips"></div>
+    </div>
+  </section>
+  <section class="dy-section diary-only" aria-labelledby="dy-nights-h">
+    <div class="dy-head">
+      <h2 id="dy-nights-h">Night by night</h2>
+      <span class="hint" id="dy-nights-note"></span>
+    </div>
+    <div class="dy-list" id="dy-list"></div>
+  </section>
+  <section class="panel dy-habits diary-only" aria-labelledby="dy-habits-h">
+    <div>
+      <span class="eyebrow dy-eyebrow">Study him before you pick</span>
+      <h2 id="dy-habits-h">His habits</h2>
+      <p class="sub" id="dy-habits-sub"></p>
+    </div>
+    <div class="dy-tiles" id="dy-habits"></div>
+  </section>
+  <section class="dy-section diary-only" aria-labelledby="dy-records-h">
+    <div class="dy-head">
+      <h2 id="dy-records-h">His records</h2>
+      <span class="hint" id="dy-records-note"></span>
+    </div>
+    <div class="dy-records" id="dy-records"></div>
+  </section>
+  <p class="dy-foot diary-only">Wheel data from the public Squeekchain API. Squeek Picks saves each night once it ends, so the diary keeps nights the API no longer shows.</p>
+
+  <section class="panel live game-only" aria-labelledby="live-h">
     <div class="live-top">
     <div class="live-main">
     <div class="live-head">
@@ -602,7 +727,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     </figure>
   </section>
 
-  <section class="panel race" id="race" aria-labelledby="race-h">
+  <section class="panel race game-only" id="race" aria-labelledby="race-h">
     <div class="race-head">
       <div class="race-title">
         <span class="eyebrow" id="race-night">Tonight</span>
@@ -628,7 +753,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     <p class="race-foot" id="race-foot"></p>
   </section>
 
-  <div class="picks-row">
+  <div class="picks-row game-only">
     <section class="panel ticket" aria-labelledby="ticket-h">
       <div class="ticket-head">
         <span class="eyebrow">Your picks for the next night</span>
@@ -663,7 +788,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
           <div class="m-head"><h3 class="m-name" id="mk-peak">Peak window</h3><span class="m-pts">up to 20 pts</span></div>
           <p class="q">Which 3 hours will he spin the most?</p>
           <div class="opts" id="pick-peak"></div>
-          <p class="hint">Your local time. The bar shows how much of a typical night's running falls in each window.</p>
+          <p class="hint" id="hint-peak">Your local time.</p>
         </fieldset>
 
         <fieldset class="market" aria-labelledby="mk-blocks">
@@ -699,7 +824,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     </section>
   </div>
 
-  <section class="panel dash" id="dash" aria-labelledby="dash-h" hidden>
+  <section class="panel dash game-only" id="dash" aria-labelledby="dash-h" hidden>
     <div class="dash-head">
       <div>
         <span class="eyebrow">Your bets</span>
@@ -712,7 +837,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     <p class="msg" id="dash-msg" role="status"></p>
   </section>
 
-  <div class="grid-2">
+  <div class="grid-2 game-only">
     <section class="panel" aria-labelledby="results-h">
       <div class="res-head">
         <div>
@@ -745,7 +870,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     </section>
   </div>
 
-  <section class="panel" id="admin" aria-labelledby="admin-h" hidden>
+  <section class="panel game-only" id="admin" aria-labelledby="admin-h" hidden>
     <span class="eyebrow">Owner</span>
     <h2 id="admin-h">Pot settings</h2>
     <p class="sub">Anyone can open this page, but the pot only accepts changes from the wallet that deployed it.</p>
@@ -753,7 +878,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     <p class="msg" id="admin-msg" role="status"></p>
   </section>
 
-  <section class="panel" aria-labelledby="rules-h">
+  <section class="panel game-only" aria-labelledby="rules-h">
     <h2 id="rules-h">How it works</h2>
     <div class="rules-grid">
       <div>
@@ -1048,6 +1173,8 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
       .then(function (r) {
         var p = r[0].status === "fulfilled" ? L.parseStats(r[0].value) : null;
         if (p) { H.nights = p.nights; H.typical = p.typical; H.statsAt = p.at; H.statsFrom = p.from; H.firstAt = p.firstAt; H.apiOk = true; }
+        // His all-time records and totals, for the diary.
+        if (r[0].status === "fulfilled" && r[0].value) { H.records = r[0].value.records || null; H.lifetime = r[0].value.lifetime || null; }
         var q = r[1].status === "fulfilled" ? L.parseSettlements(r[1].value) : null;
         if (q) { H.blocks = q.blocks; H.settledTs = q.settledTs; H.blocksAt = q.at; H.blocksFrom = q.from; H.apiOk = true; }
         return r;
@@ -2046,7 +2173,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
   }
 
   // Redraws the parts that show names and avatars, after ENS answers arrive.
-  function renderIdentity() { renderMe(); renderRace(Date.now()); renderPotLists(); renderDash(); renderPotBoard(); }
+  function renderIdentity() { renderMe(); renderRace(Date.now()); renderPotLists(); renderDash(); renderPotBoard(); if (currentView() === "diary") renderDiary(Date.now()); }
 
   // ----- Owner settings (?admin) -----
   function parseEthInput(raw) {
@@ -2360,27 +2487,37 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
       var r = resolve(addDays(live, -k), now);
       if (r.distance.state === "resolved") recent.push(r.distance.km);
     }
+    // Hints from his diary, with a link to it.
+    var dn = diaryNights(now), dh = diaryHabits(dn), dlink = ' <a href="#diary">His diary</a>';
+    if (dn.length >= recent.length) recent = dn.slice(-7).map(function (n) { return n.km; });
     if (recent.length) {
       var sorted = recent.slice().sort(function (a, b) { return a - b; });
       var med = sorted.length % 2 ? sorted[(sorted.length - 1) / 2] : (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2;
-      $("hint-distance").innerHTML = "His last " + recent.length + " nights: median <span class=\"num\">" + fmtKm(med) +
-        " km</span>, from <span class=\"num\">" + fmtKm(sorted[0]) + "</span> to <span class=\"num\">" + fmtKm(sorted[sorted.length - 1]) + " km</span>.";
+      $("hint-distance").innerHTML = (recent.length === 1 ? "His one night so far: <span class=\"num\">" + fmtKm(med) + " km</span>."
+        : "His last " + recent.length + " nights: median <span class=\"num\">" + fmtKm(med) +
+        " km</span>, from <span class=\"num\">" + fmtKm(sorted[0]) + "</span> to <span class=\"num\">" + fmtKm(sorted[sorted.length - 1]) + " km</span>.") + dlink;
     } else {
       $("hint-distance").textContent = "No finished nights to compare yet.";
     }
+    $("hint-peak").innerHTML = dh.topIdx >= 0 ? esc(blockLabel(open, dh.topIdx)) + " was his busiest on " + dh.top + " of his last " + dh.ran + (dh.ran === 1 ? " night" : " nights") + ". Your local time." + dlink
+      : "Your local time. The bar shows how much of a typical night's running falls in each window.";
 
-    // Peak options, rebuilt only when their content changes so keyboard focus stays put.
+    // Peak options, rebuilt only when their content changes so keyboard focus stays put. Each
+    // shows how often that window was his busiest; before any night is recorded, its share
+    // of a typical night's running.
     var typ = H.typical || new Array(48).fill(0), tot = typ.reduce(function (a, v) { return a + v; }, 0) || 1;
-    var shares = [], b;
+    var shares = [], b, byNights = dh.ran > 0;
     for (b = 0; b < 8; b++) shares.push(Math.round(typ.slice(b * 6, b * 6 + 6).reduce(function (a, v) { return a + v; }, 0) / tot * 100));
-    var key = open + "|" + shares.join(",");
+    var key = open + "|" + shares.join(",") + "|" + dh.counts.join(",");
     if (UI.peakKey !== key) {
       var html = "";
       for (b = 0; b < 8; b++) {
+        var k = dh.counts[b];
         html += '<button type="button" class="opt" data-block="' + b + '" aria-pressed="false">' +
           "<span>" + esc(blockLabel(open, b)) + "</span>" +
-          '<span class="share"><i style="width:' + shares[b] + '%"></i></span>' +
-          '<span class="pct">' + (H.typical ? "usually " + shares[b] + "%" : "&nbsp;") + "</span></button>";
+          '<span class="share"><i style="width:' + (byNights ? Math.round(k / dh.top * 100) : shares[b]) + '%"></i></span>' +
+          (byNights ? '<span class="pct' + (k ? " on" : "") + '">' + (k ? "busiest " + k + (k === 1 ? " night" : " nights") : "not yet his busiest") + "</span>"
+            : '<span class="pct">' + (H.typical ? "usually " + shares[b] + "%" : "&nbsp;") + "</span>") + "</button>";
       }
       $("pick-peak").innerHTML = html;
       UI.peakKey = key;
@@ -2392,8 +2529,9 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
       btn.setAttribute("aria-pressed", String(UI.draft.more === (btn.dataset.more === "true")));
     });
     var liveBlocks = H.blocks.get(live);
-    $("hint-blocks").innerHTML = liveBlocks == null ? "The night before is tonight, " + esc(fmtNight(live)) + "."
-      : "The night before is tonight, " + esc(fmtNight(live)) + ': <span class="num">' + fmtInt(liveBlocks) + "</span> blocks so far, final at " + esc(fmtDayTime(nightEnd(live))) + ".";
+    $("hint-blocks").innerHTML = (liveBlocks == null ? "The night before is tonight, " + esc(fmtNight(live)) + "."
+      : "The night before is tonight, " + esc(fmtNight(live)) + ': <span class="num">' + fmtInt(liveBlocks) + "</span> blocks so far, final at " + esc(fmtDayTime(nightEnd(live))) + ".") +
+      (dh.flips.length ? " More blocks than the night before on " + dh.more + " of " + dh.flips.length + (dh.flips.length === 1 ? " night" : " nights") + " so far." + dlink : "");
     renderSave();
   }
 
@@ -2609,6 +2747,288 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     var scale = "";
     for (var v = 0; v <= max; v += step) scale += '<span style="left:' + pct(v) + '%">' + v + (v === 0 || v === max ? " km" : "") + "</span>";
     $("track-scale").innerHTML = scale;
+  }
+
+  // ---------- Squeektoshi's diary ----------
+  // Every finished night: the ones saved daily to data/diary.json (the API keeps only
+  // 30 days), with the API's own copy taking over for nights it still has.
+  var D = { file: null, all: false };
+  function loadDiary() {
+    if (H.demo || typeof fetch !== "function") return Promise.resolve();
+    return fetch("data/diary.json", { cache: "no-cache" }).then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) { if (j && j.nights) D.file = j; }, function () { /* no saved nights yet */ });
+  }
+  function hasData(n) { return n && (n.coverageBps || n.work); }
+  function diaryNights(now) {
+    var m = new Map();
+    if (D.file) Object.keys(D.file.nights).forEach(function (k) {
+      var v = D.file.nights[k];
+      if (hasData(v) && now >= nightEnd(k)) m.set(k, { night: k, km: v.km, coverageBps: v.coverageBps, work: v.work, slots: v.slots || [], blocks: v.blocks });
+    });
+    H.nights.forEach(function (n, k) {
+      if (!hasData(n) || now < nightEnd(k)) return;
+      var prev = m.get(k), b = now >= nightEnd(k) + 20 * 60e3 && H.blocks.has(k) ? H.blocks.get(k) : prev ? prev.blocks : null;
+      m.set(k, { night: k, km: n.distanceKm, coverageBps: n.coverageBps, work: n.work, slots: n.slots, blocks: b });
+    });
+    var out = Array.from(m.values()).sort(function (a, b) { return a.night < b.night ? -1 : 1; });
+    out.forEach(function (n, i) { var p = out[i - 1]; n.prevBlocks = p && p.night === addDays(n.night, -1) ? p.blocks : null; n.facts = nightFacts(n); });
+    return out;
+  }
+  // Runs (half hours in a row with spins), when he started and stopped, his busiest window.
+  // A half hour with fewer than 30 spins (a few metres) doesn't count as running.
+  var RUN_MIN_SPINS = 30;
+  function nightFacts(n) {
+    var win = new Array(8).fill(0), runs = [], cur = null, first = -1, last = -1, max = 0, maxAt = -1;
+    for (var i = 0; i < 48; i++) {
+      var v = n.slots[i] || 0;
+      win[Math.floor(i / 6)] += v;
+      if (v > max) { max = v; maxAt = i; }
+      if (v >= RUN_MIN_SPINS) {
+        if (first < 0) first = i;
+        last = i;
+        if (cur) cur.end = i + 1; else { cur = { start: i, end: i + 1 }; runs.push(cur); }
+      } else cur = null;
+    }
+    var top = Math.max.apply(null, win), longest = null;
+    runs.forEach(function (r) { if (!longest || r.end - r.start > longest.end - longest.start) longest = r; });
+    return {
+      win: win, runs: runs, first: first, last: last, longest: longest, maxSlot: max, maxAt: maxAt,
+      busiest: top > 0 ? win.indexOf(top) : -1
+    };
+  }
+  function slotTime(night, i) { return fmtTime(nightStart(night) + i * SLOT_MS); }
+  function joinList(a) { return a.length < 2 ? a.join("") : a.slice(0, -1).join(", ") + " and " + a[a.length - 1]; }
+  // The night a record belongs to, from the API's record timestamp.
+  function recordNight(rec) { var t = rec && Date.parse(rec.occurredAt); return t ? liveNightAt(t) : null; }
+  function diaryRecords() { return H.records || (D.file && D.file.records) || null; }
+  function diaryLifetime() { return H.lifetime || (D.file && D.file.lifetime) || null; }
+  function firstRecorded() {
+    var t = (diaryLifetime() && Date.parse(diaryLifetime().firstObservedAt)) || H.firstAt || 0;
+    return t ? liveNightAt(t) : null;
+  }
+
+  // What he usually does, over the last 30 nights in the diary.
+  function diaryHabits(nights) {
+    var list = nights.slice(-30), n = list.length;
+    var counts = new Array(8).fill(0), wakes = {}, sleeps = [], kms = [], flips = [];
+    list.forEach(function (x) {
+      var f = x.facts;
+      if (f.busiest >= 0) counts[f.busiest]++;
+      if (f.first >= 0) { wakes[f.first] = (wakes[f.first] || 0) + 1; sleeps.push(f.last + 1); }
+      kms.push(x.km);
+      if (x.blocks != null && x.prevBlocks != null && x.blocks !== x.prevBlocks) flips.push(x.blocks > x.prevBlocks);
+    });
+    var wake = -1, wakeN = 0;
+    Object.keys(wakes).forEach(function (k) { if (wakes[k] > wakeN) { wakeN = wakes[k]; wake = Number(k); } });
+    var top = Math.max.apply(null, counts);
+    return {
+      n: n, list: list, counts: counts, top: top, topIdx: top > 0 ? counts.indexOf(top) : -1,
+      ran: list.filter(function (x) { return x.facts.busiest >= 0; }).length,
+      wake: wake, wakeN: wakeN, woke: Object.keys(wakes).reduce(function (a, k) { return a + wakes[k]; }, 0),
+      sleepMin: sleeps.length ? Math.min.apply(null, sleeps) : -1, sleepMax: sleeps.length ? Math.max.apply(null, sleeps) : -1,
+      kmMin: kms.length ? Math.min.apply(null, kms) : null, kmMax: kms.length ? Math.max.apply(null, kms) : null,
+      kmAvg: kms.length ? kms.reduce(function (a, b) { return a + b; }, 0) / kms.length : null,
+      over10: kms.filter(function (k) { return k >= 10; }).length,
+      flips: flips, more: flips.filter(Boolean).length
+    };
+  }
+
+  // A few plain sentences about one night, from its half-hour data.
+  function diaryText(n, ctx) {
+    var f = n.facts, night = n.night, out = [];
+    if (night === ctx.firstNight) out.push("The camera's first night.");
+    if (f.first < 0) { out.push("He took the night off. Not a single spin."); return out.join(" "); }
+    var t = function (i) { return slotTime(night, i); };
+    var L = f.longest, firstRun = f.runs[0], usual = night !== ctx.firstNight && ctx.habits.n >= 3 && ctx.habits.wake === f.first && ctx.habits.wakeN >= 2;
+    var longMin = (L.end - L.start) * 30;
+    var recRun = ctx.rec.run === night ? ", his longest run yet" : "";
+    if (firstRun === L && longMin >= 60) out.push("Up at " + t(f.first) + (usual ? " as usual" : "") + " and ran non-stop until " + t(L.end) + recRun + ".");
+    else {
+      out.push("Up at " + t(f.first) + (usual ? " as usual" : "") + ((firstRun.end - firstRun.start) >= 2 ? " and ran until " + t(firstRun.end) : "") + ".");
+      if (longMin >= 60) out.push("Then ran non-stop from " + t(L.start) + " to " + t(L.end) + recRun + ".");
+      else if (f.runs.length > 1) out.push("He ran in short bursts, none longer than " + longMin + " minutes.");
+    }
+    var others = f.runs.filter(function (r) { return r !== L && r !== firstRun; }).map(function (r) { return t(r.start); });
+    if (others.length > 3) out.push("Several shorter runs after that.");
+    else if (others.length) out.push((others.length === 1 ? "One more run at " : "More runs at ") + joinList(others) + ".");
+    if (ctx.rec.halfHour === night && ctx.rec.halfHourAt) out.push("His busiest half hour ever came at " + fmtTime(ctx.rec.halfHourAt) + ".");
+    out.push("Asleep by " + t(f.last + 1) + ".");
+    if (n.coverageBps < 9500 && night !== ctx.firstNight) out.push("Part of this night's data is missing.");
+    return out.join(" ");
+  }
+
+  // Who won that night, where the page has the data (the last 2 to 4 weeks).
+  function diaryWinners(night, now) {
+    var parts = [];
+    nightRecs(night).forEach(function (rec) {
+      if (!rec.tickets.length) return;
+      if (rec.status === 2) { parts.push("Pot: cancelled, tickets refunded."); return; }
+      var p = payoutOf(rec, night);
+      if (rec.status === 1 && p) {
+        var best = -1;
+        p.amounts.forEach(function (a, i) { if (best < 0 || a > p.amounts[best]) best = i; });
+        parts.push("Pot: " + (best >= 0 ? walletLabel(p.winners[best]) + " won " + fmtEth(p.amounts[best]) + " ETH" : "paid out") +
+          " (" + rec.tickets.length + " ticket" + (rec.tickets.length === 1 ? "" : "s") + ").");
+      } else parts.push("Pot: " + fmtEth(rec.pot) + " ETH from " + rec.tickets.length + " ticket" + (rec.tickets.length === 1 ? "" : "s") + ", being paid out.");
+    });
+    var picks = picksFor(night);
+    if (picks.length) {
+      var rows = L.liveStandings(resolve(night, now), picks);
+      if (rows.length && rows[0].score.counted && rows[0].score.total > 0) {
+        var tops = rows.filter(function (r) { return r.place === 1; });
+        parts.push("Points game: " + (tops.length > 1 ? tops.length + " players shared the top" : nameOf(rows[0].entry.player_id) + " on top") + " with " + rows[0].score.total + " points.");
+      }
+    }
+    return parts.join(" ");
+  }
+
+  var DIARY_SHOWN = 7;
+  function renderDiary(now) {
+    var nights = diaryNights(now), habits = diaryHabits(nights), recs = diaryRecords() || {}, life = diaryLifetime();
+    var firstNight = firstRecorded() || (nights[0] && nights[0].night);
+    var rec = {
+      run: recordNight(recs.longestActiveWindowMinutes), halfHour: recordNight(recs.mostWorkHalfHour),
+      halfHourAt: recs.mostWorkHalfHour && Date.parse(recs.mostWorkHalfHour.occurredAt),
+      far: recordNight(recs.maximumDailyDistanceMm), speed: recordNight(recs.peakObservedSpeedMmPerSecond)
+    };
+    var ctx = { habits: habits, rec: rec, firstNight: firstNight };
+    var totalKm = life && life.observedDistanceMm != null ? Number(life.observedDistanceMm) / 1e6 : nights.reduce(function (a, n) { return a + n.km; }, 0);
+
+    $("dy-intro").textContent = (firstNight ? "Every night on the wheel since the camera started on " + fmtNight(firstNight) : "Every night on the wheel") +
+      ", written from the wheel's own data. A new entry appears each day after " + fmtTime(nightEnd(UI.live)) + ", when the night ends.";
+    $("dy-chips").innerHTML = '<span>' + nights.length + (nights.length === 1 ? " night" : " nights") + " recorded</span>" +
+      "<span>" + fmtKm(totalKm) + " km in total</span>" +
+      (habits.wake >= 0 && habits.n >= 2 ? "<span>Usually up at " + esc(slotTime(UI.live, habits.wake)) + "</span>" : "");
+    $("dy-nights-note").textContent = "Your local time. The orange bars are his busiest 3 hours.";
+
+    // Night by night, latest first.
+    var list = $("dy-list");
+    if (!nights.length) {
+      list.innerHTML = '<p class="empty">No finished nights yet. The first entry appears after ' + esc(fmtDayTime(nightEnd(UI.live))) + ".</p>";
+    } else {
+      var maxSlot = Math.max.apply(null, nights.map(function (n) { return n.facts.maxSlot; })) || 1;
+      var rev = nights.slice().reverse(), shown = D.all ? rev : rev.slice(0, DIARY_SHOWN);
+      var many = nights.length >= 2;
+      list.innerHTML = shown.map(function (n) {
+        var f = n.facts, bars = "";
+        for (var i = 0; i < 48; i++) {
+          var v = n.slots[i] || 0;
+          bars += '<i class="' + (v > 0 ? (Math.floor(i / 6) === f.busiest ? "busy" : "on") : "") + '" style="height:' + (v > 0 ? Math.max(2, Math.round(v / maxSlot * 42)) : 1) + 'px"></i>';
+        }
+        var ticks = [0, 12, 24, 36, 48].map(function (i) { return "<span>" + esc(slotTime(n.night, i)) + "</span>"; }).join("");
+        var kmNote = !many ? "" : n.km === habits.kmMax && habits.n > 1 ? "His farthest so far" : n.km === habits.kmMin && habits.n > 1 ? "His shortest so far"
+          : n.km >= habits.kmAvg ? "Above his average" : "Below his average";
+        var tags = f.busiest >= 0 ? ['<span class="dy-tag busy">Busiest ' + esc(blockLabel(n.night, f.busiest)) + "</span>"] : [];
+        if (n.blocks != null) tags.push('<span class="dy-tag">' + fmtInt(n.blocks) + " blocks" + (n.prevBlocks != null && n.prevBlocks !== n.blocks ? ", " + (n.blocks > n.prevBlocks ? "more" : "fewer") + " than the night before" : "") + "</span>");
+        if (rec.far === n.night) tags.push('<span class="dy-tag rec">Record: farthest night</span>');
+        if (rec.run === n.night) tags.push('<span class="dy-tag rec">Record: longest run, ' + esc(fmtMinutes(Number(recs.longestActiveWindowMinutes.value))) + "</span>");
+        if (rec.halfHour === n.night) tags.push('<span class="dy-tag rec">Record: busiest half hour, ' + fmtInt(Number(recs.mostWorkHalfHour.value)) + " spins</span>");
+        if (rec.speed === n.night) tags.push('<span class="dy-tag rec">Record: top speed, ' + (Number(recs.peakObservedSpeedMmPerSecond.value) * 0.0036).toFixed(1) + " km/h</span>");
+        var who = diaryWinners(n.night, now);
+        return '<article class="dy-entry" aria-label="' + esc(fmtNight(n.night)) + '">' +
+          '<div class="dy-day"><span class="dy-date">' + esc(fmtNight(n.night)) + '</span><span class="dy-km">' + fmtKm(n.km) + "<small>km</small></span>" +
+          (kmNote ? '<span class="dy-kmnote">' + kmNote + "</span>" : "") + "</div>" +
+          '<div class="dy-body"><p class="dy-text">' + esc(diaryText(n, ctx)) + "</p>" +
+          '<div class="dy-chart" role="img" aria-label="' + esc("Spins per half hour" + (f.busiest >= 0 ? ", busiest " + blockLabel(n.night, f.busiest) : "")) + '"><div class="dy-bars">' + bars + '</div><div class="dy-ticks">' + ticks + "</div></div>" +
+          (tags.length ? '<div class="dy-tags">' + tags.join("") + "</div>" : "") +
+          (who ? '<p class="dy-who">' + esc(who) + "</p>" : "") + "</div></article>";
+      }).join("") +
+        (nights.length > DIARY_SHOWN ? '<button type="button" class="secondary dy-more" data-diary="' + (D.all ? "less" : "all") + '">' +
+          (D.all ? "Show only the last " + DIARY_SHOWN + " nights" : "Show " + (nights.length - DIARY_SHOWN) + " older nights") + "</button>" : "");
+    }
+
+    // His habits
+    var h = habits;
+    $("dy-habits-sub").textContent = !h.n ? "His habits show up here after his first night." : h.n < 10 ?
+      "Only " + h.n + (h.n === 1 ? " night" : " nights") + " so far, so these are early hints. They firm up with every night." : "From his last " + h.n + " nights.";
+    if (!h.n) { $("dy-habits").innerHTML = ""; }
+    else {
+      var winRows = "";
+      for (var b = 0; b < 8; b++) {
+        var c = h.counts[b];
+        winRows += '<div class="' + (c ? "has" : "") + (b === h.topIdx ? " top" : "") + '"><span>' + esc(blockLabel(UI.open, b)) + "</span><b><i style=\"width:" +
+          (h.top ? Math.round(c / h.top * 100) : 0) + '%"></i></b><em>' + c + (c === 1 ? " night" : " nights") + "</em></div>";
+      }
+      var lo = Math.max(0, Math.floor(h.kmMin) - 1), hi = Math.ceil(h.kmMax) + 1;
+      var dots = h.list.map(function (x) { return '<i style="left:' + ((x.km - lo) / (hi - lo) * 100).toFixed(1) + "%;opacity:" + (h.n > 10 ? 0.55 : 0.95) + '"></i>'; }).join("");
+      var flips = h.flips.map(function (up) { return '<i class="' + (up ? "up" : "") + '" title="' + (up ? "More blocks" : "Fewer blocks") + '">' + (up ? "▲" : "▼") + "</i>"; }).join("");
+      var share = h.flips.length ? h.more / h.flips.length : 0;
+      $("dy-habits").innerHTML =
+        '<div class="dy-tile"><div class="dy-tile-head"><strong>Busiest 3 hours</strong><span>Peak window pick</span></div><div class="dy-wins">' + winRows + "</div>" +
+          "<p>" + (h.topIdx >= 0 ? esc(blockLabel(UI.open, h.topIdx)) + " was his busiest on " + h.top + " of " + h.ran + (h.ran === 1 ? " night." : " nights.") : "No spins yet.") + "</p></div>" +
+        '<div class="dy-tile"><div class="dy-tile-head"><strong>How far he runs</strong><span>Distance pick</span></div>' +
+          '<span class="dy-big">' + fmtKm(h.kmMin) + (h.kmMax !== h.kmMin ? "–" + fmtKm(h.kmMax) : "") + "<small>km</small></span>" +
+          '<div class="dy-strip" role="img" aria-label="' + esc("Each night's distance, from " + fmtKm(h.kmMin) + " to " + fmtKm(h.kmMax) + " km") + '">' + dots + "</div>" +
+          '<div class="dy-scale"><span>' + lo + " km</span><span>" + hi + " km</span></div>" +
+          "<p>Average " + fmtKm(h.kmAvg) + " km." + (h.n >= 10 ? " 10 km or more on " + h.over10 + " of " + h.n + " nights." : "") + "</p></div>" +
+        '<div class="dy-tile"><div class="dy-tile-head"><strong>When he wakes up</strong><span>His first spin</span></div>' +
+          '<span class="dy-big">' + (h.wake >= 0 ? esc(slotTime(UI.live, h.wake)) : "–") + "</span>" +
+          "<p>" + (h.wake >= 0 ? "His first spin came at " + esc(slotTime(UI.live, h.wake)) + " on " + h.wakeN + " of " + h.woke + (h.woke === 1 ? " night." : " nights.") : "No spins yet.") + "</p>" +
+          (h.sleepMin >= 0 ? "<p>" + (h.sleepMin === h.sleepMax ? "Last spin by " + esc(slotTime(UI.live, h.sleepMin)) + "." : "Last spin between " + esc(slotTime(UI.live, h.sleepMin)) + " and " + esc(slotTime(UI.live, h.sleepMax)) + ".") + "</p>" : "") + "</div>" +
+        '<div class="dy-tile"><div class="dy-tile-head"><strong>More blocks than the night before?</strong><span>Blocks pick</span></div>' +
+          '<span class="dy-big">' + (h.flips.length ? h.more + " of " + h.flips.length + "<small>" + (h.flips.length === 1 ? "night" : "nights") + "</small>" : "–") + "</span>" +
+          (flips ? '<div class="dy-flips" aria-hidden="true">' + flips + "</div>" : "") +
+          "<p>" + (!h.flips.length ? "Needs two recorded nights in a row." : h.flips.length < 5 ? "Too early to call it a pattern." :
+            share >= 0.4 && share <= 0.6 ? "Close to a coin flip." : share > 0.6 ? "More often more than fewer." : "More often fewer than more.") + "</p></div>";
+    }
+
+    // His records, from the API (finer than half hours), else from the saved nights.
+    var cards = [];
+    function card(label, val, unit, when) { cards.push('<div class="dy-rec"><span class="label">' + esc(label) + '</span><span class="val">' + esc(val) + "<small>" + esc(unit) + '</small></span><span class="when">' + esc(when) + "</span></div>"); }
+    function at(r) { var t = Date.parse(r.occurredAt); return fmtNight(liveNightAt(t)); }
+    var r = recs;
+    if (r.maximumDailyDistanceMm) card("Farthest night", fmtKm(Number(r.maximumDailyDistanceMm.value) / 1e6), "km", at(r.maximumDailyDistanceMm));
+    else if (nights.length) { var far = nights.reduce(function (a, n) { return n.km > a.km ? n : a; }); card("Farthest night", fmtKm(far.km), "km", fmtNight(far.night)); }
+    // Without the API's records, the same ones from the saved half hours.
+    var bestRun = null, bestHalf = null, streak = 0, bestStreak = 0, streakFrom = null, bestFrom = null;
+    nights.forEach(function (n, i) {
+      var f = n.facts;
+      if (f.longest && (!bestRun || f.longest.end - f.longest.start > bestRun.r.end - bestRun.r.start)) bestRun = { n: n, r: f.longest };
+      if (f.maxSlot > 0 && (!bestHalf || f.maxSlot > bestHalf.n.facts.maxSlot)) bestHalf = { n: n };
+      var cont = i > 0 && nights[i - 1].night === addDays(n.night, -1);
+      if (f.first >= 0) { if (!cont || !streak) { streak = 0; streakFrom = n.night; } streak++; } else streak = 0;
+      if (streak > bestStreak) { bestStreak = streak; bestFrom = streakFrom; }
+    });
+    if (r.longestActiveWindowMinutes) {
+      var mins = Number(r.longestActiveWindowMinutes.value), st = Date.parse(r.longestActiveWindowMinutes.occurredAt);
+      card("Longest non-stop run", fmtMinutes(mins), "", at(r.longestActiveWindowMinutes) + ", " + fmtTime(st) + " to " + fmtTime(st + mins * 60e3));
+    } else if (bestRun) {
+      card("Longest non-stop run", fmtMinutes((bestRun.r.end - bestRun.r.start) * 30), "", fmtNight(bestRun.n.night) + ", " + slotTime(bestRun.n.night, bestRun.r.start) + " to " + slotTime(bestRun.n.night, bestRun.r.end));
+    }
+    if (r.mostWorkHalfHour) card("Busiest half hour", fmtInt(Number(r.mostWorkHalfHour.value)), "spins", at(r.mostWorkHalfHour) + ", " + fmtTime(Date.parse(r.mostWorkHalfHour.occurredAt)));
+    else if (bestHalf) card("Busiest half hour", fmtInt(bestHalf.n.facts.maxSlot), "spins", fmtNight(bestHalf.n.night) + ", " + slotTime(bestHalf.n.night, bestHalf.n.facts.maxAt));
+    if (r.peakObservedSpeedMmPerSecond) card("Top speed", (Number(r.peakObservedSpeedMmPerSecond.value) * 0.0036).toFixed(1), "km/h", at(r.peakObservedSpeedMmPerSecond) + ", " + fmtTime(Date.parse(r.peakObservedSpeedMmPerSecond.occurredAt)));
+    if (r.longestActiveDayStreak) card("Nights in a row on the wheel", fmtInt(Number(r.longestActiveDayStreak.value)), Number(r.longestActiveDayStreak.value) === 1 ? "night" : "nights", "Starting " + at(r.longestActiveDayStreak));
+    else if (bestStreak) card("Nights in a row on the wheel", String(bestStreak), bestStreak === 1 ? "night" : "nights", "Starting " + fmtNight(bestFrom));
+    if (nights.length || life) card("Total distance", fmtKm(totalKm), "km", distanceFun(totalKm));
+    $("dy-records").innerHTML = cards.join("") || '<p class="empty">His records show up here after his first night.</p>';
+    $("dy-records-note").textContent = firstNight ? "Since the camera started on " + fmtNight(firstNight) + "." : "";
+  }
+  function fmtMinutes(m) {
+    if (m < 60) return m + " min";
+    var h = Math.floor(m / 60), r = m % 60;
+    return r ? h + " h " + r + " min" : h + (h === 1 ? " hour" : " hours");
+  }
+  function distanceFun(km) {
+    if (km < 1) return "";
+    if (km < 42.195) return "About " + Math.round(km / 0.4) + " laps of a running track";
+    var m = km / 42.195;
+    return "About " + (m < 10 ? m.toFixed(1) : Math.round(m)) + " marathons";
+  }
+
+  // ----- Views: the game, or the diary at #diary -----
+  function currentView() { return location.hash === "#diary" ? "diary" : "game"; }
+  function applyView(moveFocus) {
+    var v = currentView();
+    if (document.body.dataset.view === v && !moveFocus) return;
+    document.body.dataset.view = v;
+    document.title = v === "diary" ? "Squeektoshi's diary · Squeek Picks" : "Squeek Picks";
+    if (v === "diary" && UI.live) renderDiary(Date.now());
+    if (moveFocus) {
+      window.scrollTo(0, 0);
+      if (v === "diary") $("diary-h").focus({ preventScroll: true });
+    }
+    if (v === "game" && location.hash === "#game") history.replaceState(null, "", location.pathname + location.search);
   }
 
   // ---------- Render: results for the last finished night ----------
@@ -3141,6 +3561,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     }
     renderBanner(); renderMe(); renderLive(now); renderTicket(now); renderRace(now); renderResults(now); renderBoard(now);
     renderPot(); renderDash(); renderPotBoard(); renderBoardTabs(); renderAdmin();
+    if (currentView() === "diary") renderDiary(now);
   }
 
   // ---------- Events ----------
@@ -3249,6 +3670,13 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
       UI.raceAll = btn.dataset.race === "all";
       renderRace(Date.now());
     });
+    // The diary view
+    window.addEventListener("hashchange", function () { applyView(true); });
+    $("dy-list").addEventListener("click", function (e) {
+      var btn = e.target.closest("button[data-diary]"); if (!btn) return;
+      D.all = btn.dataset.diary === "all";
+      renderDiary(Date.now());
+    });
     // Share window
     $("share-open").addEventListener("click", openShare);
     $("share-close").addEventListener("click", closeShare);
@@ -3341,8 +3769,9 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
 
   // ---------- Start ----------
   bind();
+  applyView(currentView() === "diary");
   renderAll();
-  Promise.allSettled([loadHamster(), gameInit()]).then(potInit).then(function () {
+  Promise.allSettled([loadHamster(), gameInit(), loadDiary()]).then(potInit).then(function () {
     syncDraftFromSaved();
     renderAll();
     // Wheel status every 5 seconds while the page is in view; one request at a time.
@@ -3356,6 +3785,7 @@ button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var
     setInterval(renderStamp, 1000);
     setInterval(renderAll, 30e3);
     setInterval(function () { if (!H.demo) loadSlow().then(renderAll); }, 5 * 60e3);
+    setInterval(function () { loadDiary().then(renderAll); }, 30 * 60e3);
     setInterval(function () { if (!H.demo) gameRefresh().then(renderAll, function () {}); }, 2 * 60e3);
     setInterval(function () { if (P.on) potRefresh().then(renderAll); }, 60e3);
     setInterval(function () { if (H.apiError) loadHamster().then(renderAll); }, 60e3);
