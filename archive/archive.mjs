@@ -24,15 +24,22 @@ const NOW = env.NOW_MS ? Number(env.NOW_MS) : Date.now();
 // A night's block count is final about 20 minutes after it ends.
 const BLOCKS_FINAL_AFTER = 20 * 60e3;
 
+// Errors show up as annotations on the Actions run.
+process.on("uncaughtException", (e) => { console.error(`::error::${e.message}`); process.exit(1); });
+process.on("unhandledRejection", (e) => { console.error(`::error::${e && e.message || e}`); process.exit(1); });
+
 async function api(path) {
   for (let attempt = 0; ; attempt++) {
-    const res = await fetch(API_BASE + path, { headers: { accept: "application/json" } });
-    if ((res.status === 429 || res.status === 503) && attempt < 4) {
-      const wait = Number(res.headers.get("retry-after") || 5);
+    const res = await fetch(API_BASE + path, { headers: { accept: "application/json", "user-agent": "SqueekPicks-diary/1.0 (+https://squeekpicks.xyz)" } });
+    if ((res.status === 429 || res.status === 503 || res.status === 403) && attempt < 4) {
+      const wait = Number(res.headers.get("retry-after") || 5 * (attempt + 1));
       await new Promise((r) => setTimeout(r, wait * 1000));
       continue;
     }
-    if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`);
+    if (!res.ok) {
+      const body = (await res.text().catch(() => "")).replace(/\s+/g, " ").slice(0, 200);
+      throw new Error(`${path}: HTTP ${res.status} ${body}`);
+    }
     return res.json();
   }
 }
