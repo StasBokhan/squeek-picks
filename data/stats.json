@@ -4,9 +4,9 @@
  "calls": 5,
  "potTickets": 5,
  "potWallets": 3,
- "paidWei": "20000000000000000",
+ "paidWei": "40000000000000000",
  "refundedWei": "0",
- "nightsPaid": 1,
+ "nightsPaid": 2,
  "pots": {
   "0x10fC2c8CCe2FFAceb619c3F1A1E38e253264B81B": {
    "version": 1,
@@ -14,7 +14,7 @@
    "paidWei": "20000000000000000",
    "refundedWei": "0",
    "nightsPaid": 1,
-   "nightsCancelled": 0,
+   "nightsCancelled": 1,
    "nights": {
     "2026-10-28": {
      "status": 1,
@@ -27,7 +27,7 @@
      "refundedWei": "0"
     },
     "2026-10-29": {
-     "status": 0,
+     "status": 2,
      "tickets": 1,
      "wallets": [
       "0x93ee59b236fd1af89619b3b420e4f96718efe1fa"
@@ -40,13 +40,13 @@
   "0x845AC45012405B8Fa1Ff017320304b665b915F86": {
    "version": 2,
    "tickets": 2,
-   "paidWei": "0",
+   "paidWei": "20000000000000000",
    "refundedWei": "0",
-   "nightsPaid": 0,
+   "nightsPaid": 1,
    "nightsCancelled": 0,
    "nights": {
     "2026-10-29": {
-     "status": 0,
+     "status": 1,
      "tickets": 2,
      "wallets": [
       "0x2b0201f79efe415871afed2b6b76e464ea23a41d",
@@ -58,5 +58,5 @@
    }
   }
  },
- "updatedAt": "2026-10-29T23:17:12.651Z"
+ "updatedAt": "2026-10-30T18:13:26.805Z"
 }

@@ -2,14 +2,14 @@
  "about": "Squeektoshi's finished nights, saved once a day from the Squeekchain API. A night runs 12:00 to 12:00 UTC and is named by its first day. km is the distance run, slots the wheel work per half hour from 12:00 UTC, blocks the Squeek blocks settled that night.",
  "firstObservedAt": "2026-10-26T13:50:00.000Z",
  "lifetime": {
-  "acceptedWorkUnits": "36993",
-  "observedDistanceMm": "32884612",
+  "acceptedWorkUnits": "45957",
+  "observedDistanceMm": "40350246",
   "activeDayCount": 4,
-  "settledBlockCount": "3382",
-  "settlementCount": "445",
+  "settledBlockCount": "4135",
+  "settlementCount": "558",
   "coverageBps": 10000,
   "firstObservedAt": "2026-10-26T13:50:00.000Z",
-  "settledWorkUnits": "36993"
+  "settledWorkUnits": "45957"
  },
  "records": {
   "mostWorkHalfHour": {
@@ -18,14 +18,14 @@
    "coverage": "complete"
   },
   "mostWorkUtcDay": {
-   "value": "11182",
-   "occurredAt": "2026-10-26T12:00:00.000Z",
-   "coverage": "partial"
+   "value": "13297",
+   "occurredAt": "2026-10-29T12:00:00.000Z",
+   "coverage": "complete"
   },
   "maximumDailyDistanceMm": {
-   "value": "9817796",
-   "occurredAt": "2026-10-26T12:00:00.000Z",
-   "coverage": "partial"
+   "value": "11674766",
+   "occurredAt": "2026-10-29T12:00:00.000Z",
+   "coverage": "complete"
   },
   "peakObservedRpmMilli": {
    "value": "111256",
@@ -51,7 +51,8 @@
  "nights": {
   "2026-10-26": {"km":9.818,"coverageBps":9236,"work":11182,"slots":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,864,1726,1714,1096,707,1173,0,0,0,0,0,1047,541,0,0,0,0,0,1047,1267,0,0,0,0,0,0,0,0,0,0],"blocks":1047},
   "2026-10-27": {"km":9.562,"coverageBps":10000,"work":10891,"slots":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,714,907,1827,198,0,0,0,1148,1723,1502,92,1274,0,0,0,0,0,898,608,0,0,0,0,0,0,0,0,0,0,0],"blocks":980},
-  "2026-10-28": {"km":9.295,"coverageBps":10000,"work":10587,"slots":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,469,50,0,1512,1597,1595,1332,1170,1330,0,0,0,0,390,1142,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"blocks":967}
+  "2026-10-28": {"km":9.295,"coverageBps":10000,"work":10587,"slots":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,469,50,0,1512,1597,1595,1332,1170,1330,0,0,0,0,390,1142,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"blocks":967},
+  "2026-10-29": {"km":11.675,"coverageBps":10000,"work":13297,"slots":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,155,260,1776,1648,1628,1643,1596,1094,1438,0,0,0,0,1394,466,0,0,0,0,0,0,199,0,0,0,0,0,0,0,0],"blocks":1141}
  },
- "updatedAt": "2026-10-29T23:17:10.613Z"
+ "updatedAt": "2026-10-30T18:13:24.948Z"
 }
