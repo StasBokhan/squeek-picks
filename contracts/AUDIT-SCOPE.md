@@ -7,6 +7,8 @@ ranked their findings. **Result: 3 low, 4 info, no high or medium.**
 Version 2 is kept as `SqueekPotV2.sol`, deployed on Sepolia at `0x845AC45012405B8Fa1Ff017320304b665b915F86`.
 
 **Current:** `contracts/SqueekPot.sol`, version 3 (Solidity 0.8.24): version 2 plus the fixes below.
+Deployed on Sepolia at `0xB6D75572e18ccb0D4f39Fa6Ad1A1891F1FD6E24f` (checked by the "Check a pot"
+workflow: its code is identical to `SqueekPot.json`).
 Its tests are in `contracts/test` (`cd contracts && npm ci && npm test`) and run on every change.
 
 **Lower priority:** `contracts/SqueekPotV1.sol`, the first version (one ticket per wallet, winners
