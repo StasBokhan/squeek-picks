@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.24;
 
-/// @title Squeek Picks nightly pot, version 2
+/// @title Squeek Picks nightly pot, version 3
 /// @notice Up to 5 tickets per wallet per night, all at the same price, each with
 ///         its own picks. Picks are stored here so anyone can check them. After the
 ///         night ends, the resolver pays the pot to the night's top tickets
@@ -10,15 +10,20 @@ pragma solidity 0.8.24;
 ///         be refunded.
 /// @dev    Testnet only: the constructor refuses any chain except Sepolia and a
 ///         local test chain. Nobody, the owner included, can withdraw the pot.
-///         Version 1 (one ticket per wallet) is kept as SqueekPotV1.sol.
+///         Version 3 takes in the findings of the IMD swarm audit of version 2
+///         (contracts/AUDIT-SCOPE.md lists them): refunds and owed payouts can be
+///         sent to another address, payouts don't copy the winner's return data,
+///         the owner role changes hands in two steps, and openNight() can't underflow.
+///         Version 2 is kept as SqueekPotV2.sol, version 1 as SqueekPotV1.sol.
 contract SqueekPot {
-    uint256 public constant VERSION = 2;
+    uint256 public constant VERSION = 3;
     uint256 public constant DAY = 1 days;
     uint256 public constant LOCK_OFFSET = 12 hours;   // a night starts and locks at 12:00 UTC
     uint256 public constant REFUND_AFTER = 3 days;    // after the night ends
     uint256 public constant MAX_TICKETS = 500;
     uint256 public constant MAX_PER_WALLET = 5;
     uint256 public constant MAX_WINNERS = 10;
+    uint256 public constant PAYOUT_GAS = 30_000;      // what a winner gets to receive a payout
     uint16 public constant MAX_DISTANCE_DECI = 600;   // 60.0 km
 
     enum Status { Open, Settled, Voided }
@@ -40,6 +45,7 @@ contract SqueekPot {
     }
 
     address public owner;
+    address public pendingOwner;
     address public resolver;
     uint256 public ticketPrice;
 
@@ -55,8 +61,10 @@ contract SqueekPot {
     event Refunded(uint32 indexed night, address indexed player, uint256 amount);
     event PaymentOwed(address indexed to, uint256 amount);
     event Withdrawn(address indexed to, uint256 amount);
+    event SentTo(address indexed from, address indexed to, uint256 amount);
     event ResolverChanged(address resolver);
     event TicketPriceChanged(uint256 price);
+    event OwnerOffered(address next);
     event OwnerChanged(address owner);
 
     error NotOwner();
@@ -87,7 +95,9 @@ contract SqueekPot {
     /// d 12:00 UTC to d+1 12:00 UTC and locks when it starts.
     function lockTime(uint32 night) public pure returns (uint256) { return uint256(night) * DAY + LOCK_OFFSET; }
     function endTime(uint32 night) public pure returns (uint256) { return lockTime(night) + DAY; }
-    function openNight() public view returns (uint32) { return uint32((block.timestamp - LOCK_OFFSET) / DAY + 1); }
+    /// The night tickets are on sale for: the next one to start. Written without a
+    /// subtraction from block.timestamp, so it also works on a fresh local chain.
+    function openNight() public view returns (uint32) { return uint32((block.timestamp + DAY - LOCK_OFFSET) / DAY); }
 
     // ----- Players -----
 
@@ -130,31 +140,21 @@ contract SqueekPot {
     }
 
     /// Take back every ticket you hold for a voided night, or for a night not paid out in time.
-    function refund(uint32 night) external nonReentrant {
-        Night storage n = _nights[night];
-        bool timedOut = n.status == Status.Open && block.timestamp >= endTime(night) + REFUND_AFTER;
-        require(n.status == Status.Voided || timedOut, "not refundable");
-        uint256[] storage mine = _ticketsOf[night][msg.sender];
-        uint256 count;
-        for (uint256 i = 0; i < mine.length; i++) {
-            Ticket storage t = n.tickets[mine[i]];
-            if (!t.refunded) { t.refunded = true; count++; }
-        }
-        require(count > 0, "nothing to refund");
-        uint256 amount = uint256(n.price) * count;
-        emit Refunded(night, msg.sender, amount);
-        (bool ok, ) = msg.sender.call{value: amount}("");
-        require(ok, "send failed");
+    function refund(uint32 night) external nonReentrant { _refund(night, msg.sender); }
+
+    /// The same, sent to another address: for a wallet contract that can't take plain ETH.
+    function refundTo(uint32 night, address to) external nonReentrant {
+        require(to != address(0), "zero address");
+        _refund(night, to);
     }
 
     /// Collect a payout that could not be sent automatically.
-    function withdrawOwed() external nonReentrant {
-        uint256 amount = owed[msg.sender];
-        require(amount > 0, "nothing owed");
-        owed[msg.sender] = 0;
-        emit Withdrawn(msg.sender, amount);
-        (bool ok, ) = msg.sender.call{value: amount}("");
-        require(ok, "send failed");
+    function withdrawOwed() external nonReentrant { _withdrawOwed(msg.sender); }
+
+    /// The same, sent to another address: for a wallet contract that can't take plain ETH.
+    function withdrawOwedTo(address to) external nonReentrant {
+        require(to != address(0), "zero address");
+        _withdrawOwed(to);
     }
 
     // ----- Resolver -----
@@ -218,10 +218,18 @@ contract SqueekPot {
         emit TicketPriceChanged(price);
     }
 
-    function setOwner(address next) external onlyOwner {
-        require(next != address(0), "zero address");
-        owner = next;
-        emit OwnerChanged(next);
+    /// Offers the owner role to `next`, who takes it with acceptOwner(). Until then
+    /// nothing changes, so a mistyped address can't lose the role. Zero withdraws the offer.
+    function offerOwner(address next) external onlyOwner {
+        pendingOwner = next;
+        emit OwnerOffered(next);
+    }
+
+    function acceptOwner() external {
+        require(msg.sender == pendingOwner, "not offered to you");
+        owner = msg.sender;
+        pendingOwner = address(0);
+        emit OwnerChanged(msg.sender);
     }
 
     // ----- Views -----
@@ -247,12 +255,47 @@ contract SqueekPot {
         require(peakBlock < 8, "peak window out of range");
     }
 
+    function _refund(uint32 night, address to) private {
+        Night storage n = _nights[night];
+        bool timedOut = n.status == Status.Open && block.timestamp >= endTime(night) + REFUND_AFTER;
+        require(n.status == Status.Voided || timedOut, "not refundable");
+        uint256[] storage mine = _ticketsOf[night][msg.sender];
+        uint256 count;
+        for (uint256 i = 0; i < mine.length; i++) {
+            Ticket storage t = n.tickets[mine[i]];
+            if (!t.refunded) { t.refunded = true; count++; }
+        }
+        require(count > 0, "nothing to refund");
+        uint256 amount = uint256(n.price) * count;
+        emit Refunded(night, msg.sender, amount);
+        if (to != msg.sender) emit SentTo(msg.sender, to, amount);
+        require(_send(to, amount, gasleft()), "send failed");
+    }
+
+    function _withdrawOwed(address to) private {
+        uint256 amount = owed[msg.sender];
+        require(amount > 0, "nothing owed");
+        owed[msg.sender] = 0;
+        emit Withdrawn(msg.sender, amount);
+        if (to != msg.sender) emit SentTo(msg.sender, to, amount);
+        require(_send(to, amount, gasleft()), "send failed");
+    }
+
+    /// A payout to a winner: if it can't be received within PAYOUT_GAS, it's kept in
+    /// `owed` for the winner to collect.
     function _pay(address to, uint256 amount) private {
         if (amount == 0) return;
-        (bool ok, ) = to.call{value: amount, gas: 30_000}("");
-        if (!ok) {
+        if (!_send(to, amount, PAYOUT_GAS)) {
             owed[to] += amount;
             emit PaymentOwed(to, amount);
+        }
+    }
+
+    /// Sends ETH without copying whatever the receiver returns, so a receiver can't
+    /// make the sender pay for a large return value.
+    function _send(address to, uint256 amount, uint256 gasLimit) private returns (bool ok) {
+        assembly ("memory-safe") {
+            ok := call(gasLimit, to, amount, 0, 0, 0, 0)
         }
     }
 }

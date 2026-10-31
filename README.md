@@ -31,13 +31,29 @@ Play it at **[squeekpicks.xyz](https://squeekpicks.xyz)**. The pot runs on the *
 - The bot can only pay a night to players who hold a ticket for it, and only between the end of the night and the 3-day refund window.
 - Settings can only be changed by the owner wallet, and never the money in the pot.
 
+## Audit
+
+The pot contract was audited by the **[IMD swarm](https://github.com/Identity-md/research/blob/main/jobs/06d98304-78a4-4089-815a-2be96ef1f7c5/files/AUDIT.md)**: four AI auditors (math, permissions, economics, control flow) and a judge who reproduced, merged and ranked their findings. It reviewed version 2 at commit `6ba3b13`. **No high or medium issues.** The 3 low findings are fixed in version 3:
+
+| Finding | Version 3 |
+|---|---|
+| A wallet contract that can't receive plain ETH can't take its refund or owed payout | `refundTo` and `withdrawOwedTo` send it to another address |
+| A winner can return a large blob and make payouts about 5× more expensive | payouts no longer copy what the winner returns |
+| A mistyped owner address loses the owner role for good | the owner role changes hands in two steps: `offerOwner`, then `acceptOwner` |
+| `openNight()` underflows on a fresh local chain (info) | rewritten without the subtraction |
+| No test suite in the repository (info) | `contracts/test`, run by GitHub Actions on every contract change |
+
+The other two info findings are recorded in [`contracts/AUDIT-SCOPE.md`](contracts/AUDIT-SCOPE.md): the payout bot decides which of a night's tickets win, and an owner price change just before a night's first ticket makes that purchase fail (the page says to reload).
+
+To run the tests: `cd contracts && npm ci && npm test`.
+
 ## Limits worth knowing
 
 - **The results are only as good as the device.** Squeekchain's docs say a signature proves which key signed a record, not that a hamster ran. That's fine for test ETH, and the reason this stays on Sepolia.
 - **Picks in the pot are public** once a ticket is bought, so a later player can see earlier picks.
 - **GitHub pauses scheduled workflows** in repositories with no activity for 60 days. Re-enable it in the Actions tab if that happens. Missed nights can still be refunded.
 - **The public Sepolia RPC** can be slow or rate limited. If the bot's runs fail with network errors, get a free Sepolia RPC URL from Alchemy or Infura and add it as a secret named `SEPOLIA_RPC_URL`.
-- **A deployed contract can't be changed.** To change the rules, deploy a new pot and update `POT_ADDRESS` in both places. Unpaid nights on the old pot become refundable after 3 days.
+- **A deployed contract can't be changed.** To change the rules, deploy a new pot (the admin page, `?admin`, offers it when the source has a newer version), set `POT_ADDRESS` to it and add the old one to `OLD_POTS` in `config.js`, so the old pot's last nights still show and get paid. Unpaid nights on the old pot become refundable after 3 days.
 - **The Squeekchain API is in active development.** If it changes, parts of the page show as unavailable rather than wrong, and the bot waits instead of paying out.
 
 ## Welfare

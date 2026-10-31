@@ -29,9 +29,12 @@ const FILE = env.STATS_FILE || fileURLToPath(new URL("../data/stats.json", impor
 const FIRST_SCAN_NIGHTS = Number(env.FIRST_SCAN_NIGHTS || 45);
 const NOW = env.NOW_MS ? Number(env.NOW_MS) : Date.now();
 const FROZEN_AFTER = 30; // nights; older ones are final
+// Version 3 keeps every function and event of version 2 that the bots use, so its ABI reads both.
+const POT_ABI = JSON.parse(readFileSync(new URL("../contracts/SqueekPot.json", import.meta.url), "utf8")).abi;
 const ABI = {
   1: JSON.parse(readFileSync(new URL("../contracts/SqueekPotV1.json", import.meta.url), "utf8")).abi,
-  2: JSON.parse(readFileSync(new URL("../contracts/SqueekPot.json", import.meta.url), "utf8")).abi,
+  2: POT_ABI,
+  3: POT_ABI,
 };
 
 const fail = (m) => { console.log(`::error::${String(m).slice(0, 400)}`); process.exit(1); };

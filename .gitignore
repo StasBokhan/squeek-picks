@@ -1,3 +1,6 @@
 wallet/node_modules/
 settler/node_modules/
 .bot-state/
+contracts/node_modules/
+contracts/cache/
+contracts/artifacts/

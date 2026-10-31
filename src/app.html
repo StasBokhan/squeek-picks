@@ -983,7 +983,9 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
           <li>When the night's results are in, the top 3 tickets by that night's points split the pot 50/30/20, or 62.5/37.5 with two tickets. Ties go to the closer distance guess, then the earlier ticket.</li>
           <li><strong>Winnings are sent to your wallet automatically.</strong> A bot checks every hour and pays the winners. There's nothing to claim.</li>
           <li><strong>Refunds you take back yourself.</strong> With one ticket or no result, the night is voided and a "Take back" button shows in the Nightly pot and in My tickets. It costs a little gas.</li>
-          <li>If a night isn't paid out within 3 days, the same button appears, so money can't get stuck. Nobody, the owner included, can take the pot.</li>
+          <li>If a night isn't paid out within 3 days, the same button appears, so money can't get stuck.</li>
+          <li>Nobody can withdraw the pot. The contract only pays a night's pot to that night's tickets, or back to whoever bought them. The payout bot picks the winners from the public results with the rules above, and anyone can work them out again: the results, the picks and the code are all public.</li>
+          <li>The pot contract was <a href="https://github.com/Identity-md/research/blob/main/jobs/06d98304-78a4-4089-815a-2be96ef1f7c5/files/AUDIT.md" target="_blank" rel="noopener">audited by the IMD swarm</a>, four AI auditors and a judge: no high or medium issues. Version 3 of the pot fixes the three low ones.</li>
         </ul>
       </div>
     </div>
@@ -994,6 +996,8 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
   <footer>
     <span>Hamster data from the public Squeekchain API on the Sepolia testnet.</span>
     <a href="https://docs.squeekchain.com/" target="_blank" rel="noopener">Squeekchain docs</a>
+    <a href="https://github.com/Identity-md/research/blob/main/jobs/06d98304-78a4-4089-815a-2be96ef1f7c5/files/AUDIT.md" target="_blank" rel="noopener">Pot audit</a>
+    <a href="https://github.com/StasBokhan/squeek-picks" target="_blank" rel="noopener">Source</a>
     <a class="tg-link" href="#" target="_blank" rel="noopener" hidden>Telegram channel</a>
   </footer>
 </div>
@@ -1057,9 +1061,11 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     SITE_URL: "",                                          // the link in share posts; empty means this page's address
     TELEGRAM_URL: ""                                       // the bot's Telegram channel, shown as a button
   }, window.SQUEEK_CONFIG || {});
-  var POT_ABI = /*@@POT_ABI@@*/[];
+  var POT_ABI = /*@@POT_ABI@@*/[];          // version 3, which also reads version 2 pots
   var POT_BYTECODE = /*@@POT_BYTECODE@@*/"";
+  var POT_VERSION = 3;                       // the version POT_BYTECODE deploys
   var POT_ABI_V1 = /*@@POT_ABI_V1@@*/[];   // pots deployed before version 2
+  var AUDIT_URL = "https://github.com/Identity-md/research/blob/main/jobs/06d98304-78a4-4089-815a-2be96ef1f7c5/files/AUDIT.md";
   // Libraries are served from this site (vendor/), copied unchanged from their npm releases,
   // so no outside CDN can change the code that builds your transactions.
   var ETHERS_URL = "vendor/ethers-6.13.4.umd.min.js";
@@ -1586,7 +1592,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
         if (e && (e.code === "CALL_EXCEPTION" || e.code === "BAD_DATA")) return 1;
         throw e; // network trouble: try again next refresh
       }).then(function (v) {
-        s.version = v >= 2 ? 2 : 1;
+        s.version = v >= 2 ? v : 1;
         s.read = new P.E.Contract(s.addr, s.version >= 2 ? POT_ABI : POT_ABI_V1, P.rpc);
       });
     }));
@@ -2327,10 +2333,12 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
         '<div><h3>Ticket price</h3><p class="hint">Applies to nights that have no tickets yet.</p>' +
         '<div class="row"><input type="text" id="adm-newprice" placeholder="0.01" inputmode="decimal"><button class="secondary" type="button" data-admin="price">Set</button></div></div></div>' +
         (i && P.account && P.account.toLowerCase() !== i.owner.toLowerCase() ? '<p class="hint">This wallet isn\'t the owner, so changes will be refused.</p>' : "") +
-        (i && i.version < 2 ? '<div class="admin-grid"><div><h3>Upgrade to version 2</h3>' +
-          '<p class="hint">Deploys a new pot where each wallet can buy up to ' + MAX_PER_WALLET + ' tickets a night, each with its own picks. It starts with the same payout bot. This pot keeps paying out its last nights.</p>' +
+        (i && i.version < POT_VERSION ? '<div class="admin-grid"><div><h3>Upgrade to version ' + POT_VERSION + '</h3>' +
+          '<p class="hint">Deploys a new pot with the fixes from the <a href="' + AUDIT_URL + '" target="_blank" rel="noopener">IMD swarm audit</a>: refunds and payouts can be sent to another address, the owner role changes hands in two steps, and payouts can\'t be made expensive.' +
+          (i.version < 2 ? " Each wallet can also buy up to " + MAX_PER_WALLET + " tickets a night, each with its own picks." : " The game rules stay the same.") +
+          ' It starts with the same payout bot. This pot keeps paying out its last nights.</p>' +
           '<label for="adm-upprice" class="hint">Ticket price in Sepolia ETH</label>' +
-          '<div class="row"><input type="text" id="adm-upprice" value="' + esc(fmtEth(i.price)) + '" inputmode="decimal"><button class="primary" type="button" data-admin="upgrade">Deploy version 2</button></div></div></div>' : "") +
+          '<div class="row"><input type="text" id="adm-upprice" value="' + esc(fmtEth(i.price)) + '" inputmode="decimal"><button class="primary" type="button" data-admin="upgrade">Deploy version ' + POT_VERSION + '</button></div></div></div>' : "") +
         (P.deployed ? '<div class="notice"><span>Deployed at <span class="addr">' + esc(P.deployed) + "</span></span>" +
           '<button class="secondary" type="button" data-admin="copy">Copy address</button></div>' +
           '<p class="hint">Next: in config.js, set POT_ADDRESS to this address and add the old one to OLD_POTS, so its last nights still show and get paid. The payout bot reads both from config.js.</p>' : "");

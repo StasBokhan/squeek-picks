@@ -1,0 +1,15 @@
+{
+  "name": "squeek-pot-contracts",
+  "private": true,
+  "description": "The Squeek Picks pot contract: compile it and run its tests.",
+  "scripts": {
+    "compile": "node compile.cjs",
+    "test": "hardhat test"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-ethers": "3.0.8",
+    "ethers": "6.13.4",
+    "hardhat": "2.22.15",
+    "solc": "0.8.24"
+  }
+}

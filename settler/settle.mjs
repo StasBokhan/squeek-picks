@@ -26,9 +26,12 @@ import { ethers } from "ethers";
 
 const require = createRequire(import.meta.url);
 const L = require("../src/logic.js");
+// Version 3 keeps every function and event of version 2 that the bots use, so its ABI reads both.
+const POT_ABI = JSON.parse(readFileSync(new URL("../contracts/SqueekPot.json", import.meta.url), "utf8")).abi;
 const ABI = {
   1: JSON.parse(readFileSync(new URL("../contracts/SqueekPotV1.json", import.meta.url), "utf8")).abi,
-  2: JSON.parse(readFileSync(new URL("../contracts/SqueekPot.json", import.meta.url), "utf8")).abi,
+  2: POT_ABI,
+  3: POT_ABI,
 };
 
 const env = process.env;
