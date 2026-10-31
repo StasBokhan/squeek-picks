@@ -2673,6 +2673,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
       return v > 0n ? v : null;
     } catch (e) { return null; }
   }
+  function isOwner(i) { return !!(i && P.account && P.account.toLowerCase() === i.owner.toLowerCase()); }
   function renderAdmin() {
     $("admin").hidden = !P.admin;
     if (!P.admin) return;
@@ -2709,8 +2710,10 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
           '<p class="hint">Deploys a new pot with the fixes from the <a href="' + AUDIT_URL + '" target="_blank" rel="noopener">IMD swarm audit</a>: refunds and payouts can be sent to another address, the owner role changes hands in two steps, and payouts can\'t be made expensive.' +
           (i.version < 2 ? " Each wallet can also buy up to " + MAX_PER_WALLET + " tickets a night, each with its own picks." : " The game rules stay the same.") +
           ' It starts with the same payout bot. This pot keeps paying out its last nights.</p>' +
-          '<label for="adm-upprice" class="hint">Ticket price in Sepolia ETH</label>' +
-          '<div class="row"><input type="text" id="adm-upprice" value="' + esc(fmtEth(i.price)) + '" inputmode="decimal"><button class="primary" type="button" data-admin="upgrade">Deploy version ' + POT_VERSION + '</button></div></div></div>' : "") +
+          (isOwner(i) ? '<label for="adm-upprice" class="hint">Ticket price in Sepolia ETH</label>' +
+            '<div class="row"><input type="text" id="adm-upprice" value="' + esc(fmtEth(i.price)) + '" inputmode="decimal"><button class="primary" type="button" data-admin="upgrade">Deploy version ' + POT_VERSION + '</button></div>'
+            : '<p class="hint" id="adm-upgrade-owner">Connect the owner wallet, ' + esc(shortAddr(i.owner)) + ', to deploy it. Whoever deploys a pot becomes its owner, and that shouldn\'t be the payout bot.</p>') +
+          '</div></div>' : "") +
         (P.deployed ? '<div class="notice"><span>Deployed at <span class="addr">' + esc(P.deployed) + "</span></span>" +
           '<button class="secondary" type="button" data-admin="copy">Copy address</button></div>' +
           '<p class="hint">Next: in config.js, set POT_ADDRESS to this address and add the old one to OLD_POTS, so its last nights still show and get paid. The payout bot reads both from config.js.</p>' : "");
@@ -2730,6 +2733,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     }
     if (!P.E) { adminMsg("The wallet library is still loading.", "err"); return; }
     if (!P.account || !onSepolia()) { adminMsg("Connect your wallet on Sepolia first.", "err"); return; }
+    if (kind === "upgrade" && !isOwner(P.info)) { adminMsg("Connect the owner wallet first: whoever deploys the new pot becomes its owner.", "err"); return; }
     if (kind === "deploy" || kind === "upgrade") {
       var price = parseEthInput($(kind === "deploy" ? "adm-price" : "adm-upprice").value);
       if (!price) { adminMsg("Enter a ticket price like 0.01.", "err"); return; }
