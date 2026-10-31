@@ -5,6 +5,66 @@ import { createAppKit } from "@reown/appkit";
 import { EthersAdapter } from "@reown/appkit-adapter-ethers";
 import { sepolia as baseSepolia } from "@reown/appkit/networks";
 
+const SEPOLIA_HEX = "0xaa36a7";
+
+// A wallet's answer meaning "I don't know this network", which MetaMask, Rabby and others
+// give as code 4902 (sometimes wrapped in originalError).
+function unknownChain(e) {
+  const code = e && (e.code != null ? e.code : e.data && e.data.originalError && e.data.originalError.code);
+  return code === 4902 || /unrecognized chain|unknown chain|not been added|try adding the chain/i.test((e && e.message) || "");
+}
+
+// Some wallets, Rabby among them, don't come with Sepolia: it has to be added once.
+// When connecting, AppKit (1.8.24) asks the wallet to switch to Sepolia and gives up on any
+// error, so those wallets could never connect. This wraps a browser wallet's provider so a
+// switch to Sepolia that the wallet doesn't know first offers to add Sepolia, the way
+// AppKit already does when switching later.
+function withAddSepolia(provider, opts) {
+  if (!provider || provider.__squeekAddSepolia) return provider;
+  const params = {
+    chainId: SEPOLIA_HEX,
+    chainName: "Sepolia",
+    nativeCurrency: { name: "Sepolia Ether", symbol: "ETH", decimals: 18 },
+    rpcUrls: [opts.rpcUrl],
+    blockExplorerUrls: [opts.explorer],
+  };
+  const request = async (args) => {
+    try {
+      return await provider.request(args);
+    } catch (e) {
+      const want = args && args.method === "wallet_switchEthereumChain" && args.params && args.params[0] && String(args.params[0].chainId).toLowerCase();
+      if (want !== SEPOLIA_HEX || !unknownChain(e)) throw e;
+      await provider.request({ method: "wallet_addEthereumChain", params: [params] });
+      // Most wallets also switch when they add a network; ask once more for those that don't.
+      const now = await provider.request({ method: "eth_chainId" }).catch(() => null);
+      if (String(now).toLowerCase() !== SEPOLIA_HEX) await provider.request(args);
+      return null;
+    }
+  };
+  return new Proxy(provider, {
+    get(target, key) {
+      if (key === "request") return request;
+      if (key === "__squeekAddSepolia") return true;
+      const value = Reflect.get(target, key, target);
+      return typeof value === "function" ? value.bind(target) : value;
+    },
+  });
+}
+
+function makeAdapter(opts) {
+  class SqueekEthersAdapter extends EthersAdapter {
+    async connect(params) {
+      const connector = this.connectors.find((c) => c.id && params && params.id && c.id.toLowerCase() === String(params.id).toLowerCase());
+      // Browser wallets only: WalletConnect and email logins have their own network handling.
+      if (connector && connector.provider && ["ANNOUNCED", "INJECTED", "EXTERNAL"].includes(connector.type)) {
+        connector.provider = withAddSepolia(connector.provider, opts);
+      }
+      return super.connect(params);
+    }
+  }
+  return new SqueekEthersAdapter();
+}
+
 function create(opts) {
   // Sepolia with the same working RPC the page uses, so a wallet that adds the
   // network through the picker never ends up on a dead address.
@@ -15,7 +75,7 @@ function create(opts) {
   };
 
   const kit = createAppKit({
-    adapters: [new EthersAdapter()],
+    adapters: [makeAdapter(opts)],
     networks: [sepolia],
     defaultNetwork: sepolia,
     projectId: opts.projectId,
