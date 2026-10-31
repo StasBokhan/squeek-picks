@@ -1727,6 +1727,11 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     return s.busy;
   }
 
+  // Rabby only knows mainnets; a testnet like Sepolia has to be added as a custom network once.
+  var RABBY_SEPOLIA = "Rabby doesn't come with Sepolia, so it needs adding once. Press Switch to Sepolia: Rabby opens " +
+    "\u201cAdd Custom Network to Rabby\u201d with Sepolia filled in. Press Add there. You can also add it in Rabby yourself: " +
+    "More \u2192 Add Custom Network \u2192 Quick add from Chainlist \u2192 Sepolia.";
+  function isRabby() { return /rabby/i.test(walletName()); }
   function walletName() {
     if (W.kit) return (W.state && W.state.walletName) || "your wallet";
     var e = window.ethereum || {};
@@ -2011,6 +2016,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     if (P.owed > 0n) {
       notices += '<div class="notice"><span>A payout of ' + fmtEth(P.owed) + ' ETH is waiting for you.</span><button class="secondary" type="button" data-pot="collect"' + busy + ">Collect</button></div>";
     }
+    if (!P.demo && P.account && !onSepolia() && isRabby()) notices += '<div class="notice" id="rabby-sepolia"><span>' + esc(RABBY_SEPOLIA) + "</span></div>";
     if (!P.demo && P.account && onSepolia() && P.balance != null && mine.length < limit && P.balance < n.price + GAS_ROOM) {
       notices += '<div class="notice"><span>This wallet has ' + fmtEth(P.balance) + " Sepolia ETH, not enough for a ticket (" + fmtEth(n.price) +
         " ETH plus a little gas). " + FAUCETS + "</span></div>";
@@ -2165,7 +2171,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
       "<span>" + esc(P.demo ? "Sample tickets" : (name ? shortAddr(P.account) + " · " : "") + walletName()) + "</span></div>" +
       (W.kit ? '<button class="secondary" type="button" data-dash="account">Wallet</button>' : "") + "</div>";
     if (!P.demo && !onSepolia()) {
-      body.innerHTML = '<div class="dash-empty"><p class="empty">Your wallet is on another network. Switch to Sepolia to see your tickets.</p>' +
+      body.innerHTML = '<div class="dash-empty"><p class="empty">Your wallet is on another network. Switch to Sepolia to see your tickets.' + (isRabby() ? " " + esc(RABBY_SEPOLIA) : "") + "</p>" +
         '<button class="primary" type="button" data-dash="switch">Switch to Sepolia</button></div>';
       return;
     }
