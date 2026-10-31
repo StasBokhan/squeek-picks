@@ -1,0 +1,34 @@
+name: Check a pot
+
+# Before the page switches to a newly deployed pot: checks it's the contract in this
+# repository with the same owner and payout bot, and shows where every pot stands.
+# Reads only; holds no wallet key. Run it from the Actions tab.
+on:
+  workflow_dispatch:
+    inputs:
+      address:
+        description: "Pot address to check (optional: the pots in config.js are always shown)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install
+        working-directory: settler
+        run: npm ci --no-audit --no-fund
+      - name: Check
+        working-directory: settler
+        env:
+          SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
+          CHECK_ADDRESS: ${{ inputs.address }}
+        run: node inspect.mjs
