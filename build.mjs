@@ -1,8 +1,8 @@
 // Builds the page you host from src/.
 //   node build.mjs                 ->  index.html (complete page for any static host)
 //   node build.mjs --fragment out  ->  also writes a body-only copy (used for previews)
-// It inlines src/logic.js and the pot contract (contracts/SqueekPot.json, plus the
-// version 1 ABI from SqueekPotV1.json for older pots).
+// It inlines src/logic.js, the pot contract (contracts/SqueekPot.json, plus the version 1
+// ABI from SqueekPotV1.json for older pots) and the Night Cards contract.
 // Your settings stay in config.js, which this never touches.
 import { readFileSync, writeFileSync } from "node:fs";
 
@@ -19,6 +19,9 @@ swap('<script src="logic.js" data-inline></script>', "<script>\n" + logic.trim()
 swap("/*@@POT_ABI@@*/[]", JSON.stringify(pot.abi));
 swap('/*@@POT_BYTECODE@@*/""', JSON.stringify(pot.bytecode));
 swap("/*@@POT_ABI_V1@@*/[]", JSON.stringify(JSON.parse(read("./contracts/SqueekPotV1.json")).abi));
+const cards = JSON.parse(read("./contracts/SqueekNightCards.json"));
+swap("/*@@CARDS_ABI@@*/[]", JSON.stringify(cards.abi));
+swap('/*@@CARDS_BYTECODE@@*/""', JSON.stringify(cards.bytecode));
 
 const [head, body] = src.split("<!-- BODY -->");
 if (!body) throw new Error("src/app.html needs a <!-- BODY --> marker");

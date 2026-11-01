@@ -53,6 +53,8 @@ const BPS = 10000n;
 const RESULTS_UNTIL = 12 * L.HOUR;
 // The last call goes out between 100 and 5 minutes before picks close.
 const CALL_FROM = 100 * 60e3, CALL_UNTIL = 5 * 60e3;
+// In a season, each live call gets a post between 60 and 5 minutes before it closes.
+const LIVE_FROM = 60 * 60e3, LIVE_UNTIL = 5 * 60e3;
 
 process.on("unhandledRejection", (e) => { console.error(`::error::${e && e.message || e}`); process.exit(1); });
 
@@ -89,6 +91,7 @@ function readConfig() {
   }
 }
 const CONFIG = readConfig();
+const SEASONS = Array.isArray(CONFIG.SEASONS) ? CONFIG.SEASONS : [];
 const SITE = (CONFIG.SITE_URL || env.SITE_URL || "https://squeekpicks.xyz/").replace(/\/?$/, "/");
 
 async function getJson(url, headers) {
@@ -129,6 +132,18 @@ async function send(text) {
 }
 
 // ----- data -----
+// His archived nights (data/diary.json), so live call lines match the page's.
+let DIARY = null;
+try { DIARY = JSON.parse(readFileSync(new URL("../data/diary.json", import.meta.url), "utf8")).nights || null; } catch (e) { DIARY = null; }
+function slotsOf(H) {
+  return (date) => {
+    const d = DIARY && DIARY[date];
+    if (d && d.slots) return d.slots.map((x) => (x == null ? null : Number(x)));
+    const n = H.stats.nights.get(date);
+    return n ? n.slots : null;
+  };
+}
+function callLines(night, H) { const o = {}; for (const c of L.CALLS) o[c.no] = L.callLine(night, c.no, slotsOf(H)); return o; }
 async function loadHamster() {
   const [statsRaw, setRaw] = await Promise.all([
     getJson(API_BASE + "/v1/measurement/stats?range=30d"),
@@ -195,12 +210,16 @@ async function loadPoints(night) {
   const base = CONFIG.SUPABASE_URL.replace(/\/$/, "") + "/rest/v1/";
   // select=* works with or without the season's double_market column.
   const picks = await getJson(base + "picks?select=*&night=eq." + night + "&limit=10000", h);
-  if (!picks.length) return { picks: [], names: new Map() };
+  // Live call answers, public once each call closes; none before the season's database part.
+  let answers = [];
+  try { answers = await getJson(base + "call_answers?select=player_id,call_no,over&night=eq." + night + "&limit=10000", h); } catch (e) { answers = []; }
+  if (!picks.length) return { picks: [], names: new Map(), answers };
   const ids = [...new Set(picks.map((p) => p.player_id))];
   const players = await getJson(base + "players?select=id,nickname&id=in.(" + ids.map(encodeURIComponent).join(",") + ")", h);
   return {
     picks: picks.map((p) => ({ player_id: p.player_id, distance_km: Number(p.distance_km), peak_block: Number(p.peak_block), more_blocks: !!p.more_blocks, double_market: p.double_market || null })),
     names: new Map(players.map((p) => [p.id, p.nickname])),
+    answers,
   };
 }
 
@@ -270,7 +289,13 @@ async function resultsPost(night, H, pots, points) {
       (p.status === 1 ? "" : ", paying out now"));
   }
   if (points && points.picks.length) {
-    const rows = L.liveStandings(res, points.picks, CONFIG.SEASONS || []);
+    let extra = null;
+    if (L.seasonOf(night, SEASONS) && points.answers && points.answers.length) {
+      const results = {};
+      for (const c of L.CALLS) results[c.no] = L.resolveCall(night, c.no, NOW, H.data);
+      extra = L.scoreCalls(points.answers.map((a) => ({ player_id: a.player_id, call_no: Number(a.call_no), over: !!a.over })), callLines(night, H), results);
+    }
+    const rows = L.liveStandings(res, points.picks, SEASONS, extra);
     if (rows.length && rows[0].score.counted && rows[0].score.total > 0) {
       const tops = rows.filter((r) => r.place === 1);
       won.push(`Points game: ${tops.length > 1 ? plural(tops.length, "player", "players") + " shared the top" : "<b>" + esc(points.names.get(rows[0].entry.player_id) || "a player") + "</b> on top"} with ${rows[0].score.total} points (${plural(points.picks.length, "player", "players")})`);
@@ -299,6 +324,19 @@ async function lastCallPost(open, H, pots) {
   return { text: lines.join("\n") };
 }
 
+function liveCallPost(night, no, H) {
+  const line = callLines(night, H)[no];
+  if (line == null) return null;
+  const close = L.callCloses(night, no), end = L.callEnds(night, no);
+  const left = Math.max(1, Math.round((close - NOW) / 60e3));
+  const season = L.seasonOf(night, SEASONS);
+  return {
+    text: [`⏱ <b>Live call${season ? " · " + esc(season.name) : ""}:</b> more or fewer than <b>${fmtInt(line)} spins</b> between ${esc(fmtTime(close))} and ${esc(fmtTime(end))} ${esc(zone(close))}?`,
+      `Closes at ${esc(fmtTime(close))}, in ${left} minutes. 5 to 15 points, by the odds.`,
+      `Answer on ${SITE}`].join("\n"),
+  };
+}
+
 // ----- main -----
 // "Run workflow" with the test box ticked: one short post, to check the setup.
 if (env.TELEGRAM_TEST === "true") {
@@ -312,8 +350,13 @@ const live = L.liveNightAt(NOW), last = L.addDays(live, -1), open = L.addDays(li
 const wantResults = !state.results[last] && NOW < L.nightEnd(last) + RESULTS_UNTIL;
 const toClose = L.nightStart(open) - NOW;
 const wantCall = !state.calls[open] && toClose <= CALL_FROM && toClose >= CALL_UNTIL;
+state.live = state.live || {};
+const wantLive = L.seasonOf(live, SEASONS) ? L.CALLS.filter((c) => {
+  const left = L.callCloses(live, c.no) - NOW;
+  return !state.live[live + "#" + c.no] && left <= LIVE_FROM && left >= LIVE_UNTIL;
+}) : [];
 
-if (!wantResults && !wantCall) {
+if (!wantResults && !wantCall && !wantLive.length) {
   console.log("Nothing to post right now.");
 } else {
   const H = await loadHamster();
@@ -334,6 +377,13 @@ if (!wantResults && !wantCall) {
     await send(r.text);
     state.calls[open] = new Date(NOW).toISOString();
     console.log(`::notice::Posted the last call for ${open} to Telegram.`);
+  }
+  for (const c of wantLive) {
+    const r = liveCallPost(live, c.no, H);
+    if (!r) continue;
+    await send(r.text);
+    state.live[live + "#" + c.no] = new Date(NOW).toISOString();
+    console.log(`::notice::Posted live call ${c.no} for ${live} to Telegram.`);
   }
   if (!DRY_RUN) saveState(state);
 }

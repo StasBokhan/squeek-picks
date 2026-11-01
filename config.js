@@ -25,6 +25,9 @@ window.SQUEEK_CONFIG = {
     { name: "Season 1", start: "2026-11-16", nights: 14 },
   ],
 
+  // The Night Cards collectibles on Sepolia, deployed from index.html?admin. Empty: no cards.
+  CARDS_ADDRESS: "",
+
   // Optional: a different Sepolia RPC endpoint for reading the pot.
   // RPC_URL: "https://ethereum-sepolia-rpc.publicnode.com",
 };

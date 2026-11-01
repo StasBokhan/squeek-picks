@@ -180,7 +180,7 @@
   // What a right call on the peak window or the blocks is worth in a season: the fewer
   // players made the same pick, the more. Counts are smoothed with one imaginary player per
   // option, so a handful of players can't swing a pick to the extremes.
-  var ODDS = { peak: { top: 40, low: 5, options: 8 }, blocks: { top: 25, low: 5, options: 2 } };
+  var ODDS = { peak: { top: 40, low: 5, options: 8 }, blocks: { top: 25, low: 5, options: 2 }, call: { top: 15, low: 5, options: 2 } };
   function oddsPoints(market, count, players) {
     var m = ODDS[market], share = (count + 1) / (players + m.options);
     return Math.max(m.low, Math.min(m.top, Math.round(m.top * (1 - share))));
@@ -273,6 +273,107 @@
     };
   }
 
+  // ---------- Live calls ----------
+  // In a season, three quick calls a night on one hour of his running each: more or fewer
+  // spins than his usual for that hour. A call closes when its hour starts and settles from
+  // the half-hour stats once the hour is over. Hours in UTC, by half-hour slot of the night.
+  var CALLS = [
+    { no: 1, slot: 18 },   // 21:00 to 22:00 UTC
+    { no: 2, slot: 22 },   // 23:00 to 00:00 UTC
+    { no: 3, slot: 26 }    // 01:00 to 02:00 UTC
+  ];
+  var CALL_MIN_LINE = 50;
+  function callOf(no) { for (var i = 0; i < CALLS.length; i++) if (CALLS[i].no === Number(no)) return CALLS[i]; return null; }
+  function callCloses(night, no) { return nightStart(night) + callOf(no).slot * 30 * 60e3; }
+  function callEnds(night, no) { return callCloses(night, no) + HOUR; }
+  // The line: his median spins in that hour over the 7 nights ending two nights before (all
+  // archived by the time the night starts, so everyone gets the same line), rounded to 50.
+  // slotsOf(date) gives that night's 48 half-hour spin counts, or null. null: too little history.
+  function callLine(night, no, slotsOf) {
+    var c = callOf(no), vals = [];
+    for (var k = 2; k <= 8; k++) {
+      var s = slotsOf(addDays(night, -k));
+      if (s && s[c.slot] != null && s[c.slot + 1] != null) vals.push(Number(s[c.slot]) + Number(s[c.slot + 1]));
+    }
+    if (vals.length < 3) return null;
+    vals.sort(function (a, b) { return a - b; });
+    var m = vals.length % 2 ? vals[(vals.length - 1) / 2] : (vals[vals.length / 2 - 1] + vals[vals.length / 2]) / 2;
+    return Math.max(CALL_MIN_LINE, Math.round(m / 50) * 50);
+  }
+  // A call's state: open (answers taken), live (its hour is running), wait (data not in),
+  // void (no data for that hour) or resolved with the hour's spins.
+  function resolveCall(night, no, now, data) {
+    var c = callOf(no), end = callEnds(night, no);
+    if (now < callCloses(night, no)) return { state: "open" };
+    if (now < end) return { state: "live" };
+    var n = data.nights.get(night), has = n && n.slots && n.slots[c.slot] != null && n.slots[c.slot + 1] != null;
+    if (data.statsAt < end + 10 * 60e3 || !has) {
+      return now >= nightEnd(night) + VOID_AFTER ? { state: "void", reason: "No data for that hour" } : { state: "wait", reason: "Waiting for the hour's data" };
+    }
+    return { state: "resolved", spins: n.slots[c.slot] + n.slots[c.slot + 1] };
+  }
+  // Points per player for a night's calls. answers: [{ player_id, call_no, over }];
+  // lines and results keyed by call number. A right answer pays 5 to 15 by the odds;
+  // a call that lands exactly on its line counts for nobody.
+  function scoreCalls(answers, lines, results) {
+    var out = new Map();
+    CALLS.forEach(function (c) {
+      var list = answers.filter(function (a) { return Number(a.call_no) === c.no; });
+      var r = results[c.no], line = lines[c.no];
+      if (!list.length || !r || r.state !== "resolved" || line == null || r.spins === line) return;
+      var over = r.spins > line, same = list.filter(function (a) { return !!a.over === over; }).length;
+      var pts = oddsPoints("call", same, list.length);
+      list.forEach(function (a) {
+        var s = out.get(a.player_id) || { points: 0, right: 0, settled: 0 };
+        s.settled++;
+        if (!!a.over === over) { s.points += pts; s.right++; }
+        out.set(a.player_id, s);
+      });
+    });
+    return out;
+  }
+
+  // ---------- Night Cards ----------
+  // A collectible for each season night a player calls well (contracts/SqueekNightCards.sol).
+  var CARD_KINDS = ["Called it", "Bullseye", "Lone call", "Perfect night", "Season champion"];
+  var CARD_RARITY = ["Common", "Rare", "Epic", "Epic", "Legendary"];
+  var LONE_MIN = 3;   // a lone call needs at least this many players on that market
+  // The card each player earned for a season night: { kind, points } by player. The best of:
+  // a perfect night (3), a lone call (2: right when nobody else was), a bullseye (1: distance
+  // within 0.25 km) or 20+ points (0). Players with none get no card.
+  function nightCards(res, picks, answers, lines, callResults) {
+    var scores = scoreSeason(res, picks), crowd = crowdOf(picks), calls = scoreCalls(answers, lines, callResults);
+    var lone = new Set();
+    picks.forEach(function (p) {
+      if (crowd.players < LONE_MIN) return;
+      if (res.peak.state === "resolved" && res.peak.winners.indexOf(p.peak_block) >= 0 && crowd.peak[p.peak_block] === 1) lone.add(p.player_id);
+      if (res.blocks.state === "resolved" && p.more_blocks === res.blocks.more && (p.more_blocks ? crowd.more : crowd.fewer) === 1) lone.add(p.player_id);
+    });
+    CALLS.forEach(function (c) {
+      var r = callResults[c.no], line = lines[c.no], list = answers.filter(function (a) { return Number(a.call_no) === c.no; });
+      if (!r || r.state !== "resolved" || line == null || r.spins === line || list.length < LONE_MIN) return;
+      var right = list.filter(function (a) { return !!a.over === (r.spins > line); });
+      if (right.length === 1) lone.add(right[0].player_id);
+    });
+    var out = new Map(), ids = new Set();
+    scores.forEach(function (s, id) { ids.add(id); });
+    calls.forEach(function (c, id) { ids.add(id); });
+    ids.forEach(function (id) {
+      var s = scores.get(id), c = calls.get(id);
+      var points = (s && s.counted ? s.total : 0) + (c ? c.points : 0), kind = null;
+      if (s && s.perfect) kind = 3;
+      else if (lone.has(id)) kind = 2;
+      else if (s && res.distance.state === "resolved" && s.err != null && s.err <= 0.25) kind = 1;
+      else if (points >= 20) kind = 0;
+      if (kind != null) out.set(id, { kind: kind, points: Math.min(points, 65535) });
+    });
+    return out;
+  }
+  // What a player signs to have their cards sent to a wallet; the minting bot checks it.
+  function linkMessage(wallet, playerId) {
+    return "Squeek Picks: send my Night Cards to " + String(wallet).toLowerCase() + ". Player " + playerId + ".";
+  }
+
   // ---------- Live standings ----------
   // The night so far, scored as if it ended right now: distance run so far, busiest
   // window so far, and tonight's blocks against the night before's final count. Only for
@@ -293,8 +394,10 @@
   // then the earlier ticket. Entries tied on all of those share a place.
   // Returns [{ entry, score, place }]. With `seasons`, entries are points-game picks and
   // a season night is scored by its rules; without, by the classic (pot) rules.
-  function liveStandings(res, entries, seasons) {
+  // `extra`: points from elsewhere that night (live calls), by player, added to each total.
+  function liveStandings(res, entries, seasons, extra) {
     var scores = seasons ? scoreGame(res, entries, seasons) : scoreNight(res, entries);
+    if (extra) scores.forEach(function (s, id) { var x = extra.get(id); if (x && x.points) { s.calls = x.points; s.total += x.points; } });
     function errKey(s) { return s.err == null ? 1e9 : s.err; }
     var rows = entries.map(function (e) { return { entry: e, score: scores.get(e.player_id) }; });
     rows.sort(function (a, b) {
@@ -412,6 +515,8 @@
     liveNightAt: liveNightAt, openNightAt: openNightAt, nightToDay: nightToDay, dayToNight: dayToNight, slotOf: slotOf,
     parseStats: parseStats, parseSettlements: parseSettlements,
     resolveNight: resolveNight, distancePoints: distancePoints, scoreNight: scoreNight, potPayouts: potPayouts,
+    CARD_KINDS: CARD_KINDS, CARD_RARITY: CARD_RARITY, nightCards: nightCards, linkMessage: linkMessage,
+    CALLS: CALLS, CALL_MIN_LINE: CALL_MIN_LINE, callOf: callOf, callCloses: callCloses, callEnds: callEnds, callLine: callLine, resolveCall: resolveCall, scoreCalls: scoreCalls,
     seasonOf: seasonOf, ODDS: ODDS, oddsPoints: oddsPoints, crowdOf: crowdOf, scoreSeason: scoreSeason, scoreGame: scoreGame, DOUBLE_MARKETS: DOUBLE_MARKETS,
     potTicketId: potTicketId, potTickets: potTickets,
     provisionalResult: provisionalResult, liveStandings: liveStandings,

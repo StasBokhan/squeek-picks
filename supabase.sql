@@ -132,3 +132,109 @@ as $$
 $$;
 
 grant execute on function public.pick_odds(date) to anon, authenticated;
+
+-- ---------- Live calls ----------
+-- In a season, three quick calls a night on one hour of his running each (more or fewer
+-- spins than his usual for that hour). A call closes when its hour starts: 21:00, 23:00
+-- and 01:00 UTC. Safe to run again.
+create or replace function public.call_closes(p_night date, p_call smallint)
+returns timestamptz
+language sql
+immutable
+as $$
+  select (p_night::timestamp + interval '12 hours'
+          + (case p_call when 1 then 9 when 2 then 11 when 3 then 13 end) * interval '1 hour') at time zone 'utc'
+$$;
+
+create table if not exists public.call_answers (
+  player_id uuid not null references public.players (id) on delete cascade,
+  night date not null,
+  call_no smallint not null check (call_no between 1 and 3),
+  over boolean not null,
+  updated_at timestamptz not null default now(),
+  primary key (player_id, night, call_no)
+);
+
+drop trigger if exists call_answers_touch on public.call_answers;
+create trigger call_answers_touch
+  before insert or update on public.call_answers
+  for each row execute function public.touch_updated_at();
+
+alter table public.call_answers enable row level security;
+
+-- Answers stay hidden until their call closes, except your own.
+drop policy if exists "Answers show once the call closes" on public.call_answers;
+create policy "Answers show once the call closes"
+  on public.call_answers for select
+  using (now() >= public.call_closes(night, call_no) or player_id = auth.uid());
+
+-- You answer the running night's calls, for yourself, until each one closes.
+drop policy if exists "Answer a call until it closes" on public.call_answers;
+create policy "Answer a call until it closes"
+  on public.call_answers for insert to authenticated
+  with check (player_id = auth.uid() and night = public.open_night() - 1 and now() < public.call_closes(night, call_no));
+
+drop policy if exists "Change an answer until the call closes" on public.call_answers;
+create policy "Change an answer until the call closes"
+  on public.call_answers for update to authenticated
+  using (player_id = auth.uid() and night = public.open_night() - 1 and now() < public.call_closes(night, call_no))
+  with check (player_id = auth.uid() and night = public.open_night() - 1 and now() < public.call_closes(night, call_no));
+
+grant select on public.call_answers to anon, authenticated;
+grant insert, update on public.call_answers to authenticated;
+grant execute on function public.call_closes(date, smallint) to anon, authenticated;
+
+-- How many answered more and fewer on each of a night's calls, never who.
+create or replace function public.call_odds(p_night date)
+returns json
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select json_agg(json_build_object(
+    'call', c.i,
+    'over', (select count(*) from public.call_answers where night = p_night and call_no = c.i and over),
+    'under', (select count(*) from public.call_answers where night = p_night and call_no = c.i and not over)
+  ) order by c.i)
+  from generate_series(1, 3) as c(i)
+$$;
+
+grant execute on function public.call_odds(date) to anon, authenticated;
+
+-- ---------- Night Cards ----------
+-- Where a player's Night Cards go: a wallet, proven with a signature the minting bot checks
+-- before it sends anything. Linked wallets are public, like pot tickets. Safe to run again.
+create table if not exists public.wallet_links (
+  player_id uuid primary key references public.players (id) on delete cascade,
+  wallet text not null check (wallet ~ '^0x[0-9a-fA-F]{40}$'),
+  message text not null check (length(message) <= 300),
+  signature text not null check (signature ~ '^0x[0-9a-fA-F]{130}$'),
+  updated_at timestamptz not null default now()
+);
+
+drop trigger if exists wallet_links_touch on public.wallet_links;
+create trigger wallet_links_touch
+  before insert or update on public.wallet_links
+  for each row execute function public.touch_updated_at();
+
+alter table public.wallet_links enable row level security;
+
+drop policy if exists "Everyone sees linked wallets" on public.wallet_links;
+create policy "Everyone sees linked wallets"
+  on public.wallet_links for select
+  using (true);
+
+drop policy if exists "Players link their own wallet" on public.wallet_links;
+create policy "Players link their own wallet"
+  on public.wallet_links for insert to authenticated
+  with check (player_id = auth.uid());
+
+drop policy if exists "Players change their own wallet" on public.wallet_links;
+create policy "Players change their own wallet"
+  on public.wallet_links for update to authenticated
+  using (player_id = auth.uid())
+  with check (player_id = auth.uid());
+
+grant select on public.wallet_links to anon, authenticated;
+grant insert, update on public.wallet_links to authenticated;

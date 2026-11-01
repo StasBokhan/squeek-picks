@@ -37,6 +37,16 @@ jobs:
           SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
           POT_ADDRESS: ${{ vars.POT_ADDRESS }}
         run: node settle.mjs
+      # Night Cards: once a season night's results are final, mints players' cards to the
+      # wallets they linked. Does nothing until CARDS_ADDRESS is set in config.js.
+      - name: Mint Night Cards
+        if: always()
+        continue-on-error: true    # a slow RPC shouldn't stop the Telegram posts
+        working-directory: settler
+        env:
+          SETTLER_PRIVATE_KEY: ${{ secrets.SETTLER_PRIVATE_KEY }}
+          SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
+        run: node cards.mjs
       # Telegram: results and the last call. Does nothing until TELEGRAM_BOT_TOKEN (secret)
       # and TELEGRAM_CHAT_ID (variable) are set. Runs even if the payout step failed.
       - name: Load what was already posted

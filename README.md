@@ -20,9 +20,19 @@ The free points game runs in seasons, set in `config.js` (`SEASONS`: a name, the
 
 - **By the odds:** in a season the peak window pays 5 to 40 points and blocks 5 to 25, depending on how many players picked the same thing: the fewer, the more it's worth. Counts are smoothed so a handful of players can't swing a pick to the extremes. While picking, the page shows how many picked each option (never who) and what it pays.
 - **One double a night:** a player can pick one market whose points count twice.
+- **Live calls:** three quick calls a night, on the hours 21:00, 23:00 and 01:00 UTC: more or fewer spins than his median for that hour over the archived nights. Each closes when its hour starts (the database enforces it), settles from the half-hour stats, and pays 5 to 15 points by the odds. The Telegram bot posts each one within the hour before it closes.
 - Distance scores as always. The pot keeps the classic points, since a pot ticket on chain has no double.
 - The season has its own leaderboard tab and a champion. The rules live in `src/logic.js` (`scoreSeason`), shared by the page and the Telegram bot.
-- Needs the **Seasons** part at the end of `supabase.sql` (a `double_market` column and a `pick_odds` function that returns counts only). Until it's run, picks save without a double and no odds show.
+- Needs the **Seasons** and **Live calls** parts at the end of `supabase.sql` (a `double_market` column, a `call_answers` table, and `pick_odds` / `call_odds` functions that return counts only). Until they're run, picks save without a double, no odds show and no live calls appear.
+
+### Night Cards
+
+A collectible for each season night a player calls well, on Sepolia (`contracts/SqueekNightCards.sol`, an ERC-721). The art is drawn on chain from his real run that night: a wheel with one spoke per half hour of spins, his busiest 3 hours lit.
+
+- **Common · Called it:** 20+ points that night. **Rare · Bullseye:** distance within 0.25 km. **Epic · Lone call:** right when nobody else was (3+ players), or **Perfect night:** all three right and the closest distance. **Legendary · Season champion:** one per season, showing the champion's best night.
+- Players link a wallet on the page by signing a message (no fee). The payout bot (`settler/cards.mjs`, in the hourly workflow) checks the signature, records each finished night's run on the contract once, and mints each player's best card for that night. A card can only be minted once per player and night.
+- Deploy it from `?admin` (the pot's owner wallet; the payout bot becomes the minter), then put its address in `config.js` as `CARDS_ADDRESS`. Needs the **Night Cards** part of `supabase.sql` (`wallet_links`).
+- Not audited yet: it holds no ETH and only the minter can mint. Before any mainnet version, it gets its own audit.
 
 ### The pot
 
@@ -55,7 +65,7 @@ The pot contract was audited by the **[IMD swarm](https://github.com/Identity-md
 
 The other two info findings are recorded in [`contracts/AUDIT-SCOPE.md`](contracts/AUDIT-SCOPE.md): the payout bot decides which of a night's tickets win, and an owner price change just before a night's first ticket makes that purchase fail (the page says to reload).
 
-To run the tests: `cd contracts && npm ci && npm test`.
+To run the tests: `cd contracts && npm ci && npm test` (the pot and the Night Cards).
 
 ## Limits worth knowing
 

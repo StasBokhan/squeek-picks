@@ -441,6 +441,32 @@ a.play-btn:hover { filter: brightness(1.05); }
 .sb-dots span.next { background: transparent; box-shadow: inset 0 0 0 2px var(--accent-ink); }
 @media (max-width: 720px) { .season-band .sb-side { justify-content: flex-start; } }
 
+/* Night Cards */
+.cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin-top: 14px; }
+.cards-grid figure { margin: 0; display: grid; gap: 6px; }
+.cards-grid img { width: 100%; height: auto; display: block; border-radius: 14px; }
+.cards-grid figcaption { font-size: 13px; color: var(--ink-2); }
+#cards-body { margin-top: 14px; }
+button.linklike { appearance: none; border: 0; background: none; padding: 0; color: var(--blue); font: inherit; font-weight: 700; cursor: pointer; text-decoration: underline; }
+
+/* Live calls */
+.call-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+@media (max-width: 860px) { .call-list { grid-template-columns: minmax(0, 1fr); } }
+.call { padding: 16px; border-radius: 18px; background: var(--raise); border: 2px solid transparent; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.call.open { border-color: color-mix(in srgb, var(--gold) 70%, transparent); }
+.call-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.call-state { font: 800 12px/1.4 var(--font-body); text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); }
+.call.open .call-state { color: var(--accent-ink); }
+.call.resolved .call-state { color: var(--good); }
+.call-q { margin: 0; font: 600 19px/1.25 var(--font-display); }
+.call .duo { max-width: none; background: var(--panel); }
+.call .duo .opt { display: grid; gap: 2px; font-size: 15px; padding: 10px; }
+.call .duo .opt .pct { font-size: 12px; font-weight: 600; color: var(--ink-3); }
+.call .duo .opt:disabled { cursor: not-allowed; opacity: .7; }
+.call p { margin: 0; font-size: 14px; color: var(--ink-2); }
+.call p strong { color: var(--ink); }
+.call .ok { color: var(--good); font-weight: 800; }
+
 /* Quick pick, and the nickname asked for when saving */
 .quick { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 8px; }
 .quick button.secondary { padding: 10px 16px; }
@@ -900,6 +926,15 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     <p class="race-foot" id="race-foot"></p>
   </section>
 
+  <!-- Live calls: in a season, quick calls on tonight's running -->
+  <section class="panel calls game-only" id="calls" aria-labelledby="calls-h" hidden>
+    <span class="eyebrow">Tonight · live</span>
+    <h2 id="calls-h">Live calls</h2>
+    <p class="sub">Three quick calls on his running tonight: more or fewer spins than his usual for that hour. Each one closes when its hour starts and pays 5 to 15 points by the odds.</p>
+    <div class="call-list" id="call-list"></div>
+    <p class="msg" id="calls-msg" role="status"></p>
+  </section>
+
   <div class="picks-row game-only">
     <section class="panel ticket" id="ticket" aria-labelledby="ticket-h">
       <div class="ticket-head">
@@ -981,6 +1016,14 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
       <p class="hint">Tickets cost Sepolia test ETH, which has no value. A ticket uses your three picks, and everyone can see pot picks on the blockchain.</p>
     </section>
   </div>
+
+  <section class="panel cards game-only" id="cards" aria-labelledby="cards-h" hidden>
+    <span class="eyebrow">Collection</span>
+    <h2 id="cards-h">Night Cards</h2>
+    <p class="sub">Call a season night well and a card of his run that night lands in your wallet: Common for 20+ points, Rare for a bullseye, Epic for a lone call or a perfect night, Legendary for the season champion. Free, on Sepolia.</p>
+    <div id="cards-body"></div>
+    <p class="msg" id="cards-msg" role="status"></p>
+  </section>
 
   <section class="panel dash game-only" id="dash" aria-labelledby="dash-h" hidden>
     <div class="dash-head">
@@ -1158,12 +1201,15 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     ENS_AVATAR_URL: "https://metadata.ens.domains/mainnet/avatar/",
     SITE_URL: "",                                          // the link in share posts; empty means this page's address
     TELEGRAM_URL: "",                                      // the bot's Telegram channel, shown as a button
-    SEASONS: []                                            // [{ name, start: "YYYY-MM-DD", nights }]: see config.js
+    SEASONS: [],                                           // [{ name, start: "YYYY-MM-DD", nights }]: see config.js
+    CARDS_ADDRESS: ""                                      // the Night Cards contract on Sepolia
   }, window.SQUEEK_CONFIG || {});
   var POT_ABI = /*@@POT_ABI@@*/[];          // version 3, which also reads version 2 pots
   var POT_BYTECODE = /*@@POT_BYTECODE@@*/"";
   var POT_VERSION = 3;                       // the version POT_BYTECODE deploys
   var POT_ABI_V1 = /*@@POT_ABI_V1@@*/[];   // pots deployed before version 2
+  var CARDS_ABI = /*@@CARDS_ABI@@*/[];       // the Night Cards collectibles
+  var CARDS_BYTECODE = /*@@CARDS_BYTECODE@@*/"";
   var AUDIT_URL = "https://github.com/Identity-md/research/blob/main/jobs/06d98304-78a4-4089-815a-2be96ef1f7c5/files/AUDIT.md";
   // Libraries are served from this site (vendor/), copied unchanged from their npm releases,
   // so no outside CDN can change the code that builds your transactions.
@@ -1392,6 +1438,11 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     sb: null, uid: null, me: null,
     players: new Map(), picks: [], sample: new Set(),
     hasDouble: false,   // the database has the season's double_market column
+    hasCalls: false,    // the database has the live calls table
+    hasLinks: false,    // the database has the Night Cards wallet links
+    link: null,         // your linked wallet: { wallet, message, signature }
+    answers: [],        // live call answers: [{ player_id, night, call_no, over }] (yours, and others' once closed)
+    callOdds: null,     // { night, counts: { 1: { over, under }, ... } } for the running night
     odds: null          // { night, counts: { players, peak: [8], more, fewer } } for the open night
   };
   var LOCAL_KEY = "squeekpicks.local.v1";
@@ -1417,7 +1468,8 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
   function gameInit() {
     if (G.mode === "local") {
       var l = readLocal();
-      G.hasDouble = true;
+      G.hasDouble = true; G.hasCalls = true; G.hasLinks = true;
+      G.link = l.wallet || null;
       if (l.nickname) { G.uid = "me"; G.me = { id: "me", nickname: l.nickname }; }
       return gameRefresh();
     }
@@ -1441,7 +1493,16 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
   // The season's double column and odds function exist once the Seasons part of
   // supabase.sql has run. Until then picks save without a double and no odds show.
   function detectSeasonDb() {
-    return G.sb.from("picks").select("double_market").limit(1).then(function (r) { G.hasDouble = !r.error; }, function () { G.hasDouble = false; });
+    return Promise.all([
+      G.sb.from("picks").select("double_market").limit(1).then(function (r) { G.hasDouble = !r.error; }, function () { G.hasDouble = false; }),
+      G.sb.from("call_answers").select("night").limit(1).then(function (r) { G.hasCalls = !r.error; }, function () { G.hasCalls = false; }),
+      G.sb.from("wallet_links").select("player_id").limit(1).then(function (r) { G.hasLinks = !r.error; }, function () { G.hasLinks = false; })
+    ]);
+  }
+  function callOddsFrom(rows) {
+    var c = {};
+    (rows || []).forEach(function (x) { c[Number(x.call)] = { over: Number(x.over) || 0, under: Number(x.under) || 0 }; });
+    return c;
   }
 
   function gameRefresh() {
@@ -1456,6 +1517,15 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
       }
       G.picks = picks;
       G.odds = { night: open, counts: L.crowdOf(picks.filter(function (p) { return p.night === open; })) };
+      // Your live call answers, kept in this browser.
+      var ans = [], live = liveNightAt(Date.now()), lc = {};
+      if (G.me) Object.keys(l.calls || {}).forEach(function (night) {
+        if (night < since) return;
+        Object.keys(l.calls[night]).forEach(function (no) { ans.push({ player_id: "me", night: night, call_no: Number(no), over: !!l.calls[night][no] }); });
+      });
+      G.answers = ans;
+      ans.filter(function (a) { return a.night === live; }).forEach(function (a) { var x = lc[a.call_no] = lc[a.call_no] || { over: 0, under: 0 }; if (a.over) x.over++; else x.under++; });
+      G.callOdds = { night: live, counts: lc };
       return Promise.resolve();
     }
     if (!G.sb) return Promise.resolve();
@@ -1469,6 +1539,15 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
       seasonOf(open) ? G.sb.rpc("pick_odds", { p_night: open }).then(function (r) {
         G.odds = r.error || !r.data ? null : { night: open, counts: r.data };
       }, function () { G.odds = null; }) : (G.odds = null),
+      // Live calls: answers (yours, and everyone's once a call closes) and the running night's odds.
+      G.hasCalls ? fetchAll(function () { return G.sb.from("call_answers").select("player_id,night,call_no,over").gte("night", since).order("night").order("player_id").order("call_no"); })
+        .then(function (rows) { G.answers = rows.map(function (a) { return { player_id: a.player_id, night: a.night, call_no: Number(a.call_no), over: !!a.over }; }); }) : (G.answers = []),
+      G.hasLinks && G.uid ? G.sb.from("wallet_links").select("wallet,message,signature").eq("player_id", G.uid).maybeSingle().then(function (r) {
+        G.link = r.error ? null : r.data || null;
+      }, function () {}) : null,
+      G.hasCalls && seasonOf(liveNightAt(Date.now())) ? G.sb.rpc("call_odds", { p_night: liveNightAt(Date.now()) }).then(function (r) {
+        G.callOdds = r.error ? null : { night: liveNightAt(Date.now()), counts: callOddsFrom(r.data) };
+      }, function () { G.callOdds = null; }) : (G.callOdds = null),
       // All-time calls, for the numbers under the header (locked nights plus your own).
       G.sb.from("picks").select("night", { count: "exact", head: true }).then(function (r) { G.calls = r && r.count != null ? r.count : null; }, function () {})
     ]).then(function (r) {
@@ -1520,6 +1599,36 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
   }
 
   function picksFor(night) { return G.picks.filter(function (p) { return p.night === night; }); }
+
+  // ---------- Live calls ----------
+  function callSave(night, no, over) {
+    if (G.mode === "local") {
+      var l = readLocal(); l.calls = l.calls || {}; (l.calls[night] = l.calls[night] || {})[no] = over; writeLocal(l);
+      return gameRefresh();
+    }
+    return G.sb.from("call_answers").upsert({ player_id: G.uid, night: night, call_no: no, over: over }, { onConflict: "player_id,night,call_no" }).then(function (r) {
+      if (r.error) {
+        if (r.error.code === "42501") throw new Error("That call just closed.");
+        throw new Error(r.error.message);
+      }
+      return gameRefresh();
+    });
+  }
+  function callsFor(night) { return G.answers.filter(function (a) { return a.night === night; }); }
+  // A night's 48 half-hour spin counts: from the archive (the same for everyone), else the API.
+  function slotsOf(date) {
+    var d = D.file && D.file.nights && D.file.nights[date];
+    if (d && d.slots) return d.slots.map(function (x) { return x == null ? null : Number(x); });
+    var n = H.nights.get(date);
+    return n ? n.slots : null;
+  }
+  function callLines(night) { var o = {}; L.CALLS.forEach(function (c) { o[c.no] = L.callLine(night, c.no, slotsOf); }); return o; }
+  function callResults(night, now) { var o = {}; L.CALLS.forEach(function (c) { o[c.no] = L.resolveCall(night, c.no, now, H); }); return o; }
+  // Live call points by player for a season night (empty outside a season).
+  function callPoints(night, now) {
+    if (!seasonOf(night) || !G.hasCalls) return new Map();
+    return L.scoreCalls(callsFor(night), callLines(night), callResults(night, now));
+  }
   function myPick(night) {
     if (!G.uid) return null;
     for (var i = 0; i < G.picks.length; i++) if (G.picks[i].night === night && G.picks[i].player_id === G.uid) return G.picks[i];
@@ -2477,7 +2586,15 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
           '</div></div>' : "") +
         (P.deployed ? '<div class="notice"><span>Deployed at <span class="addr">' + esc(P.deployed) + "</span></span>" +
           '<button class="secondary" type="button" data-admin="copy">Copy address</button></div>' +
-          '<p class="hint">Next: in config.js, set POT_ADDRESS to this address and add the old one to OLD_POTS, so its last nights still show and get paid. The payout bot reads both from config.js.</p>' : "");
+          '<p class="hint">Next: in config.js, set POT_ADDRESS to this address and add the old one to OLD_POTS, so its last nights still show and get paid. The payout bot reads both from config.js.</p>' : "") +
+        // Night Cards: deployed by the owner, minted by the payout bot.
+        (i && CARDS_ABI.length ? '<div class="admin-grid"><div><h3>Night Cards</h3>' +
+          (CONFIG.CARDS_ADDRESS ? '<p class="hint">Contract ' + addrLink(CONFIG.CARDS_ADDRESS, shortAddr(CONFIG.CARDS_ADDRESS)) + ". The payout bot mints the cards after each season night.</p>"
+            : isOwner(i) ? '<p class="hint">Deploys the Night Cards collectibles on Sepolia, with this wallet as owner and the payout bot, ' + esc(shortAddr(i.resolver)) + ", as minter.</p>" +
+              '<div class="row"><button class="primary" type="button" data-admin="cards">Deploy Night Cards</button></div>'
+            : '<p class="hint">Connect the owner wallet, ' + esc(shortAddr(i.owner)) + ", to deploy them.</p>") + "</div></div>" : "") +
+        (P.cardsDeployed ? '<div class="notice"><span>Night Cards deployed at <span class="addr">' + esc(P.cardsDeployed) + "</span></span></div>" +
+          '<p class="hint">Next: in config.js, set CARDS_ADDRESS to this address.</p>' : "");
     }
     // Only redraw when something changed, so typing in the fields isn't interrupted.
     var key = body.replace(/value="[^"]*"/g, "");
@@ -2494,6 +2611,11 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     }
     if (!P.E) { adminMsg("The wallet library is still loading.", "err"); return; }
     if (!P.account || !onSepolia()) { adminMsg("Connect your wallet on Sepolia first.", "err"); return; }
+    if (kind === "cards") {
+      if (!isOwner(P.info)) { adminMsg("Connect the owner wallet first.", "err"); return; }
+      var deploy = CARDS_BYTECODE + new P.E.Interface(CARDS_ABI).encodeDeploy([P.info.resolver]).slice(2);
+      return sendTx(adminMsg, "Night Cards deployed.", { data: deploy }, function (r) { P.cardsDeployed = P.E.getAddress(r.receipt.contractAddress); });
+    }
     if (kind === "upgrade" && !isOwner(P.info)) { adminMsg("Connect the owner wallet first: whoever deploys the new pot becomes its owner.", "err"); return; }
     if (kind === "deploy" || kind === "upgrade") {
       var price = parseEthInput($(kind === "deploy" ? "adm-price" : "adm-upprice").value);
@@ -3386,14 +3508,15 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
       note(res.blocks, res.blocks.state === "resolved" ? fmtInt(res.blocks.cur) + " blocks vs " + fmtInt(res.blocks.prev) + " the night before." : "") + "</div>";
 
     var scores = scorePoints(res, picks);
-    var mine = G.uid && scores.get(G.uid);
+    var mine = G.uid && scores.get(G.uid), myCalls = G.uid ? callPoints(night, now).get(G.uid) : null;
     if (mine) {
       var parts = [];
       if (res.distance.state === "resolved") parts.push("distance " + mine.distance + (mine.closest ? " + closest 10" : ""));
       if (res.peak.state === "resolved") parts.push("peak " + mine.peak);
       if (res.blocks.state === "resolved") parts.push("blocks " + mine.blocks);
       if (mine.bonus) parts.push("doubled " + (mine.double === "peak" ? "peak window" : mine.double) + " +" + mine.bonus);
-      html += '<div class="yours"><span class="pts">' + mine.total + "</span> points for you" + (parts.length ? ": " + parts.join(", ") + "." : " so far.") + "</div>";
+      if (myCalls && myCalls.settled) parts.push("live calls " + myCalls.points);
+      html += '<div class="yours"><span class="pts">' + (mine.total + (myCalls ? myCalls.points : 0)) + "</span> points for you" + (parts.length ? ": " + parts.join(", ") + "." : " so far.") + "</div>";
     }
     if (picks.length) {
       var ranked = Array.from(scores.entries()).sort(function (a, b) { return b[1].total - a[1].total; }).slice(0, 3);
@@ -3822,17 +3945,23 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
   // Points per player over some nights, with what the badges need.
   function pointsTotals(nights, now) {
     var totals = new Map();
+    function add(id, pts, s) {
+      var t = totals.get(id) || { points: 0, nights: 0, best: 0, perfect: 0, closest: 0 };
+      t.points += pts; t.nights++; t.best = Math.max(t.best, pts);
+      if (s && s.perfect) t.perfect++;
+      if (s && s.closest) t.closest++;
+      totals.set(id, t);
+    }
     nights.forEach(function (night) {
-      var picks = picksFor(night);
-      if (!picks.length) return;
-      scorePoints(resolve(night, now), picks).forEach(function (s, id) {
-        if (!s.counted) return;
-        var t = totals.get(id) || { points: 0, nights: 0, best: 0, perfect: 0, closest: 0 };
-        t.points += s.total; t.nights++; t.best = Math.max(t.best, s.total);
-        if (s.perfect) t.perfect++;
-        if (s.closest) t.closest++;
-        totals.set(id, t);
+      var picks = picksFor(night), calls = callPoints(night, now), done = new Set();
+      if (picks.length) scorePoints(resolve(night, now), picks).forEach(function (s, id) {
+        var c = calls.get(id);
+        if (!s.counted && !(c && c.settled)) return;
+        done.add(id);
+        add(id, (s.counted ? s.total : 0) + (c ? c.points : 0), s.counted ? s : null);
       });
+      // Players who only answered live calls that night.
+      calls.forEach(function (c, id) { if (!done.has(id) && c.settled) add(id, c.points, null); });
     });
     return totals;
   }
@@ -3937,6 +4066,138 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     el.hidden = false;
   }
 
+  // ---------- Night Cards ----------
+  var C = { wallet: null, list: null, loading: null, at: 0 };
+  function cardsOn() { return !!(CONFIG.CARDS_ADDRESS && CARDS_ABI.length && SEASONS.length); }
+  function saveLink(row) {
+    if (G.mode === "local") { var l = readLocal(); l.wallet = row; writeLocal(l); G.link = row; return Promise.resolve(); }
+    return G.sb.from("wallet_links").upsert(Object.assign({ player_id: G.uid }, row), { onConflict: "player_id" }).then(function (r) {
+      if (r.error) throw new Error(r.error.message);
+      G.link = row;
+    });
+  }
+  // Proves the wallet is yours with a signed message (no fee, no transaction); the minting
+  // bot checks the signature before it sends any card.
+  function linkWallet() {
+    var msg = function (t, k) { say("cards-msg", t, k); };
+    if (!G.me || !G.uid) { msg("Save your picks with a nickname first.", "err"); return; }
+    if (!P.account) { msg("Connect the wallet you want your cards in, then press Link again."); connectWallet(msg); return; }
+    var account = P.account;
+    loadEthers().then(function (E) {
+      var text = L.linkMessage(account, G.uid);
+      msg("Check " + walletName() + ": it asks you to sign a message. It costs nothing.");
+      return eth().request({ method: "personal_sign", params: [E.hexlify(E.toUtf8Bytes(text)), account] }).then(function (sig) {
+        if (E.verifyMessage(text, sig).toLowerCase() !== account.toLowerCase()) throw new Error("That signature doesn't match the wallet.");
+        return saveLink({ wallet: E.getAddress(account), message: text, signature: sig });
+      });
+    }).then(function () {
+      msg("Linked. Your cards go to " + shortAddr(account) + ".", "ok");
+      C.wallet = null; renderCards();
+    }).catch(function (e) { msg(errText(e), "err"); });
+  }
+  // The cards a wallet holds, read from the contract with their on-chain art.
+  function loadCards(wallet) {
+    if (C.loading === wallet) return;
+    C.loading = wallet;
+    loadEthers().then(function (E) {
+      var net = E.Network.from(Number(CONFIG.CHAIN_ID));
+      var rpc = P.rpc || new E.JsonRpcProvider(CONFIG.RPC_URL, net, { staticNetwork: net });
+      var c = new E.Contract(CONFIG.CARDS_ADDRESS, CARDS_ABI, rpc);
+      return c.cardsOf(wallet).then(function (ids) {
+        return Promise.all(Array.from(ids).map(function (id) {
+          return c.tokenURI(id).then(function (u) {
+            var bin = atob(u.split(",")[1]), bytes = new Uint8Array(bin.length);
+            for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            var j = JSON.parse(new TextDecoder().decode(bytes));
+            return { id: Number(id), name: j.name, image: j.image };
+          });
+        }));
+      });
+    }).then(function (list) { C.list = list.sort(function (a, b) { return b.id - a.id; }); C.err = false; },
+      function () { C.list = C.list || []; C.err = true; })
+      .then(function () { C.wallet = wallet; C.at = Date.now(); C.loading = null; renderCards(); });
+  }
+  function renderCards() {
+    var el = $("cards"), on = cardsOn();
+    el.hidden = !on;
+    if (!on) return;
+    var body;
+    if (!G.me) body = '<p class="empty">Play the season with a nickname to earn cards.</p><a class="play-btn" href="#ticket" data-play="1">Play free</a>';
+    else if (!G.hasLinks) body = '<p class="empty">Night Cards are on the way.</p>';
+    else if (!G.link) body = '<div class="notice"><span>Link a wallet and your cards land there by themselves. You only sign a message: no fee, no transaction. Linked wallets are public, like pot tickets.</span>' +
+      '<button class="primary" type="button" data-cards="link">Link a wallet</button></div>';
+    else {
+      var w = G.link.wallet;
+      if (C.wallet !== w || Date.now() - C.at > 10 * 60e3) loadCards(w);
+      var list = C.wallet === w ? C.list : null;
+      body = '<p class="hint">Your cards go to ' + addrLink(w, shortAddr(w)) + '. <button class="linklike" type="button" data-cards="link">Change</button></p>' +
+        (!list ? '<p class="empty">Loading your cards…</p>'
+          : !list.length ? '<p class="empty">' + (C.err ? "Couldn't read your cards right now. Reload to try again." : "No cards yet. They arrive within the hour after a season night's results.") + "</p>"
+          : '<div class="cards-grid">' + list.map(function (c) {
+            return '<figure><img src="' + esc(c.image) + '" alt="' + esc(c.name) + '" width="600" height="840" loading="lazy"><figcaption>' + esc(c.name.replace(/^Night Card /, "")) + "</figcaption></figure>";
+          }).join("") + "</div>");
+    }
+    if (UI.cardsKey !== body) { $("cards-body").innerHTML = body; UI.cardsKey = body; }
+  }
+
+  // ---------- Live calls panel ----------
+  // The running night's answers without your own, so each button shows what it pays you.
+  function callOddsNow(night) {
+    if (!G.callOdds || G.callOdds.night !== night) return null;
+    var out = {};
+    L.CALLS.forEach(function (c) {
+      var x = G.callOdds.counts[c.no] || { over: 0, under: 0 }, o = { over: x.over, under: x.under };
+      callsFor(night).forEach(function (a) { if (a.player_id === G.uid && a.call_no === c.no) { if (a.over) o.over = Math.max(0, o.over - 1); else o.under = Math.max(0, o.under - 1); } });
+      out[c.no] = o;
+    });
+    return out;
+  }
+  function renderCalls(now) {
+    var el = $("calls"), night = UI.live;
+    var lines = seasonOf(night) && G.hasCalls ? callLines(night) : {};
+    var any = L.CALLS.some(function (c) { return lines[c.no] != null; });
+    el.hidden = !any;
+    if (!any) return;
+    var results = callResults(night, now), odds = callOddsNow(night), mine = {}, all = callsFor(night);
+    all.forEach(function (a) { if (a.player_id === G.uid) mine[a.call_no] = !!a.over; });
+    var html = L.CALLS.map(function (c) {
+      var line = lines[c.no];
+      if (line == null) return "";
+      var r = results[c.no], from = L.callCloses(night, c.no), to = L.callEnds(night, c.no), my = mine[c.no];
+      var said = my == null ? "" : " You said " + (my ? "more" : "fewer") + ".";
+      var body, label;
+      if (r.state === "open") {
+        var o = odds && odds[c.no], tot = o ? o.over + o.under : 0;
+        var btn = function (over) {
+          var n = o ? (over ? o.over : o.under) : 0, w = L.oddsPoints("call", n + 1, tot + 1);
+          return '<button type="button" class="opt" data-call="' + c.no + '" data-over="' + over + '" aria-pressed="' + (my === over) + '"' + (G.me ? "" : " disabled") + ">" +
+            (over ? "More" : "Fewer") + " · " + w + " pts" + (tot ? '<span class="pct">' + Math.round(n / tot * 100) + "% so far</span>" : "") + "</button>";
+        };
+        label = "Open";
+        body = '<div class="duo">' + btn(true) + btn(false) + "</div>" +
+          "<p>Closes " + esc(fmtTime(from)) + ' · <span class="num">in ' + esc(fmtIn(from - now)) + "</span>" +
+          (G.me ? "" : '. <a href="#ticket" data-play="1">Save your picks with a nickname</a> to answer.') + "</p>";
+      } else if (r.state === "live") {
+        var n = H.nights.get(night), so = n && n.slots ? (n.slots[c.slot] || 0) + (n.slots[c.slot + 1] || 0) : null;
+        label = "Hour running";
+        body = "<p>" + (so != null ? "<strong>" + fmtInt(so) + "</strong> spins so far." : "Counting his spins.") + said + "</p>";
+      } else if (r.state === "resolved") {
+        var tie = r.spins === line, over = r.spins > line, list = all.filter(function (a) { return a.call_no === c.no; });
+        var right = list.filter(function (a) { return !!a.over === over; }).length, pts = list.length ? L.oddsPoints("call", right, list.length) : 0;
+        label = "Settled";
+        body = "<p><strong>" + fmtInt(r.spins) + "</strong> spins: " + (tie ? "right on the line, so no points." : over ? "more." : "fewer.") +
+          (my == null || tie ? "" : my === over ? ' <span class="ok">You called it, +' + pts + ".</span>" : said) + "</p>";
+      } else {
+        label = r.state === "void" ? "No call" : "Waiting";
+        body = "<p>" + esc(r.reason || "Waiting for the hour's data") + "." + (r.state === "void" ? " No points either way." : said) + "</p>";
+      }
+      return '<div class="call ' + r.state + '"><div class="call-head"><span class="call-state">' + label + " · " + esc(fmtTime(from) + "–" + fmtTime(to)) +
+        '</span><span class="m-pts">5 to 15 pts</span></div><p class="call-q">More or fewer than ' + fmtInt(line) + " spins?</p>" + body + "</div>";
+    }).join("");
+    // Rebuilt only when something changed, so a press isn't lost to a redraw.
+    if (UI.callsKey !== html) { $("call-list").innerHTML = html; UI.callsKey = html; }
+  }
+
   // ---------- Seasons ----------
   function seasonInfo(i) { var x = SEASONS[i]; return x && x.start ? L.seasonOf(x.start, SEASONS) : null; }
   function allSeasons() { var out = []; for (var i = 0; i < SEASONS.length; i++) { var s = seasonInfo(i); if (s) out.push(s); } return out; }
@@ -3974,7 +4235,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     var el = $("season-band"), cur = seasonNow(), html = "";
     var next = allSeasons().filter(function (s) { return s.start > UI.open && s.start <= addDays(UI.open, 21); })[0];
     var done = !cur && boardSeason();
-    var rules = "The peak window and blocks pay by the odds: the fewer players pick what happens, the more it's worth. One pick a night counts double.";
+    var rules = "The peak window and blocks pay by the odds: the fewer players pick what happens, the more it's worth. One pick a night counts double, and three live calls a night add more.";
     if (cur) {
       var k = 0, dots = "";
       for (var i = 0; i < cur.nights; i++) {
@@ -4003,7 +4264,9 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     r.hidden = !s;
     if (s) r.innerHTML = "<h3>" + esc(s.name) + "</h3><ul><li>The nights of " + esc(fmtNight(s.start)) + " to " + esc(fmtNight(s.last)) + ", in the free points game.</li>" +
       "<li>Distance scores as always. The peak window pays 5 to 40 points and blocks 5 to 25, by the odds: the fewer players picked what happened, the more it's worth.</li>" +
-      "<li>Double one pick a night: that market's points count twice.</li><li>The pot keeps the classic points.</li></ul>";
+      "<li>Double one pick a night: that market's points count twice.</li>" +
+      "<li>Live calls: three quick calls a night, each on one hour of his running (more or fewer spins than his usual for that hour). Each closes when its hour starts and pays 5 to 15 points by the odds.</li>" +
+      "<li>The pot keeps the classic points.</li></ul>";
   }
 
   // A returning player's night at a glance, above everything else: how last night went,
@@ -4018,13 +4281,14 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     // Last night
     var last = addDays(UI.live, -1), res = resolve(last, now), scores = scorePoints(res, picksFor(last)), mine = scores.get(G.uid), t1;
     var waiting = [res.distance, res.peak, res.blocks].some(function (m) { return m.state === "wait" || m.state === "live"; });
-    var lastDay = esc(fmtNight(last));
-    if (!mine) t1 = tile("Last night", "–", lastDay + " · you didn't call it");
-    else if (!mine.counted) t1 = tile("Last night", "Counting", lastDay + " · points once the data is in");
+    var lastDay = esc(fmtNight(last)), lastTotals = pointsTotals([last], now), mt = lastTotals.get(G.uid);
+    var answered = callsFor(last).some(function (a) { return a.player_id === G.uid; });
+    if (!mine && !answered) t1 = tile("Last night", "–", lastDay + " · you didn't call it");
+    else if (!mt) t1 = tile("Last night", "Counting", lastDay + " · points once the data is in");
     else {
-      var players = 0, ahead = 0;
-      scores.forEach(function (s, id) { if (!s.counted) return; players++; if (id !== G.uid && s.total > mine.total) ahead++; });
-      t1 = tile("Last night", mine.total + " pts", lastDay + " · #" + (ahead + 1) + " of " + players + (players === 1 ? " player" : " players") + (waiting ? ", still counting" : ""));
+      var players = lastTotals.size, ahead = 0;
+      lastTotals.forEach(function (t, id) { if (id !== G.uid && t.points > mt.points) ahead++; });
+      t1 = tile("Last night", mt.points + " pts", lastDay + " · #" + (ahead + 1) + " of " + players + (players === 1 ? " player" : " players") + (waiting ? ", still counting" : ""));
     }
     // This week, with the streak
     var set = pickedNights().get(G.uid), withOpen = set && set.has(UI.open), streak = withOpen ? streakOf(set, UI.open) : streakOf(set, UI.live);
@@ -4085,7 +4349,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
         if (P.on) potRefresh().then(renderPot);
       }
     }
-    renderBanner(); renderMe(); renderYou(now); renderSeason(now); renderLive(now); renderTicket(now); renderRace(now); renderResults(now); renderBoard(now);
+    renderBanner(); renderMe(); renderYou(now); renderSeason(now); renderLive(now); renderCalls(now); renderCards(); renderTicket(now); renderRace(now); renderResults(now); renderBoard(now);
     renderPot(); renderDash(); renderPotBoard(); renderBoardTabs(); renderAdmin();
     if (currentView() === "diary") renderDiary(now);
     renderOverlay(now);
@@ -4140,6 +4404,21 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
       });
     });
     $("quick-pick").addEventListener("click", quickPick);
+    $("cards").addEventListener("click", function (e) {
+      var btn = e.target.closest("button[data-cards]"); if (!btn) return;
+      if (btn.dataset.cards === "link") linkWallet();
+    });
+    $("calls").addEventListener("click", function (e) {
+      var btn = e.target.closest("button[data-call]"); if (!btn || btn.disabled) return;
+      var no = Number(btn.dataset.call), over = btn.dataset.over === "true", night = UI.live;
+      if (Date.now() >= L.callCloses(night, no)) { say("calls-msg", "That call just closed.", "err"); renderCalls(Date.now()); return; }
+      Array.prototype.forEach.call(btn.parentNode.children, function (b) { b.setAttribute("aria-pressed", String(b === btn)); });
+      say("calls-msg", "Saving…");
+      callSave(night, no, over).then(function () {
+        say("calls-msg", "Saved. You can change it until " + fmtTime(L.callCloses(night, no)) + ".", "ok");
+        UI.callsKey = null; renderCalls(Date.now());
+      }).catch(function (err) { say("calls-msg", err.message || String(err), "err"); UI.callsKey = null; renderCalls(Date.now()); });
+    });
     $("pick-double").addEventListener("click", function (e) {
       var btn = e.target.closest("button[data-double]"); if (!btn) return;
       UI.draft.double = UI.draft.double === btn.dataset.double ? null : btn.dataset.double;
