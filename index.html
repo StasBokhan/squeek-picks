@@ -396,7 +396,57 @@ button.wallet-btn {
 button.wallet-btn .av { width: 32px; height: 32px; }
 button.wallet-btn .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 button.wallet-btn:hover { border-color: var(--ink-3); }
-button.wallet-btn.connect { padding: 0 20px; background: var(--gold); color: var(--on-gold); border-color: var(--gold); }
+button.wallet-btn.connect { padding: 0 18px; }
+/* The header's main button: the free game, which needs no wallet. */
+a.play-btn {
+  display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 22px; box-sizing: border-box;
+  border-radius: 999px; background: var(--gold); color: var(--on-gold); border: 1px solid var(--gold);
+  font: 800 15px/1 var(--font-body); text-decoration: none; white-space: nowrap; box-shadow: var(--shadow);
+}
+a.play-btn:hover { filter: brightness(1.05); }
+
+/* Your game: the returning player's night at a glance */
+.you-head { display: flex; align-items: baseline; justify-content: space-between; gap: 6px 16px; flex-wrap: wrap; }
+.you-head h2 { font-size: 22px; }
+.you-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+@media (max-width: 720px) { .you-grid { grid-template-columns: minmax(0, 1fr); gap: 8px; } }
+.you-tile { display: grid; gap: 2px; align-content: start; padding: 14px 16px; border-radius: 16px; background: var(--raise); min-width: 0; }
+.you-tile .k { font: 800 12px/1.4 var(--font-body); color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.05em; }
+.you-tile .v { font: 600 24px/1.2 var(--font-display); color: var(--ink); font-variant-numeric: tabular-nums; }
+.you-tile .v.ok { color: var(--good); }
+.you-tile .v.todo { color: var(--accent-ink); }
+.you-tile .d { font-size: 13px; color: var(--ink-2); }
+.you-tile button { justify-self: start; margin-top: 8px; padding: 10px 16px; font-size: 14px; border-radius: 12px; }
+@media (max-width: 720px) {
+  .you-tile { grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 12px; padding: 12px 14px; }
+  .you-tile .k, .you-tile .d { grid-column: 1; }
+  .you-tile .v { grid-column: 2; grid-row: 1 / span 2; font-size: 20px; text-align: right; }
+  .you-tile button[data-play] { display: none; }   /* the bar at the bottom has it */
+}
+
+/* Quick pick, and the nickname asked for when saving */
+.quick { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 8px; }
+.quick button.secondary { padding: 10px 16px; }
+.nick-row { flex-basis: 100%; display: grid; gap: 6px; }
+.nick-row label { font-weight: 800; font-size: 15px; }
+.nick-row input { max-width: 320px; }
+
+/* Phones: a bar with the picks countdown, until the picks are on screen */
+.pickbar { display: none; }
+@media (max-width: 720px) {
+  .pickbar:not([hidden]) {
+    display: flex; position: fixed; z-index: 50; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    align-items: center; justify-content: space-between; gap: 12px; padding: 10px 10px 10px 16px; border-radius: 18px;
+    background: color-mix(in srgb, var(--panel) 94%, transparent); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    border: 1px solid var(--rule); box-shadow: 0 10px 28px rgba(0, 0, 0, .35);
+  }
+  .pickbar .pb-text { font: 700 14px/1.3 var(--font-body); color: var(--ink-2); min-width: 0; }
+  .pickbar .pb-text strong { color: var(--ink); }
+  .pickbar .pb-text .num { color: var(--accent-ink); font-weight: 800; }
+  .pickbar .pb-text .ok { color: var(--good); font-weight: 800; }
+  .pickbar button { flex: none; padding: 11px 16px; font-size: 15px; border-radius: 14px; }
+  body[data-view="game"] .wrap { padding-bottom: 104px; }
+}
 
 /* Leaderboard tabs */
 .board-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
@@ -719,6 +769,9 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
   <p class="proof game-only" id="proof" hidden></p>
   <div class="banner" id="banner" role="status" hidden></div>
 
+  <!-- Your game: for a returning player, last night, this week and the next night's picks -->
+  <section class="panel you game-only" id="you" aria-labelledby="you-h" hidden></section>
+
   <!-- Squeektoshi's diary: shown instead of the game at #diary -->
   <section class="panel dy-hero diary-only" aria-labelledby="diary-h">
     <img src="squeektoshi.jpg" width="665" height="413" alt="Squeektoshi sitting in front of his wheel on the night camera">
@@ -829,24 +882,18 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
   </section>
 
   <div class="picks-row game-only">
-    <section class="panel ticket" aria-labelledby="ticket-h">
+    <section class="panel ticket" id="ticket" aria-labelledby="ticket-h">
       <div class="ticket-head">
         <span class="eyebrow">Your picks for the next night</span>
         <h2 id="ticket-h">Night of <span id="open-night">…</span></h2>
         <p class="lock" id="lock-line"></p>
         <p class="sub">Call the next night while you watch this one. Save your picks for free in the points game, put them on a pot ticket, or both.</p>
-      </div>
-
-      <span id="join-anchor"></span>
-      <form class="join" id="join" hidden novalidate>
-        <label for="nick">Free points game: pick a nickname to save your picks</label>
-        <div class="row">
-          <input type="text" id="nick" maxlength="20" autocomplete="off" spellcheck="false" placeholder="wheel_watcher">
-          <button class="primary" type="submit" id="join-btn">Join</button>
+        <div class="quick" id="quick" hidden>
+          <button type="button" class="secondary" id="quick-pick">Quick pick: his usual night</button>
+          <span class="hint">Fills in what he usually does. Change anything you like.</span>
         </div>
-        <p class="hint">2 to 20 letters, numbers, dots, dashes or underscores.</p>
-        <p class="msg" id="join-msg" role="status"></p>
-      </form>
+      </div>
+      <span id="join-anchor"></span>
 
       <form class="markets" id="pick-form" novalidate>
         <fieldset class="market" aria-labelledby="mk-distance">
@@ -877,6 +924,11 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
         </fieldset>
 
         <div class="save-row">
+          <div class="nick-row" id="nick-row" hidden>
+            <label for="nick">Your nickname for the leaderboard</label>
+            <input type="text" id="nick" maxlength="20" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="wheel_watcher" aria-describedby="nick-hint">
+            <p class="hint" id="nick-hint">2 to 20 letters, numbers, dots, dashes or underscores. No sign-up.</p>
+          </div>
           <button class="primary" type="submit" id="save">Save picks</button>
           <p class="msg" id="save-msg" role="status"></p>
           <p class="hint save-note">Free. Saved picks score on the points leaderboard. They don't buy a pot ticket.</p>
@@ -1007,6 +1059,12 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     <a href="https://github.com/StasBokhan/squeek-picks" target="_blank" rel="noopener">Source</a>
     <a class="tg-link" href="#" target="_blank" rel="noopener" hidden>Telegram channel</a>
   </footer>
+
+  <!-- Phones: the picks countdown, shown until the picks are on screen -->
+  <div class="pickbar game-only" id="pickbar" hidden>
+    <span class="pb-text" id="pb-text"></span>
+    <button class="primary" type="button" id="pb-go">Pick now</button>
+  </div>
 </div>
 
 <!-- Stream overlay (?view=overlay): one strip for an OBS browser source -->
@@ -2528,7 +2586,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
   }
 
   function renderDash() {
-    var show = P.on || P.demo;
+    var show = (P.on || P.demo) && !!P.account;
     $("dash").hidden = !show;
     if (!show) return;
     var whoEl = $("dash-who"), body = $("dash-body"), now = Date.now();
@@ -2984,8 +3042,6 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     var open = UI.open, live = UI.live;
     $("open-night").textContent = fmtNight(open);
     $("lock-line").innerHTML = "Picks close " + esc(fmtDayTime(nightStart(open))) + ", when that night starts" + ' · <span class="num">in ' + esc(fmtIn(nightStart(open) - now)) + "</span>";
-    $("join").hidden = !!G.me;
-
     var recent = [];
     for (var k = 1; k <= 14 && recent.length < 7; k++) {
       var r = resolve(addDays(live, -k), now);
@@ -2994,9 +3050,11 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     // Hints from his diary, with a link to it.
     var dn = diaryNights(now), dh = L.diaryHabits(dn), dlink = ' <a href="#diary">His diary</a>';
     if (dn.length >= recent.length) recent = dn.slice(-7).map(function (n) { return n.km; });
+    UI.usual = { km: null, peak: null, more: null };
     if (recent.length) {
       var sorted = recent.slice().sort(function (a, b) { return a - b; });
       var med = sorted.length % 2 ? sorted[(sorted.length - 1) / 2] : (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2;
+      UI.usual.km = Math.round(med * 10) / 10;
       $("hint-distance").innerHTML = (recent.length === 1 ? "His one night so far: <span class=\"num\">" + fmtKm(med) + " km</span>."
         : "His last " + recent.length + " nights: median <span class=\"num\">" + fmtKm(med) +
         " km</span>, from <span class=\"num\">" + fmtKm(sorted[0]) + "</span> to <span class=\"num\">" + fmtKm(sorted[sorted.length - 1]) + " km</span>.") + dlink;
@@ -3032,11 +3090,56 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     Array.prototype.forEach.call($("pick-more").querySelectorAll("button"), function (btn) {
       btn.setAttribute("aria-pressed", String(UI.draft.more === (btn.dataset.more === "true")));
     });
+    // Quick pick: his usual night. The busiest window he has had most often (or, before any
+    // recorded night, the one with most of a typical night's running), and more or fewer
+    // blocks by what happened more often; a tie leaves that pick to the player.
+    if (dh.topIdx >= 0) UI.usual.peak = dh.topIdx;
+    else if (H.typical) UI.usual.peak = shares.indexOf(Math.max.apply(null, shares));
+    if (dh.flips.length && dh.more * 2 !== dh.flips.length) UI.usual.more = dh.more * 2 > dh.flips.length;
+    $("quick").hidden = UI.usual.km == null && UI.usual.peak == null;
     var liveBlocks = H.blocks.get(live);
     $("hint-blocks").innerHTML = (liveBlocks == null ? "The night before is tonight, " + esc(fmtNight(live)) + "."
       : "The night before is tonight, " + esc(fmtNight(live)) + ': <span class="num">' + fmtInt(liveBlocks) + "</span> blocks so far, final at " + esc(fmtDayTime(nightEnd(live))) + ".") +
       (dh.flips.length ? " More blocks than the night before on " + dh.more + " of " + dh.flips.length + (dh.flips.length === 1 ? " night" : " nights") + " so far." + dlink : "");
     renderSave();
+    renderPickbar(now);
+  }
+
+  // Fills the draft with his usual night (see renderTicket).
+  function quickPick() {
+    var u = UI.usual || {}, got = [];
+    if (u.km != null) { UI.draft.distance = u.km.toFixed(1); $("pick-distance").value = UI.draft.distance; got.push(fmtKm(u.km) + " km"); }
+    if (u.peak != null) { UI.draft.peak = u.peak; got.push(blockLabel(UI.open, u.peak)); }
+    if (u.more != null) { UI.draft.more = u.more; got.push((u.more ? "more" : "fewer") + " blocks"); }
+    var now = Date.now();
+    renderTicket(now); renderChart(now); draftChanged();
+    say("save-msg", "Filled in his usual: " + got.join(", ") + "." + (u.more == null ? " Blocks have gone both ways, so that one's up to you." : "") +
+      (G.me ? " Change anything, then save." : " Change anything, then add a nickname and save."), "ok");
+  }
+
+  // Takes the player to the picks: the panel scrolls into view and the distance gets focus.
+  function goPick() {
+    var t = $("ticket");
+    t.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+    try { $("pick-distance").focus({ preventScroll: true }); } catch (e) { /* old browsers */ }
+  }
+
+  // Phones: the countdown to the picks closing, or that they're saved, while the picks
+  // panel is off screen.
+  function renderPickbar(now) {
+    var bar = $("pickbar");
+    var have = !!myPick(UI.open) || myTickets(UI.open).length > 0;
+    bar.hidden = currentView() !== "game" || !!UI.ticketVisible || now >= nightStart(UI.open);
+    if (bar.hidden) return;
+    var key = have + "|" + UI.open + "|" + fmtIn(nightStart(UI.open) - now);
+    if (UI.pickbarKey === key) return;
+    UI.pickbarKey = key;
+    $("pb-text").innerHTML = have
+      ? '<span class="ok">\u2713</span> Picks saved for <strong>' + esc(fmtNight(UI.open)) + "</strong>"
+      : "Picks for <strong>" + esc(fmtNight(UI.open)) + '</strong> close in <span class="num">' + esc(fmtIn(nightStart(UI.open) - now)) + "</span>";
+    var go = $("pb-go");
+    go.textContent = have ? "Change" : "Pick now";
+    go.className = have ? "secondary" : "primary";
   }
 
   function draftValid() {
@@ -3049,7 +3152,8 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
   function renderSave() {
     var btn = $("save"), v = draftValid(), saved = myPick(UI.open);
     renderStreak();
-    if (!G.me) { btn.disabled = true; btn.textContent = "Pick a nickname above to save"; return; }
+    $("nick-row").hidden = !!G.me;
+    if (!G.me) { btn.disabled = UI.saving || !v.ok; btn.textContent = UI.saving ? "Saving…" : "Save my picks"; return; }
     btn.disabled = UI.saving || !v.ok || (saved && !UI.dirty);
     btn.textContent = UI.saving ? "Saving…" : saved ? (UI.dirty ? "Update picks" : "Picks saved") : "Save picks";
   }
@@ -4083,10 +4187,48 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     el.hidden = false;
   }
 
+  // A returning player's night at a glance, above everything else: how last night went,
+  // this week's place and streak, and whether the next night is picked.
+  function renderYou(now) {
+    var el = $("you");
+    if (!G.me || !G.uid) { el.hidden = true; return; }
+    function tile(k, v, d, cls, extra) {
+      return '<div class="you-tile"><span class="k">' + esc(k) + '</span><span class="v' + (cls ? " " + cls : "") + '">' + v + "</span>" +
+        (d ? '<span class="d">' + d + "</span>" : "") + (extra || "") + "</div>";
+    }
+    // Last night
+    var last = addDays(UI.live, -1), res = resolve(last, now), scores = L.scoreNight(res, picksFor(last)), mine = scores.get(G.uid), t1;
+    var waiting = [res.distance, res.peak, res.blocks].some(function (m) { return m.state === "wait" || m.state === "live"; });
+    var lastDay = esc(fmtNight(last));
+    if (!mine) t1 = tile("Last night", "–", lastDay + " · you didn't call it");
+    else if (!mine.counted) t1 = tile("Last night", "Counting", lastDay + " · points once the data is in");
+    else {
+      var players = 0, ahead = 0;
+      scores.forEach(function (s, id) { if (!s.counted) return; players++; if (id !== G.uid && s.total > mine.total) ahead++; });
+      t1 = tile("Last night", mine.total + " pts", lastDay + " · #" + (ahead + 1) + " of " + players + (players === 1 ? " player" : " players") + (waiting ? ", still counting" : ""));
+    }
+    // This week, with the streak
+    var set = pickedNights().get(G.uid), withOpen = set && set.has(UI.open), streak = withOpen ? streakOf(set, UI.open) : streakOf(set, UI.live);
+    var streakText = streak >= 2 ? streak + "-night streak" : "";
+    var ws = weekStart(UI.live), wk = ranked(pointsTotals(weekNights(ws, last), now)), me = null;
+    wk.forEach(function (x) { if (x.id === G.uid) me = x; });
+    var t2 = me ? tile("This week", "#" + me.rank, me.t.points + " pts" + (streakText ? " · " + streakText : ""))
+      : tile("This week", "–", ws > last ? "A new week starts with tonight." + (streakText ? " " + streakText + "." : "") : "No points yet this week." + (streakText ? " " + streakText + "." : ""));
+    // The next night
+    var p = myPick(UI.open), t3;
+    if (p) t3 = tile("Next night", "Saved ✓", esc(fmtNight(UI.open)) + " · " + esc(picksText(UI.open, p)), "ok");
+    else t3 = tile("Next night", "Not picked", esc(fmtNight(UI.open)) + " · closes in " + esc(fmtIn(nightStart(UI.open) - now)), "todo",
+      '<button class="primary" type="button" data-play="1">Pick now</button>');
+    el.innerHTML = '<div class="you-head"><h2 id="you-h">Hi, ' + esc(G.me.nickname) + "</h2>" +
+      (G.mode === "local" ? '<span class="chip">this browser</span>' : "") + "</div>" +
+      '<div class="you-grid">' + t1 + t2 + t3 + "</div>";
+    el.hidden = false;
+  }
+
   function renderMe() {
     var el = $("me"), html;
     if (G.me) html = "<span>Points game: <strong>" + esc(G.me.nickname) + "</strong></span>" + (G.mode === "local" ? '<span class="chip">this browser</span>' : "");
-    else html = H.demo ? '<span class="chip">Preview</span>' : '<a class="chip" href="#join-anchor">Join the free points game</a>';
+    else html = H.demo ? '<span class="chip">Preview</span>' : '<a class="play-btn" href="#ticket" data-play="1">Play free</a>';
     if (P.on || P.demo) {
       if (!P.account) html += '<button class="wallet-btn connect" type="button" data-wallet="connect">Connect wallet</button>';
       else html += '<button class="wallet-btn" type="button" data-wallet="account" title="' + esc(P.account) + '">' + avatar(P.account) +
@@ -4121,7 +4263,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
         if (P.on) potRefresh().then(renderPot);
       }
     }
-    renderBanner(); renderMe(); renderLive(now); renderTicket(now); renderRace(now); renderResults(now); renderBoard(now);
+    renderBanner(); renderMe(); renderYou(now); renderLive(now); renderTicket(now); renderRace(now); renderResults(now); renderBoard(now);
     renderPot(); renderDash(); renderPotBoard(); renderBoardTabs(); renderAdmin();
     if (currentView() === "diary") renderDiary(now);
     renderOverlay(now);
@@ -4150,34 +4292,43 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
       if (!v.okKm) { say("save-msg", "Enter a distance from 0 to 60 km, with at most one decimal.", "err"); return; }
       if (!v.ok) { say("save-msg", "Pick a peak window and more or fewer blocks too.", "err"); return; }
       if (Date.now() >= nightStart(UI.open)) { renderAll(); return; }
-      UI.saving = true; renderSave();
+      // A newcomer names themselves here: joining and saving are one step.
+      var nick = $("nick").value.trim(), joining = !G.me;
+      if (joining && !NICK_RE.test(nick)) {
+        say("save-msg", nick ? "Use 2 to 20 letters, numbers, dots, dashes or underscores for your nickname." : "Add a nickname so your picks show on the leaderboard.", "err");
+        $("nick").focus();
+        return;
+      }
+      UI.saving = true; renderSave(); say("save-msg", joining ? "Joining and saving…" : "");
       var night = UI.open;
-      gameSave(night, { distance_km: v.km, peak_block: UI.draft.peak, more_blocks: UI.draft.more }).then(function () {
+      (joining ? gameJoin(nick) : Promise.resolve()).then(function () {
+        return gameSave(night, { distance_km: v.km, peak_block: UI.draft.peak, more_blocks: UI.draft.more });
+      }).then(function () {
         UI.saving = false; UI.dirty = false;
         UI.draft.distance = v.km.toFixed(1); $("pick-distance").value = UI.draft.distance;
-        say("save-msg", "Saved. You can change it until " + fmtDayTime(nightStart(night)) + ".", "ok");
-        renderSave(); renderBoard(Date.now()); renderPot();
+        say("save-msg", (joining ? "Welcome, " + nick + "! " : "") + "Saved. You can change it until " + fmtDayTime(nightStart(night)) + ".", "ok");
+        if (joining) renderAll(); else { renderSave(); renderBoard(Date.now()); renderPot(); renderYou(Date.now()); renderPickbar(Date.now()); }
       }).catch(function (err) {
         UI.saving = false;
         say("save-msg", err.message || String(err), "err");
+        if (joining && !G.me) $("nick").focus();
         renderSave();
         if (/closed/.test(err.message || "")) renderAll();
       });
     });
-    $("join").addEventListener("submit", function (e) {
-      e.preventDefault();
-      var nick = $("nick").value.trim();
-      if (!NICK_RE.test(nick)) { say("join-msg", "Use 2 to 20 letters, numbers, dots, dashes or underscores.", "err"); return; }
-      $("join-btn").disabled = true; say("join-msg", "Joining…");
-      gameJoin(nick).then(function () {
-        say("join-msg", ""); $("join-btn").disabled = false;
-        syncDraftFromSaved(); renderAll();
-        $("pick-distance").focus();
-      }).catch(function (err) {
-        $("join-btn").disabled = false;
-        say("join-msg", err.message || String(err), "err");
-      });
+    $("quick-pick").addEventListener("click", quickPick);
+    $("pb-go").addEventListener("click", goPick);
+    document.addEventListener("click", function (e) {
+      var a = e.target.closest("[data-play]"); if (!a) return;
+      e.preventDefault(); goPick();
     });
+    // The phone bar steps aside while the picks are on screen.
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(function (entries) {
+        UI.ticketVisible = entries[0].isIntersecting;
+        renderPickbar(Date.now());
+      }, { rootMargin: "0px 0px -35% 0px" }).observe($("ticket"));
+    }
     $("pot").addEventListener("click", function (e) {
       var btn = e.target.closest("button[data-pot]"); if (!btn || btn.disabled) return;
       potAction(btn.dataset.pot, btn.dataset.night, btn.dataset.ticket, btn.dataset.src);
