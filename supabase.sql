@@ -103,3 +103,32 @@ create policy "Change picks until lock"
 grant select on public.players, public.picks to anon, authenticated;
 grant insert, update on public.players, public.picks to authenticated;
 grant execute on function public.open_night() to anon, authenticated;
+
+-- ---------- Seasons ----------
+-- Added for Season 1. Safe to run again: it only adds what's missing.
+
+-- One market per pick can count twice in a season: 'distance', 'peak' or 'blocks'.
+alter table public.picks add column if not exists double_market text
+  check (double_market in ('distance', 'peak', 'blocks'));
+
+-- The crowd's odds for a night: how many players picked each option, never who.
+-- Picks themselves stay hidden until the night starts.
+create or replace function public.pick_odds(p_night date)
+returns json
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select json_build_object(
+    'players', (select count(*) from public.picks where night = p_night),
+    'peak', (select json_agg(coalesce(c.n, 0) order by b.i)
+             from generate_series(0, 7) as b(i)
+             left join (select peak_block, count(*) as n from public.picks where night = p_night group by peak_block) c
+               on c.peak_block = b.i),
+    'more', (select count(*) from public.picks where night = p_night and more_blocks),
+    'fewer', (select count(*) from public.picks where night = p_night and not more_blocks)
+  )
+$$;
+
+grant execute on function public.pick_odds(date) to anon, authenticated;

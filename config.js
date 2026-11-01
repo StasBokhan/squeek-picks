@@ -18,6 +18,13 @@ window.SQUEEK_CONFIG = {
   // The Telegram channel the announcer bot posts to; shows a Telegram button on the page.
   TELEGRAM_URL: "https://t.me/squeekpicks",
 
+  // Seasons of the free points game: from the night of `start`, for `nights` nights. In a
+  // season the peak window and blocks pay by the odds and one pick a night counts double;
+  // the pot keeps the classic points. Needs the Seasons part of supabase.sql.
+  SEASONS: [
+    { name: "Season 1", start: "2026-11-16", nights: 14 },
+  ],
+
   // Optional: a different Sepolia RPC endpoint for reading the pot.
   // RPC_URL: "https://ethereum-sepolia-rpc.publicnode.com",
 };

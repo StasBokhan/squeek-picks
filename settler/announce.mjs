@@ -193,12 +193,13 @@ async function loadPoints(night) {
   if (!CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_ANON_KEY) return null;
   const h = { apikey: CONFIG.SUPABASE_ANON_KEY, authorization: "Bearer " + CONFIG.SUPABASE_ANON_KEY };
   const base = CONFIG.SUPABASE_URL.replace(/\/$/, "") + "/rest/v1/";
-  const picks = await getJson(base + "picks?select=player_id,distance_km,peak_block,more_blocks&night=eq." + night + "&limit=10000", h);
+  // select=* works with or without the season's double_market column.
+  const picks = await getJson(base + "picks?select=*&night=eq." + night + "&limit=10000", h);
   if (!picks.length) return { picks: [], names: new Map() };
   const ids = [...new Set(picks.map((p) => p.player_id))];
   const players = await getJson(base + "players?select=id,nickname&id=in.(" + ids.map(encodeURIComponent).join(",") + ")", h);
   return {
-    picks: picks.map((p) => ({ player_id: p.player_id, distance_km: Number(p.distance_km), peak_block: Number(p.peak_block), more_blocks: !!p.more_blocks })),
+    picks: picks.map((p) => ({ player_id: p.player_id, distance_km: Number(p.distance_km), peak_block: Number(p.peak_block), more_blocks: !!p.more_blocks, double_market: p.double_market || null })),
     names: new Map(players.map((p) => [p.id, p.nickname])),
   };
 }
@@ -269,7 +270,7 @@ async function resultsPost(night, H, pots, points) {
       (p.status === 1 ? "" : ", paying out now"));
   }
   if (points && points.picks.length) {
-    const rows = L.liveStandings(res, points.picks);
+    const rows = L.liveStandings(res, points.picks, CONFIG.SEASONS || []);
     if (rows.length && rows[0].score.counted && rows[0].score.total > 0) {
       const tops = rows.filter((r) => r.place === 1);
       won.push(`Points game: ${tops.length > 1 ? plural(tops.length, "player", "players") + " shared the top" : "<b>" + esc(points.names.get(rows[0].entry.player_id) || "a player") + "</b> on top"} with ${rows[0].score.total} points (${plural(points.picks.length, "player", "players")})`);

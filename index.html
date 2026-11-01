@@ -424,6 +424,29 @@ a.play-btn:hover { filter: brightness(1.05); }
   .you-tile button[data-play] { display: none; }   /* the bar at the bottom has it */
 }
 
+/* Seasons: odds on the options, the double, the season band */
+.opt .worth { font: 600 17px/1.1 var(--font-display); color: var(--ink); }
+.opt .worth.hi { color: var(--accent-ink); }
+.dbl { display: flex; flex-wrap: wrap; gap: 8px; }
+.dbl .opt { text-align: center; padding: 10px 16px; }
+.dbl .opt[aria-pressed="true"] { border-color: var(--gold); background: var(--gold); color: var(--on-gold); }
+.best { margin: 0; font-size: 14px; color: var(--ink-2); }
+.best strong { color: var(--ink); }
+.season-band { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: center; justify-content: space-between; border-color: color-mix(in srgb, var(--gold) 45%, var(--card-line)); }
+.season-band .sb-main { flex: 999 1 420px; min-width: 0; display: grid; gap: 6px; }
+.season-band .sb-main .eyebrow { color: var(--accent-ink); }
+.season-band .sb-main p { margin: 0; color: var(--ink-2); font-size: 15px; max-width: 64ch; }
+.season-band .sb-side { flex: 1 1 220px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: flex-end; }
+.season-band .sb-stat { padding: 10px 14px; border-radius: 14px; background: var(--raise); display: grid; gap: 1px; min-width: 84px; }
+.season-band .sb-stat .k { font: 800 11px/1.4 var(--font-body); color: var(--ink-3); text-transform: uppercase; letter-spacing: .05em; }
+.season-band .sb-stat .v { font: 600 22px/1.15 var(--font-display); font-variant-numeric: tabular-nums; }
+.sb-dots { display: flex; gap: 4px; margin-top: 4px; max-width: 520px; }
+.sb-dots span { flex: 1; height: 8px; border-radius: 4px; background: var(--rule); }
+.sb-dots span.done { background: var(--gold); }
+.sb-dots span.live { background: var(--accent-ink); }
+.sb-dots span.next { background: transparent; box-shadow: inset 0 0 0 2px var(--accent-ink); }
+@media (max-width: 720px) { .season-band .sb-side { justify-content: flex-start; } }
+
 /* Quick pick, and the nickname asked for when saving */
 .quick { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 8px; }
 .quick button.secondary { padding: 10px 16px; }
@@ -772,6 +795,9 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
   <!-- Your game: for a returning player, last night, this week and the next night's picks -->
   <section class="panel you game-only" id="you" aria-labelledby="you-h" hidden></section>
 
+  <!-- Seasons: coming up, under way, or just over -->
+  <section class="panel season-band game-only" id="season-band" aria-labelledby="season-h" hidden></section>
+
   <!-- Squeektoshi's diary: shown instead of the game at #diary -->
   <section class="panel dy-hero diary-only" aria-labelledby="diary-h">
     <img src="squeektoshi.jpg" width="665" height="413" alt="Squeektoshi sitting in front of his wheel on the night camera">
@@ -897,7 +923,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
 
       <form class="markets" id="pick-form" novalidate>
         <fieldset class="market" aria-labelledby="mk-distance">
-          <div class="m-head"><h3 class="m-name" id="mk-distance">Distance</h3><span class="m-pts">up to 40 pts</span></div>
+          <div class="m-head"><h3 class="m-name" id="mk-distance">Distance</h3><span class="m-pts" id="pts-distance">up to 40 pts</span></div>
           <p class="q">How far will he run that night?</p>
           <div class="km">
             <input type="text" id="pick-distance" inputmode="decimal" autocomplete="off" placeholder="9.5" aria-describedby="hint-distance">
@@ -907,20 +933,30 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
         </fieldset>
 
         <fieldset class="market" aria-labelledby="mk-peak">
-          <div class="m-head"><h3 class="m-name" id="mk-peak">Peak window</h3><span class="m-pts">up to 20 pts</span></div>
+          <div class="m-head"><h3 class="m-name" id="mk-peak">Peak window</h3><span class="m-pts" id="pts-peak">up to 20 pts</span></div>
           <p class="q">Which 3 hours will he spin the most?</p>
           <div class="opts" id="pick-peak"></div>
           <p class="hint" id="hint-peak">Your local time.</p>
         </fieldset>
 
         <fieldset class="market" aria-labelledby="mk-blocks">
-          <div class="m-head"><h3 class="m-name" id="mk-blocks">Blocks</h3><span class="m-pts">15 pts</span></div>
+          <div class="m-head"><h3 class="m-name" id="mk-blocks">Blocks</h3><span class="m-pts" id="pts-blocks">15 pts</span></div>
           <p class="q">Will more Squeek blocks settle that night than the night before?</p>
           <div class="duo" id="pick-more">
             <button type="button" class="opt" data-more="true" aria-pressed="false">More</button>
             <button type="button" class="opt" data-more="false" aria-pressed="false">Fewer</button>
           </div>
           <p class="hint" id="hint-blocks"></p>
+        </fieldset>
+
+        <fieldset class="market double-row" id="double-row" aria-labelledby="mk-double" hidden>
+          <div class="m-head"><h3 class="m-name" id="mk-double">Double one pick</h3><span class="m-pts">optional</span></div>
+          <p class="q">Pick the call you're surest of. It counts twice tonight.</p>
+          <div class="dbl" id="pick-double">
+            <button type="button" class="opt" data-double="distance" aria-pressed="false">Distance</button>
+            <button type="button" class="opt" data-double="peak" aria-pressed="false">Peak window</button>
+            <button type="button" class="opt" data-double="blocks" aria-pressed="false">Blocks</button>
+          </div>
         </fieldset>
 
         <div class="save-row">
@@ -930,6 +966,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
             <p class="hint" id="nick-hint">2 to 20 letters, numbers, dots, dashes or underscores. No sign-up.</p>
           </div>
           <button class="primary" type="submit" id="save">Save picks</button>
+          <p class="best" id="best-case" hidden></p>
           <p class="msg" id="save-msg" role="status"></p>
           <p class="hint save-note">Free. Saved picks score on the points leaderboard. They don't buy a pot ticket.</p>
           <p class="streak-note" id="streak-note" hidden></p>
@@ -989,11 +1026,13 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
           <h2 id="board-h">Points game, last 28 nights</h2>
         </div>
         <div class="tabs" role="tablist" aria-label="Leaderboard" id="board-tabs">
+          <button type="button" role="tab" id="tab-season" aria-controls="board-season" aria-selected="false" tabindex="-1" hidden>Season</button>
           <button type="button" role="tab" id="tab-week" aria-controls="board-week" aria-selected="true">This week</button>
           <button type="button" role="tab" id="tab-points" aria-controls="board" aria-selected="false" tabindex="-1">28 nights</button>
           <button type="button" role="tab" id="tab-pot" aria-controls="board-pot" aria-selected="false" tabindex="-1" hidden>Pot winners</button>
         </div>
       </div>
+      <div id="board-season" role="tabpanel" aria-labelledby="tab-season" hidden></div>
       <div id="board-week" role="tabpanel" aria-labelledby="tab-week"></div>
       <div id="board" role="tabpanel" aria-labelledby="tab-points" hidden></div>
       <div id="board-pot" role="tabpanel" aria-labelledby="tab-pot" hidden></div>
@@ -1035,6 +1074,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
         <h3>Results</h3>
         <p>Distance and peak come from closed, accepted rounds, so they settle once the night's data is in. Blocks come from blocks settled on Ethereum, counted by when they settled. If a market has a data gap, a tie or a night off, it doesn't count: no points either way.</p>
       </div>
+      <div id="rules-season" hidden></div>
       <div id="rules-pot" hidden>
         <h3>The pot</h3>
         <ul>
@@ -1265,9 +1305,63 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
       }
       if (res.blocks.state === "resolved") { s.blocks = p.more_blocks === res.blocks.more ? 15 : 0; s.counted = true; }
       s.total = s.distance + s.closest + s.peak + s.blocks;
+      s.perfect = s.total === 75;
       out.set(p.player_id, s);
     });
     return out;
+  }
+
+  // ---------- Seasons ----------
+  // seasons: [{ name, start (the first night, "YYYY-MM-DD"), nights }]. The free points game
+  // scores a season's nights by the odds (below); other nights and the pot keep the classic rules.
+  function seasonOf(night, seasons) {
+    var list = Array.isArray(seasons) ? seasons : [];
+    for (var i = 0; i < list.length; i++) {
+      var x = list[i];
+      if (x && x.start && night >= x.start && night < addDays(x.start, Number(x.nights) || 14)) {
+        return { index: i, name: x.name || "Season " + (i + 1), start: x.start, nights: Number(x.nights) || 14, last: addDays(x.start, (Number(x.nights) || 14) - 1) };
+      }
+    }
+    return null;
+  }
+
+  // What a right call on the peak window or the blocks is worth in a season: the fewer
+  // players made the same pick, the more. Counts are smoothed with one imaginary player per
+  // option, so a handful of players can't swing a pick to the extremes.
+  var ODDS = { peak: { top: 40, low: 5, options: 8 }, blocks: { top: 25, low: 5, options: 2 } };
+  function oddsPoints(market, count, players) {
+    var m = ODDS[market], share = (count + 1) / (players + m.options);
+    return Math.max(m.low, Math.min(m.top, Math.round(m.top * (1 - share))));
+  }
+  // How many players picked each option: { players, peak: [8], more, fewer }.
+  function crowdOf(picks) {
+    var c = { players: picks.length, peak: [0, 0, 0, 0, 0, 0, 0, 0], more: 0, fewer: 0 };
+    picks.forEach(function (p) { c.peak[p.peak_block]++; if (p.more_blocks) c.more++; else c.fewer++; });
+    return c;
+  }
+  var DOUBLE_MARKETS = ["distance", "peak", "blocks"];
+
+  // A season night: distance as always; the peak window and blocks by the odds, from every
+  // pick that night; and one market per pick (double_market) counting twice.
+  function scoreSeason(res, picks) {
+    var base = scoreNight(res, picks), crowd = crowdOf(picks), out = new Map();
+    picks.forEach(function (p) {
+      var b = base.get(p.player_id), s = Object.assign({}, b);
+      s.worth = { peak: oddsPoints("peak", crowd.peak[p.peak_block], crowd.players), blocks: oddsPoints("blocks", p.more_blocks ? crowd.more : crowd.fewer, crowd.players) };
+      if (res.peak.state === "resolved") s.peak = res.peak.winners.indexOf(p.peak_block) >= 0 ? s.worth.peak : b.peak;
+      if (res.blocks.state === "resolved") s.blocks = p.more_blocks === res.blocks.more ? s.worth.blocks : 0;
+      s.double = DOUBLE_MARKETS.indexOf(p.double_market) >= 0 ? p.double_market : null;
+      s.bonus = s.double === "distance" ? s.distance + s.closest : s.double === "peak" ? s.peak : s.double === "blocks" ? s.blocks : 0;
+      s.total = s.distance + s.closest + s.peak + s.blocks + s.bonus;
+      s.perfect = b.perfect;
+      s.season = true;
+      out.set(p.player_id, s);
+    });
+    return out;
+  }
+  // The points game's scores for a night: a season's rules on its nights, classic otherwise.
+  function scoreGame(res, picks, seasons) {
+    return seasonOf(res.night, seasons) ? scoreSeason(res, picks) : scoreNight(res, picks);
   }
 
   // ---------- Pot ----------
@@ -1345,9 +1439,10 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
   }
   // Orders entries the way the pot ranks tickets: points, then the closer distance guess,
   // then the earlier ticket. Entries tied on all of those share a place.
-  // Returns [{ entry, score, place }].
-  function liveStandings(res, entries) {
-    var scores = scoreNight(res, entries);
+  // Returns [{ entry, score, place }]. With `seasons`, entries are points-game picks and
+  // a season night is scored by its rules; without, by the classic (pot) rules.
+  function liveStandings(res, entries, seasons) {
+    var scores = seasons ? scoreGame(res, entries, seasons) : scoreNight(res, entries);
     function errKey(s) { return s.err == null ? 1e9 : s.err; }
     var rows = entries.map(function (e) { return { entry: e, score: scores.get(e.player_id) }; });
     rows.sort(function (a, b) {
@@ -1465,6 +1560,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     liveNightAt: liveNightAt, openNightAt: openNightAt, nightToDay: nightToDay, dayToNight: dayToNight, slotOf: slotOf,
     parseStats: parseStats, parseSettlements: parseSettlements,
     resolveNight: resolveNight, distancePoints: distancePoints, scoreNight: scoreNight, potPayouts: potPayouts,
+    seasonOf: seasonOf, ODDS: ODDS, oddsPoints: oddsPoints, crowdOf: crowdOf, scoreSeason: scoreSeason, scoreGame: scoreGame, DOUBLE_MARKETS: DOUBLE_MARKETS,
     potTicketId: potTicketId, potTickets: potTickets,
     provisionalResult: provisionalResult, liveStandings: liveStandings,
     RUN_MIN_SPINS: RUN_MIN_SPINS, nightFacts: nightFacts, diaryHabits: diaryHabits, describeNight: describeNight
@@ -1489,7 +1585,8 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     MAINNET_RPC_URL: "https://ethereum-rpc.publicnode.com", // ENS names live on Ethereum mainnet
     ENS_AVATAR_URL: "https://metadata.ens.domains/mainnet/avatar/",
     SITE_URL: "",                                          // the link in share posts; empty means this page's address
-    TELEGRAM_URL: ""                                       // the bot's Telegram channel, shown as a button
+    TELEGRAM_URL: "",                                      // the bot's Telegram channel, shown as a button
+    SEASONS: []                                            // [{ name, start: "YYYY-MM-DD", nights }]: see config.js
   }, window.SQUEEK_CONFIG || {});
   var POT_ABI = [{"inputs":[{"internalType":"uint256","name":"price","type":"uint256"},{"internalType":"address","name":"resolver_","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[],"name":"NotOwner","type":"error"},{"inputs":[],"name":"NotResolver","type":"error"},{"inputs":[],"name":"Reentrant","type":"error"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint32","name":"night","type":"uint32"},{"indexed":false,"internalType":"uint256[]","name":"tickets","type":"uint256[]"},{"indexed":false,"internalType":"address[]","name":"winners","type":"address[]"},{"indexed":false,"internalType":"uint256[]","name":"amounts","type":"uint256[]"}],"name":"NightSettled","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint32","name":"night","type":"uint32"}],"name":"NightVoided","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"owner","type":"address"}],"name":"OwnerChanged","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"next","type":"address"}],"name":"OwnerOffered","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"PaymentOwed","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint32","name":"night","type":"uint32"},{"indexed":true,"internalType":"address","name":"player","type":"address"},{"indexed":false,"internalType":"uint256","name":"ticket","type":"uint256"},{"indexed":false,"internalType":"uint16","name":"distanceDeci","type":"uint16"},{"indexed":false,"internalType":"uint8","name":"peakBlock","type":"uint8"},{"indexed":false,"internalType":"bool","name":"moreBlocks","type":"bool"}],"name":"PicksChanged","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint32","name":"night","type":"uint32"},{"indexed":true,"internalType":"address","name":"player","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"Refunded","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"resolver","type":"address"}],"name":"ResolverChanged","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"SentTo","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint32","name":"night","type":"uint32"},{"indexed":true,"internalType":"address","name":"player","type":"address"},{"indexed":false,"internalType":"uint256","name":"ticket","type":"uint256"},{"indexed":false,"internalType":"uint16","name":"distanceDeci","type":"uint16"},{"indexed":false,"internalType":"uint8","name":"peakBlock","type":"uint8"},{"indexed":false,"internalType":"bool","name":"moreBlocks","type":"bool"},{"indexed":false,"internalType":"uint256","name":"price","type":"uint256"}],"name":"TicketBought","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"price","type":"uint256"}],"name":"TicketPriceChanged","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"Withdrawn","type":"event"},{"inputs":[],"name":"DAY","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"LOCK_OFFSET","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"MAX_DISTANCE_DECI","outputs":[{"internalType":"uint16","name":"","type":"uint16"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"MAX_PER_WALLET","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"MAX_TICKETS","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"MAX_WINNERS","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"PAYOUT_GAS","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"REFUND_AFTER","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"VERSION","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"acceptOwner","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint32","name":"night","type":"uint32"},{"internalType":"uint16","name":"distanceDeci","type":"uint16"},{"internalType":"uint8","name":"peakBlock","type":"uint8"},{"internalType":"bool","name":"moreBlocks","type":"bool"}],"name":"buyTicket","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"uint32","name":"night","type":"uint32"},{"internalType":"uint256","name":"ticket","type":"uint256"},{"internalType":"uint16","name":"distanceDeci","type":"uint16"},{"internalType":"uint8","name":"peakBlock","type":"uint8"},{"internalType":"bool","name":"moreBlocks","type":"bool"}],"name":"changePicks","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint32","name":"night","type":"uint32"}],"name":"endTime","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"pure","type":"function"},{"inputs":[{"internalType":"uint32","name":"night","type":"uint32"}],"name":"getNight","outputs":[{"internalType":"uint256","name":"price","type":"uint256"},{"internalType":"uint256","name":"pot","type":"uint256"},{"internalType":"enum SqueekPot.Status","name":"status","type":"uint8"},{"components":[{"internalType":"address","name":"player","type":"address"},{"internalType":"uint40","name":"boughtAt","type":"uint40"},{"internalType":"uint16","name":"distanceDeci","type":"uint16"},{"internalType":"uint8","name":"peakBlock","type":"uint8"},{"internalType":"bool","name":"moreBlocks","type":"bool"},{"internalType":"bool","name":"refunded","type":"bool"}],"internalType":"struct SqueekPot.Ticket[]","name":"tickets","type":"tuple[]"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint32","name":"night","type":"uint32"}],"name":"lockTime","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"pure","type":"function"},{"inputs":[{"internalType":"address","name":"next","type":"address"}],"name":"offerOwner","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"openNight","outputs":[{"internalType":"uint32","name":"","type":"uint32"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"owed","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"pendingOwner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint32","name":"night","type":"uint32"}],"name":"refund","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint32","name":"night","type":"uint32"},{"internalType":"address","name":"to","type":"address"}],"name":"refundTo","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"resolver","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"next","type":"address"}],"name":"setResolver","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"price","type":"uint256"}],"name":"setTicketPrice","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint32","name":"night","type":"uint32"},{"internalType":"uint256[]","name":"winners","type":"uint256[]"},{"internalType":"uint16[]","name":"bps","type":"uint16[]"}],"name":"settle","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"ticketPrice","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint32","name":"night","type":"uint32"},{"internalType":"address","name":"player","type":"address"}],"name":"ticketsOf","outputs":[{"internalType":"uint256[]","name":"","type":"uint256[]"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint32","name":"night","type":"uint32"}],"name":"voidNight","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"withdrawOwed","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"to","type":"address"}],"name":"withdrawOwedTo","outputs":[],"stateMutability":"nonpayable","type":"function"}];          // version 3, which also reads version 2 pots
   var POT_BYTECODE = "0x608060405234801562000010575f80fd5b506040516200235e3803806200235e833981016040819052620000339162000139565b4662aa36a7148062000046575046617a69145b620000875760405162461bcd60e51b815260206004820152600c60248201526b746573746e6574206f6e6c7960a01b60448201526064015b60405180910390fd5b5f82118015620000ab5750620000a76101f46001600160801b0362000175565b8211155b620000e55760405162461bcd60e51b815260206004820152600960248201526862616420707269636560b81b60448201526064016200007e565b5f80546001600160a01b031916331790556001600160a01b038116156200010d57806200010f565b335b600280546001600160a01b0319166001600160a01b03929092169190911790555060035562000195565b5f80604083850312156200014b575f80fd5b825160208401519092506001600160a01b03811681146200016a575f80fd5b809150509250929050565b5f826200019057634e487b7160e01b5f52601260045260245ffd5b500490565b6121bb80620001a35f395ff3fe6080604052600436106101d0575f3560e01c80637c3bce08116100fd578063d741d74011610092578063e49e042211610062578063e49e042214610524578063ebbc496514610543578063fca846dc14610557578063ffa1ad741461056c575f80fd5b8063d741d7401461049c578063db6d112c146104bb578063df18e047146104da578063e30c397814610505575f80fd5b80639eed2279116100cd5780639eed22791461041f578063a3b2584114610432578063a4218bea14610451578063a91b5af914610470575f80fd5b80637c3bce08146103b85780638112b2a3146103d75780638da5cb5b146103ec5780639a44da831461040a575f80fd5b806327cfe856116101735780634d8b06f2116101435780634d8b06f2146103335780634e543b2614610352578063585c10991461037157806379f12b7014610390575f80fd5b806327cfe856146102cc57806329a62a76146102e257806339a72c5c146102f657806341f8a3a51461030a575f80fd5b80631209b1f6116101ae5780631209b1f614610261578063159816501461027657806319f2ed4d146102975780631c48c074146102ad575f80fd5b806304f3bcec146101d457806309cb3717146102105780630f2cdd6c1461023f575b5f80fd5b3480156101df575f80fd5b506002546101f3906001600160a01b031681565b6040516001600160a01b0390911681526020015b60405180910390f35b34801561021b575f80fd5b5061022f61022a366004611c78565b610580565b6040516102079493929190611cac565b34801561024a575f80fd5b50610253600581565b604051908152602001610207565b34801561026c575f80fd5b5061025360035481565b348015610281575f80fd5b50610295610290366004611d75565b6106a4565b005b3480156102a2575f80fd5b506102536203f48081565b3480156102b8575f80fd5b506102956102c7366004611c78565b610768565b3480156102d7575f80fd5b506102536201518081565b3480156102ed575f80fd5b50610253600a81565b348015610301575f80fd5b506102956107b0565b348015610315575f80fd5b5061031e6107f6565b60405163ffffffff9091168152602001610207565b34801561033e575f80fd5b5061025361034d366004611c78565b610821565b34801561035d575f80fd5b5061029561036c366004611da2565b61083f565b34801561037c575f80fd5b5061029561038b366004611e03565b6108dd565b34801561039b575f80fd5b506103a561025881565b60405161ffff9091168152602001610207565b3480156103c3575f80fd5b506102956103d2366004611da2565b610eb5565b3480156103e2575f80fd5b5061025361a8c081565b3480156103f7575f80fd5b505f546101f3906001600160a01b031681565b348015610415575f80fd5b5061025361753081565b61029561042d366004611eae565b610f2d565b34801561043d575f80fd5b5061029561044c366004611eff565b61127a565b34801561045c575f80fd5b5061029561046b366004611c78565b6112e9565b34801561047b575f80fd5b5061048f61048a366004611eff565b61140c565b6040516102079190611f6a565b3480156104a7575f80fd5b506102956104b6366004611f7c565b611484565b3480156104c6575f80fd5b506102536104d5366004611c78565b61163f565b3480156104e5575f80fd5b506102536104f4366004611da2565b60066020525f908152604090205481565b348015610510575f80fd5b506001546101f3906001600160a01b031681565b34801561052f575f80fd5b5061029561053e366004611da2565b611656565b34801561054e575f80fd5b506102956116b6565b348015610562575f80fd5b506102536101f481565b348015610577575f80fd5b50610253600381565b63ffffffff81165f908152600460205260408120805482918291606091906001600160801b0316156105bc5780546001600160801b03166105c0565b6003545b8154600183015460028401805460408051602080840282018101909252828152600160801b9095046001600160801b03169460ff909416939183915f9084015b8282101561068e575f8481526020908190206040805160c081018252918501546001600160a01b038116835264ffffffffff600160a01b8204168385015261ffff600160c81b8204169183019190915260ff600160d81b820481166060840152600160e01b8204811615156080840152600160e81b90910416151560a0820152825260019092019101610600565b5050505090509450945094509450509193509193565b5f546001600160a01b031633146106ce576040516330cd747160e01b815260040160405180910390fd5b5f811180156106ef57506106eb6101f46001600160801b03611fea565b8111155b61072c5760405162461bcd60e51b815260206004820152600960248201526862616420707269636560b81b60448201526064015b60405180910390fd5b60038190556040518181527f70aa15e700a2c874a0358150f8fed3716cb8c992634a5321dc6d9a54a161e0b6906020015b60405180910390a150565b60075460ff161561078c5760405163769dd35360e11b815260040160405180910390fd5b6007805460ff191660011790556107a38133611758565b506007805460ff19169055565b60075460ff16156107d45760405163769dd35360e11b815260040160405180910390fd5b6007805460ff191660011790556107ea336119f4565b6007805460ff19169055565b5f6201518061a8c06108088242612009565b610812919061201c565b61081c9190611fea565b905090565b5f6201518061082f8361163f565b6108399190612009565b92915050565b5f546001600160a01b03163314610869576040516330cd747160e01b815260040160405180910390fd5b6001600160a01b03811661088f5760405162461bcd60e51b81526004016107239061202f565b600280546001600160a01b0319166001600160a01b0383169081179091556040519081527f9126d3d22dcb1dbfaccf7ae16a8189957e5259f20d952b7acfa778962adb6dc79060200161075d565b6002546001600160a01b0316331461090857604051635d154fe160e11b815260040160405180910390fd5b60075460ff161561092c5760405163769dd35360e11b815260040160405180910390fd5b6007805460ff1916600117905563ffffffff85165f90815260046020526040812090600182015460ff16600281111561096757610967611c98565b146109a55760405162461bcd60e51b815260206004820152600e60248201526d185b1c9958591e4818db1bdcd95960921b6044820152606401610723565b6109ae86610821565b4210156109ee5760405162461bcd60e51b815260206004820152600e60248201526d3734b3b43a103737ba1037bb32b960911b6044820152606401610723565b6203f4806109fb87610821565b610a059190612009565b4210610a485760405162461bcd60e51b81526020600482015260126024820152713932b33ab732103bb4b73237bb9037b832b760711b6044820152606401610723565b838015801590610a595750600a8111155b8015610a6457508083145b610a9e5760405162461bcd60e51b815260206004820152600b60248201526a6261642077696e6e65727360a81b6044820152606401610723565b5f808267ffffffffffffffff811115610ab957610ab9612055565b604051908082528060200260200182016040528015610ae2578160200160208202803683370190505b5090505f5b83811015610c87576002850154898983818110610b0657610b06612069565b9050602002013510610b4b5760405162461bcd60e51b815260206004820152600e60248201526d1b9bc81cdd58da081d1a58dad95d60921b6044820152606401610723565b5f5b81811015610bcf57898983818110610b6757610b67612069565b905060200201358a8a83818110610b8057610b80612069565b9050602002013503610bc75760405162461bcd60e51b815260206004820152601060248201526f323ab83634b1b0ba32903bb4b73732b960811b6044820152606401610723565b600101610b4d565b5084600201898983818110610be657610be6612069565b9050602002013581548110610bfd57610bfd612069565b5f9182526020909120015482516001600160a01b0390911690839083908110610c2857610c28612069565b60200260200101906001600160a01b031690816001600160a01b031681525050868682818110610c5a57610c5a612069565b9050602002016020810190610c6f919061207d565b610c7d9061ffff1684612009565b9250600101610ae7565b508161271014610cd25760405162461bcd60e51b8152602060048201526016602482015275736861726573206d75737420746f74616c203130302560501b6044820152606401610723565b6001848101805460ff191690911790558354600160801b90046001600160801b03165f8467ffffffffffffffff811115610d0e57610d0e612055565b604051908082528060200260200182016040528015610d37578160200160208202803683370190505b5090505f805b86811015610dd4576127108a8a83818110610d5a57610d5a612069565b9050602002016020810190610d6f919061207d565b610d7d9061ffff1686612096565b610d879190611fea565b838281518110610d9957610d99612069565b602002602001018181525050828181518110610db757610db7612069565b602002602001015182610dca9190612009565b9150600101610d3d565b50610ddf818461201c565b825f81518110610df157610df1612069565b60200260200101818151610e059190612009565b90525060405163ffffffff8d16907f764cb87cefcc1eee2122cd7546307f629be08b1c6fb01221606c50dd2471083090610e46908e908e90899088906120ad565b60405180910390a25f5b86811015610e9c57610e94858281518110610e6d57610e6d612069565b6020026020010151848381518110610e8757610e87612069565b6020026020010151611b24565b600101610e50565b50506007805460ff191690555050505050505050505050565b5f546001600160a01b03163314610edf576040516330cd747160e01b815260040160405180910390fd5b600180546001600160a01b0319166001600160a01b0383169081179091556040519081527f2439aac4a064d4b56c7ed4f350b85640f7c26830faadf4a124130844b8c8370d9060200161075d565b610f356107f6565b63ffffffff168463ffffffff1614610f805760405162461bcd60e51b815260206004820152600e60248201526d3734b3b43a103737ba1037b832b760911b6044820152606401610723565b610f8a8383611bae565b63ffffffff84165f908152600460209081526040808320600580845282852033865290935292208054909111610ff95760405162461bcd60e51b81526020600482015260146024820152731d1a58dad95d081b1a5b5a5d081c995858da195960621b6044820152606401610723565b60028201546101f41161103e5760405162461bcd60e51b815260206004820152600d60248201526c1b9a59da1d081a5cc8199d5b1b609a1b6044820152606401610723565b60028201545f036110705760035482546fffffffffffffffffffffffffffffffff19166001600160801b039091161782555b81546001600160801b031634146110be5760405162461bcd60e51b815260206004820152601260248201527177726f6e67207469636b657420707269636560701b6044820152606401610723565b6002820180546040805160c08101825233815264ffffffffff428116602080840191825261ffff808d1695850195865260ff808d16606087019081528c1515608088019081525f60a089018181526001808d018e559c82528682209951998c01805498519b519451935191511515600160e81b0260ff60e81b19921515600160e01b029290921661ffff60e01b1994909616600160d81b0260ff60d81b1995909716600160c81b029490941662ffffff60c81b199b909916600160a01b026001600160c81b03199098166001600160a01b039a909a169990991796909617989098169590951791909117959095169490941792909217905584549384018555848152209091018190558254349084906010906111ec9084906001600160801b03600160801b90910416612146565b82546001600160801b039182166101009390930a9283029190920219909116179055506040805182815261ffff8816602082015260ff8716918101919091528415156060820152346080820152339063ffffffff8916907f653427db085129432dbd28c6d0131d4257ebc4dc7bb3136a52a476282253d99f9060a0015b60405180910390a350505050505050565b60075460ff161561129e5760405163769dd35360e11b815260040160405180910390fd5b6007805460ff191660011790556001600160a01b0381166112d15760405162461bcd60e51b81526004016107239061202f565b6112db8282611758565b50506007805460ff19169055565b6002546001600160a01b0316331461131457604051635d154fe160e11b815260040160405180910390fd5b63ffffffff81165f90815260046020526040812090600182015460ff16600281111561134257611342611c98565b146113805760405162461bcd60e51b815260206004820152600e60248201526d185b1c9958591e4818db1bdcd95960921b6044820152606401610723565b61138982610821565b4210156113c95760405162461bcd60e51b815260206004820152600e60248201526d3734b3b43a103737ba1037bb32b960911b6044820152606401610723565b60018101805460ff1916600217905560405163ffffffff8316907fba651dd6bbb1da3cfb1520642dd8123ef02f88d1f9e78e16dbf8dac56fd6e159905f90a25050565b63ffffffff82165f9081526005602090815260408083206001600160a01b038516845282529182902080548351818402810184019094528084526060939283018282801561147757602002820191905f5260205f20905b815481526020019060010190808311611463575b5050505050905092915050565b61148c6107f6565b63ffffffff168563ffffffff16146114d75760405162461bcd60e51b815260206004820152600e60248201526d3734b3b43a103737ba1037b832b760911b6044820152606401610723565b6114e18383611bae565b63ffffffff85165f908152600460205260409020600281015485106115395760405162461bcd60e51b815260206004820152600e60248201526d1b9bc81cdd58da081d1a58dad95d60921b6044820152606401610723565b5f81600201868154811061154f5761154f612069565b5f91825260209091200180549091506001600160a01b031633146115a75760405162461bcd60e51b815260206004820152600f60248201526e1b9bdd081e5bdd5c881d1a58dad95d608a1b6044820152606401610723565b8054831515600160e01b810260ff60e01b1960ff8816600160d81b810260ff60d81b1961ffff8c16600160c81b81029190911662ffffff60c81b19909716969096171791909116919091178455604080518a815260208101949094528301526060820152339063ffffffff8916907f215770922fe1c8d687a78127ef495623cdb6d7db12e6029cd2c916907676984790608001611269565b5f61a8c061082f6201518063ffffffff8516612096565b60075460ff161561167a5760405163769dd35360e11b815260040160405180910390fd5b6007805460ff191660011790556001600160a01b0381166116ad5760405162461bcd60e51b81526004016107239061202f565b6107a3816119f4565b6001546001600160a01b031633146117055760405162461bcd60e51b81526020600482015260126024820152716e6f74206f66666572656420746f20796f7560701b6044820152606401610723565b5f8054336001600160a01b031991821681179092556001805490911690556040519081527fa2ea9883a321a3e97b8266c2b078bfeec6d50c711ed71f874a90d500ae2eaf369060200160405180910390a1565b63ffffffff82165f9081526004602052604081209080600183015460ff16600281111561178757611787611c98565b1480156117aa57506203f48061179c85610821565b6117a69190612009565b4210155b90506002600183015460ff1660028111156117c7576117c7611c98565b14806117d05750805b61180d5760405162461bcd60e51b815260206004820152600e60248201526d6e6f7420726566756e6461626c6560901b6044820152606401610723565b63ffffffff84165f908152600560209081526040808320338452909152812090805b82548110156118ad575f8560020184838154811061184f5761184f612069565b905f5260205f2001548154811061186857611868612069565b5f9182526020909120018054909150600160e81b900460ff166118a457805460ff60e81b1916600160e81b178155826118a08161216d565b9350505b5060010161182f565b505f81116118f15760405162461bcd60e51b81526020600482015260116024820152701b9bdd1a1a5b99c81d1bc81c99599d5b99607a1b6044820152606401610723565b83545f906119099083906001600160801b0316612096565b9050336001600160a01b03168763ffffffff167f5ea3787f6a8a11d5c88e0cd9e7b06a2aa729afa155976a8f2d029d1ca403e95a8360405161194d91815260200190565b60405180910390a36001600160a01b03861633146119a6576040518181526001600160a01b0387169033907fcf97bde5b910802a07204e35ed054004a4f75516a6182ec7e7c199aa2ccc71859060200160405180910390a35b6119b186825a611c4f565b6119eb5760405162461bcd60e51b815260206004820152600b60248201526a1cd95b990819985a5b195960aa1b6044820152606401610723565b50505050505050565b335f9081526006602052604090205480611a3f5760405162461bcd60e51b815260206004820152600c60248201526b1b9bdd1a1a5b99c81bddd95960a21b6044820152606401610723565b335f8181526006602052604080822091909155517f7084f5476618d8e60b11ef0d7d3f06914655adb8793e28ff7f018d4c76d505d590611a829084815260200190565b60405180910390a26001600160a01b0382163314611adb576040518181526001600160a01b0383169033907fcf97bde5b910802a07204e35ed054004a4f75516a6182ec7e7c199aa2ccc71859060200160405180910390a35b611ae682825a611c4f565b611b205760405162461bcd60e51b815260206004820152600b60248201526a1cd95b990819985a5b195960aa1b6044820152606401610723565b5050565b805f03611b2f575050565b611b3c8282617530611c4f565b611b20576001600160a01b0382165f9081526006602052604081208054839290611b67908490612009565b90915550506040518181526001600160a01b038316907f15037fdbcf9999d2f250620f39c029ca732e68e0561907aa9083b4fa6a86e46c9060200160405180910390a25050565b61025861ffff83161115611bfc5760405162461bcd60e51b815260206004820152601560248201527464697374616e6365206f7574206f662072616e676560581b6044820152606401610723565b60088160ff1610611b205760405162461bcd60e51b815260206004820152601860248201527f7065616b2077696e646f77206f7574206f662072616e676500000000000000006044820152606401610723565b5f805f805f868887f1949350505050565b803563ffffffff81168114611c73575f80fd5b919050565b5f60208284031215611c88575f80fd5b611c9182611c60565b9392505050565b634e487b7160e01b5f52602160045260245ffd5b5f60808083018784526020876020860152604060038810611cdb57634e487b7160e01b5f52602160045260245ffd5b87604087015260606080606088015283885180865260a0955060a08901915060208a015f5b82811015611d6257815180516001600160a01b031685528781015164ffffffffff16888601528681015161ffff16878601528581015160ff16868601528981015115158a86015288015115158885015260c09093019290860190600101611d00565b50919d9c50505050505050505050505050565b5f60208284031215611d85575f80fd5b5035919050565b80356001600160a01b0381168114611c73575f80fd5b5f60208284031215611db2575f80fd5b611c9182611d8c565b5f8083601f840112611dcb575f80fd5b50813567ffffffffffffffff811115611de2575f80fd5b6020830191508360208260051b8501011115611dfc575f80fd5b9250929050565b5f805f805f60608688031215611e17575f80fd5b611e2086611c60565b9450602086013567ffffffffffffffff80821115611e3c575f80fd5b611e4889838a01611dbb565b90965094506040880135915080821115611e60575f80fd5b50611e6d88828901611dbb565b969995985093965092949392505050565b803561ffff81168114611c73575f80fd5b803560ff81168114611c73575f80fd5b80358015158114611c73575f80fd5b5f805f8060808587031215611ec1575f80fd5b611eca85611c60565b9350611ed860208601611e7e565b9250611ee660408601611e8f565b9150611ef460608601611e9f565b905092959194509250565b5f8060408385031215611f10575f80fd5b611f1983611c60565b9150611f2760208401611d8c565b90509250929050565b5f815180845260208085019450602084015f5b83811015611f5f57815187529582019590820190600101611f43565b509495945050505050565b602081525f611c916020830184611f30565b5f805f805f60a08688031215611f90575f80fd5b611f9986611c60565b945060208601359350611fae60408701611e7e565b9250611fbc60608701611e8f565b9150611fca60808701611e9f565b90509295509295909350565b634e487b7160e01b5f52601160045260245ffd5b5f8261200457634e487b7160e01b5f52601260045260245ffd5b500490565b8082018082111561083957610839611fd6565b8181038181111561083957610839611fd6565b6020808252600c908201526b7a65726f206164647265737360a01b604082015260600190565b634e487b7160e01b5f52604160045260245ffd5b634e487b7160e01b5f52603260045260245ffd5b5f6020828403121561208d575f80fd5b611c9182611e7e565b808202811582820484141761083957610839611fd6565b606080825281018490525f6001600160fb1b038511156120cb575f80fd5b8460051b80876080850137608090830183810382016020808601919091528651928201839052868101925f9260a001905b808410156121255784516001600160a01b031682529382019360019390930192908201906120fc565b5085810360408701526121388188611f30565b9a9950505050505050505050565b6001600160801b0381811683821601908082111561216657612166611fd6565b5092915050565b5f6001820161217e5761217e611fd6565b506001019056fea2646970667358221220329b132ff01900ec11163a94c39d3cb48121caafdb10ae8c8ca300634fbabea064736f6c63430008180033";
@@ -1506,6 +1603,11 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
   var STATUS_POLL_MS = 5000;
   var NICK_RE = /^[A-Za-z0-9_.-]{2,20}$/;
   var configured = !!(CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY);
+  // Seasons (config.js): the points game scores a season's nights by the odds, with one
+  // double a night. Other nights, and the pot, keep the classic points.
+  var SEASONS = Array.isArray(CONFIG.SEASONS) ? CONFIG.SEASONS : [];
+  function seasonOf(night) { return L.seasonOf(night, SEASONS); }
+  function scorePoints(res, picks) { return L.scoreGame(res, picks, SEASONS); }
   var addDays = L.addDays, nightStart = L.nightStart, nightEnd = L.nightEnd, liveNightAt = L.liveNightAt, openNightAt = L.openNightAt;
 
   function $(id) { return document.getElementById(id); }
@@ -1716,7 +1818,9 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
   var G = {
     mode: configured ? "remote" : "local",
     sb: null, uid: null, me: null,
-    players: new Map(), picks: [], sample: new Set()
+    players: new Map(), picks: [], sample: new Set(),
+    hasDouble: false,   // the database has the season's double_market column
+    odds: null          // { night, counts: { players, peak: [8], more, fewer } } for the open night
   };
   var LOCAL_KEY = "squeekpicks.local.v1";
 
@@ -1741,6 +1845,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
   function gameInit() {
     if (G.mode === "local") {
       var l = readLocal();
+      G.hasDouble = true;
       if (l.nickname) { G.uid = "me"; G.me = { id: "me", nickname: l.nickname }; }
       return gameRefresh();
     }
@@ -1756,13 +1861,19 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
       return G.sb.from("players").select("id,nickname").eq("id", G.uid).maybeSingle().then(function (p) {
         if (p.data) G.me = p.data;
       });
-    }).then(gameRefresh).catch(function (e) {
+    }).then(detectSeasonDb).then(gameRefresh).catch(function (e) {
       setBanner("Couldn't reach the game database: " + esc(e.message || e) + ". Reload to try again.");
     });
   }
 
+  // The season's double column and odds function exist once the Seasons part of
+  // supabase.sql has run. Until then picks save without a double and no odds show.
+  function detectSeasonDb() {
+    return G.sb.from("picks").select("double_market").limit(1).then(function (r) { G.hasDouble = !r.error; }, function () { G.hasDouble = false; });
+  }
+
   function gameRefresh() {
-    var since = addDays(liveNightAt(Date.now()), -(BOARD_NIGHTS + 1));
+    var since = addDays(liveNightAt(Date.now()), -(BOARD_NIGHTS + 1)), open = openNightAt(Date.now());
     if (G.mode === "local") {
       var l = readLocal(), picks = G.picks.filter(function (p) { return p.player_id !== "me"; });
       if (G.me) {
@@ -1772,21 +1883,26 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
         });
       }
       G.picks = picks;
+      G.odds = { night: open, counts: L.crowdOf(picks.filter(function (p) { return p.night === open; })) };
       return Promise.resolve();
     }
     if (!G.sb) return Promise.resolve();
     return Promise.all([
       fetchAll(function () { return G.sb.from("players").select("id,nickname").order("id"); }),
       fetchAll(function () {
-        return G.sb.from("picks").select("player_id,night,distance_km,peak_block,more_blocks")
+        return G.sb.from("picks").select("player_id,night,distance_km,peak_block,more_blocks" + (G.hasDouble ? ",double_market" : ""))
           .gte("night", since).order("night").order("player_id");
       }),
+      // The crowd's odds for the open night, in a season: counts only, never who.
+      seasonOf(open) ? G.sb.rpc("pick_odds", { p_night: open }).then(function (r) {
+        G.odds = r.error || !r.data ? null : { night: open, counts: r.data };
+      }, function () { G.odds = null; }) : (G.odds = null),
       // All-time calls, for the numbers under the header (locked nights plus your own).
       G.sb.from("picks").select("night", { count: "exact", head: true }).then(function (r) { G.calls = r && r.count != null ? r.count : null; }, function () {})
     ]).then(function (r) {
       G.players = new Map(r[0].map(function (p) { return [p.id, p.nickname]; }));
       G.picks = r[1].map(function (p) {
-        return { player_id: p.player_id, night: p.night, distance_km: Number(p.distance_km), peak_block: Number(p.peak_block), more_blocks: !!p.more_blocks };
+        return { player_id: p.player_id, night: p.night, distance_km: Number(p.distance_km), peak_block: Number(p.peak_block), more_blocks: !!p.more_blocks, double_market: p.double_market || null };
       });
     });
   }
@@ -1821,6 +1937,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
       return gameRefresh();
     }
     var row = { player_id: G.uid, night: night, distance_km: pick.distance_km, peak_block: pick.peak_block, more_blocks: pick.more_blocks };
+    if (G.hasDouble && pick.double_market !== undefined) row.double_market = pick.double_market;
     return G.sb.from("picks").upsert(row, { onConflict: "player_id,night" }).then(function (r) {
       if (r.error) {
         if (r.error.code === "42501") throw new Error("Picks for this night are closed.");
@@ -2714,17 +2831,25 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
       (P.demo ? '<p class="hint">Sample wallets in the preview.</p>' : "");
   }
 
-  function boardTabsShown() { return P.on || P.demo ? ["week", "points", "pot"] : ["week", "points"]; }
+  function boardTabsShown() {
+    var t = boardSeason() ? ["season", "week", "points"] : ["week", "points"];
+    if (P.on || P.demo) t.push("pot");
+    return t;
+  }
   function renderBoardTabs() {
-    var tabs = boardTabsShown(), tab = tabs.indexOf(UI.boardTab) >= 0 ? UI.boardTab : "week";
+    // While a season runs its board comes first, unless you picked another tab this visit.
+    var tabs = boardTabsShown(), bs = boardSeason();
+    var tab = !UI.boardTabChosen && bs ? "season" : tabs.indexOf(UI.boardTab) >= 0 ? UI.boardTab : tabs[0];
     $("tab-pot").hidden = tabs.indexOf("pot") < 0;
-    [["week", "tab-week", "board-week"], ["points", "tab-points", "board"], ["pot", "tab-pot", "board-pot"]].forEach(function (x) {
+    $("tab-season").hidden = !bs;
+    if (bs) $("tab-season").textContent = bs.name;
+    [["season", "tab-season", "board-season"], ["week", "tab-week", "board-week"], ["points", "tab-points", "board"], ["pot", "tab-pot", "board-pot"]].forEach(function (x) {
       var on = tab === x[0];
       $(x[1]).setAttribute("aria-selected", String(on));
       $(x[1]).tabIndex = on ? 0 : -1;
       $(x[2]).hidden = !on;
     });
-    $("board-h").textContent = tab === "pot" ? "Pot winners, last " + HISTORY_NIGHTS + " nights" : tab === "week" ? "Points game, this week" : "Points game, last " + BOARD_NIGHTS + " nights";
+    $("board-h").textContent = tab === "season" ? bs.name + " leaderboard" : tab === "pot" ? "Pot winners, last " + HISTORY_NIGHTS + " nights" : tab === "week" ? "Points game, this week" : "Points game, last " + BOARD_NIGHTS + " nights";
   }
 
   // Redraws the parts that show names and avatars, after ENS answers arrive.
@@ -2899,7 +3024,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
   }
 
   // ---------- UI state ----------
-  var UI = { open: null, live: null, draft: { distance: "", peak: null, more: null }, draftNight: null, dirty: false, saving: false, points: null, boardTab: "week" };
+  var UI = { open: null, live: null, draft: { distance: "", peak: null, more: null, double: null }, draftNight: null, dirty: false, saving: false, points: null, boardTab: "week" };
   try { var bt = localStorage.getItem("squeekpicks.boardtab"); if (bt === "pot" || bt === "points" || bt === "week") UI.boardTab = bt; } catch (x) { /* storage blocked */ }
   UI.raceTab = null; UI.raceAll = false;
   try { var rt = localStorage.getItem("squeekpicks.racetab"); if (rt === "pot" || rt === "points") UI.raceTab = rt; } catch (x) { /* storage blocked */ }
@@ -2910,7 +3035,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     var p = myPick(UI.open) || myTickets(UI.open).slice(-1)[0];
     UI.draftNight = UI.open;
     UI.dirty = false;
-    UI.draft = p ? { distance: p.distance_km.toFixed(1), peak: p.peak_block, more: p.more_blocks } : { distance: "", peak: null, more: null };
+    UI.draft = p ? { distance: p.distance_km.toFixed(1), peak: p.peak_block, more: p.more_blocks, double: p.double_market || null } : { distance: "", peak: null, more: null, double: null };
     $("pick-distance").value = UI.draft.distance;
   }
 
@@ -3070,16 +3195,21 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     var typ = H.typical || new Array(48).fill(0), tot = typ.reduce(function (a, v) { return a + v; }, 0) || 1;
     var shares = [], b, byNights = dh.ran > 0;
     for (b = 0; b < 8; b++) shares.push(Math.round(typ.slice(b * 6, b * 6 + 6).reduce(function (a, v) { return a + v; }, 0) / tot * 100));
-    var key = open + "|" + shares.join(",") + "|" + dh.counts.join(",");
+    var season = seasonOf(open), odds = oddsNow(open);
+    var key = open + "|" + shares.join(",") + "|" + dh.counts.join(",") + "|" + (odds ? odds.peak.join(",") + "/" + odds.players : "");
     if (UI.peakKey !== key) {
       var html = "";
       for (b = 0; b < 8; b++) {
         var k = dh.counts[b];
         html += '<button type="button" class="opt" data-block="' + b + '" aria-pressed="false">' +
           "<span>" + esc(blockLabel(open, b)) + "</span>" +
-          '<span class="share"><i style="width:' + (byNights ? Math.round(k / dh.top * 100) : shares[b]) + '%"></i></span>' +
-          (byNights ? '<span class="pct' + (k ? " on" : "") + '">' + (k ? "busiest " + k + (k === 1 ? " night" : " nights") : "not yet his busiest") + "</span>"
-            : '<span class="pct">' + (H.typical ? "usually " + shares[b] + "%" : "&nbsp;") + "</span>") + "</button>";
+          // In a season the bar is how much of the crowd picked it, and the number what it pays.
+          (odds ? '<span class="share"><i style="width:' + pctOf(odds.peak[b], odds) + '%"></i></span>' +
+              '<span class="pct">' + (odds.players ? "picked by " + pctOf(odds.peak[b], odds) + "%" : "nobody yet") + "</span>" +
+              '<span class="worth' + (odds.peakWorth[b] >= 30 ? " hi" : "") + '">' + odds.peakWorth[b] + " pts</span>"
+            : '<span class="share"><i style="width:' + (byNights ? Math.round(k / dh.top * 100) : shares[b]) + '%"></i></span>' +
+              (byNights ? '<span class="pct' + (k ? " on" : "") + '">' + (k ? "busiest " + k + (k === 1 ? " night" : " nights") : "not yet his busiest") + "</span>"
+                : '<span class="pct">' + (H.typical ? "usually " + shares[b] + "%" : "&nbsp;") + "</span>")) + "</button>";
       }
       $("pick-peak").innerHTML = html;
       UI.peakKey = key;
@@ -3089,6 +3219,15 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     });
     Array.prototype.forEach.call($("pick-more").querySelectorAll("button"), function (btn) {
       btn.setAttribute("aria-pressed", String(UI.draft.more === (btn.dataset.more === "true")));
+      var more = btn.dataset.more === "true", label = more ? "More" : "Fewer";
+      btn.textContent = odds ? label + " \u00b7 " + (more ? odds.moreWorth : odds.fewerWorth) + " pts" : label;
+    });
+    // Points labels, and the double, follow the night's rules.
+    $("pts-peak").textContent = season ? "5 to 40 pts, by the odds" : "up to 20 pts";
+    $("pts-blocks").textContent = season ? "5 to 25 pts, by the odds" : "15 pts";
+    $("double-row").hidden = !(season && G.hasDouble);
+    Array.prototype.forEach.call($("pick-double").querySelectorAll("button"), function (btn) {
+      btn.setAttribute("aria-pressed", String(UI.draft.double === btn.dataset.double));
     });
     // Quick pick: his usual night. The busiest window he has had most often (or, before any
     // recorded night, the one with most of a typical night's running), and more or fewer
@@ -3100,9 +3239,44 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     var liveBlocks = H.blocks.get(live);
     $("hint-blocks").innerHTML = (liveBlocks == null ? "The night before is tonight, " + esc(fmtNight(live)) + "."
       : "The night before is tonight, " + esc(fmtNight(live)) + ': <span class="num">' + fmtInt(liveBlocks) + "</span> blocks so far, final at " + esc(fmtDayTime(nightEnd(live))) + ".") +
-      (dh.flips.length ? " More blocks than the night before on " + dh.more + " of " + dh.flips.length + (dh.flips.length === 1 ? " night" : " nights") + " so far." + dlink : "");
+      (dh.flips.length ? " More blocks than the night before on " + dh.more + " of " + dh.flips.length + (dh.flips.length === 1 ? " night" : " nights") + " so far." + dlink : "") +
+      (odds && odds.players ? " So far " + pctOf(odds.more, odds) + "% of players picked more." : "");
+    if (season && !odds) $("hint-peak").innerHTML += " This season the peak window and blocks pay by the odds: the fewer players pick what happens, the more it's worth.";
     renderSave();
+    renderBest();
     renderPickbar(now);
+  }
+
+  // The crowd's picks for the open night without your own saved pick, so what an option
+  // shows is what it pays if you pick it. null outside a season or before the odds load.
+  function oddsNow(open) {
+    if (!seasonOf(open) || !G.odds || G.odds.night !== open || !G.odds.counts) return null;
+    var c = G.odds.counts, o = { players: Number(c.players) || 0, peak: [], more: Number(c.more) || 0, fewer: Number(c.fewer) || 0 };
+    for (var b = 0; b < 8; b++) o.peak.push(Number(c.peak && c.peak[b]) || 0);
+    var mine = myPick(open);
+    if (mine && o.players > 0) {
+      o.players--; o.peak[mine.peak_block] = Math.max(0, o.peak[mine.peak_block] - 1);
+      if (mine.more_blocks) o.more = Math.max(0, o.more - 1); else o.fewer = Math.max(0, o.fewer - 1);
+    }
+    o.peakWorth = o.peak.map(function (n) { return L.oddsPoints("peak", n + 1, o.players + 1); });
+    o.moreWorth = L.oddsPoints("blocks", o.more + 1, o.players + 1);
+    o.fewerWorth = L.oddsPoints("blocks", o.fewer + 1, o.players + 1);
+    return o;
+  }
+  function pctOf(n, o) { return o.players ? Math.round(n / o.players * 100) : 0; }
+
+  // In a season: what tonight's picks pay if they all come in, with the double.
+  function renderBest() {
+    var el = $("best-case"), o = oddsNow(UI.open), d = UI.draft;
+    if (!o || d.peak == null || d.more == null) { el.hidden = true; return; }
+    var parts = [
+      ["distance", 40], ["peak", o.peakWorth[d.peak]], ["blocks", d.more ? o.moreWorth : o.fewerWorth]
+    ], total = 0;
+    el.innerHTML = "If it all comes in: <strong>" + parts.map(function (x) {
+      var dbl = d.double === x[0]; total += x[1] * (dbl ? 2 : 1);
+      return x[1] + (dbl ? " \u00d7 2" : "");
+    }).join(" + ") + " = " + total + " pts</strong>";
+    el.hidden = false;
   }
 
   // Fills the draft with his usual night (see renderTicket).
@@ -3198,7 +3372,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
       });
     }
     return picksFor(live).map(function (p) {
-      return { player_id: p.player_id, distance_km: p.distance_km, peak_block: p.peak_block, more_blocks: p.more_blocks, kind: "points", mine: p.player_id === G.uid };
+      return { player_id: p.player_id, distance_km: p.distance_km, peak_block: p.peak_block, more_blocks: p.more_blocks, double_market: p.double_market, kind: "points", mine: p.player_id === G.uid };
     });
   }
 
@@ -3261,9 +3435,9 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     else { $("race-list").removeAttribute("role"); $("race-list").removeAttribute("aria-labelledby"); }
 
     var entries = raceEntries(tab) || [];
-    var rows = L.liveStandings(res, entries);
+    var rows = L.liveStandings(res, entries, tab === "points" ? SEASONS : null);
     var was = new Map();
-    if (before) L.liveStandings(L.provisionalResult(live, before), entries).forEach(function (r) { was.set(r.entry.player_id, r.place); });
+    if (before) L.liveStandings(L.provisionalResult(live, before), entries, tab === "points" ? SEASONS : null).forEach(function (r) { was.set(r.entry.player_id, r.place); });
     var prizes = new Map(), out = null;
     if (tab === "pot" && potN) {
       out = L.potPayouts(res, entries);
@@ -3413,7 +3587,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     });
     var picks = picksFor(night);
     if (picks.length) {
-      var rows = L.liveStandings(resolve(night, now), picks);
+      var rows = L.liveStandings(resolve(night, now), picks, SEASONS);
       if (rows.length && rows[0].score.counted && rows[0].score.total > 0) {
         var tops = rows.filter(function (r) { return r.place === 1; });
         parts.push("Points game: " + (tops.length > 1 ? tops.length + " players shared the top" : nameOf(rows[0].entry.player_id) + " on top") + " with " + rows[0].score.total + " points.");
@@ -3587,7 +3761,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     // Who's winning: the pot when it has tickets tonight, else the points game.
     var potN = (P.on || P.demo) ? P.nights.get(live) : null, tab = potN && potN.tickets.length ? "pot" : "points";
     var res = L.provisionalResult(live, st || { km: null, busiest: [], blocks: null, prevBlocks: null });
-    var entries = raceEntries(tab) || [], rows = L.liveStandings(res, entries), lead = "";
+    var entries = raceEntries(tab) || [], rows = L.liveStandings(res, entries, tab === "points" ? SEASONS : null), lead = "";
     if (rows.length && rows[0].score.total > 0) {
       var e = rows[0].entry, top = rows.filter(function (r) { return r.place === 1; }).length;
       var name = e.kind === "pot" ? (P.demo && e.mine ? "Preview wallet" : ensName(e.address) || shortAddr(e.address)) + (e.tno ? " #" + e.tno : "") : nameOf(e.player_id);
@@ -3639,13 +3813,14 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
       '<div class="kv"><span class="k">Blocks vs the night before</span>' + cell(res.blocks, res.blocks.state === "resolved" ? (res.blocks.more ? "More" : "Fewer") : "") +
       note(res.blocks, res.blocks.state === "resolved" ? fmtInt(res.blocks.cur) + " blocks vs " + fmtInt(res.blocks.prev) + " the night before." : "") + "</div>";
 
-    var scores = L.scoreNight(res, picks);
+    var scores = scorePoints(res, picks);
     var mine = G.uid && scores.get(G.uid);
     if (mine) {
       var parts = [];
       if (res.distance.state === "resolved") parts.push("distance " + mine.distance + (mine.closest ? " + closest 10" : ""));
       if (res.peak.state === "resolved") parts.push("peak " + mine.peak);
       if (res.blocks.state === "resolved") parts.push("blocks " + mine.blocks);
+      if (mine.bonus) parts.push("doubled " + (mine.double === "peak" ? "peak window" : mine.double) + " +" + mine.bonus);
       html += '<div class="yours"><span class="pts">' + mine.total + "</span> points for you" + (parts.length ? ": " + parts.join(", ") + "." : " so far.") + "</div>";
     }
     if (picks.length) {
@@ -3712,7 +3887,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     var picks = picksFor(night);
     d.players = picks.length;
     if (!d.top.length && picks.length) {
-      var rows = L.liveStandings(res, picks).filter(function (r) { return r.score.counted; });
+      var rows = L.liveStandings(res, picks, SEASONS).filter(function (r) { return r.score.counted; });
       if (rows.length) {
         d.topLabel = "Top of the points game";
         d.top = rows.slice(0, 3).map(function (r) { return { place: r.place, name: nameOf(r.entry.player_id), pts: r.score.total }; });
@@ -3752,12 +3927,14 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
       d.name = walletLabel(P.account); d.many = mine.length;
     } else if (pick) {
       var prow = null, picks = picksFor(night);
-      L.liveStandings(res, picks).forEach(function (r) { if (r.entry.player_id === G.uid) prow = r; });
+      L.liveStandings(res, picks, SEASONS).forEach(function (r) { if (r.entry.player_id === G.uid) prow = r; });
       d.src = "points"; d.pick = pick; d.score = prow.score; d.place = prow.place; d.of = picks.length; d.name = G.me ? G.me.nickname : nameOf(G.uid);
     } else {
       return null;
     }
-    var s = d.score, counted = s.counted, perfect = s.total === MAX_POINTS;
+    var s = d.score, counted = s.counted, perfect = !!s.perfect;
+    var outOf = s.season ? " points" : " of " + MAX_POINTS + " points";
+    function x2(m) { return s.double === m ? 2 : 1; }
     d.counted = counted;
     d.eyebrow = counted && d.place <= 3 && s.total > 0 ? "I called Squeektoshi's night" : "My night on Squeek Picks";
     if (!counted) d.headline = "Still counting";
@@ -3765,24 +3942,24 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     else if (d.src === "pot" && d.potVoid) d.headline = "Scored " + s.total + " points";
     else if (d.of > 1) d.headline = "Finished #" + d.place + " of " + d.of;
     else d.headline = "Scored " + s.total + " points";
-    d.sub = d.name + " · " + (counted ? s.total + " of " + MAX_POINTS + " points" + (perfect ? ", a perfect night" : "") : "results for " + fmtNight(night) + " are on their way") +
+    d.sub = d.name + " · " + (counted ? s.total + outOf + (perfect ? ", a perfect night" : "") : "results for " + fmtNight(night) + " are on their way") +
       (d.src === "pot" ? (d.potVoid ? " · pot refunded" : d.many > 1 ? " · best of " + d.many + " tickets" : "") : " · points game");
 
     // The three picks against what happened.
     var p = d.pick;
     function state(m, yes, no) { return m.state === "resolved" ? yes : m.state === "void" ? no : "Still counting."; }
     d.tiles = [
-      { label: "Distance", me: fmtKm(p.distance_km) + " km", pts: res.distance.state === "resolved" ? s.distance + s.closest : null,
+      { label: "Distance" + (s.double === "distance" ? " ×2" : ""), me: fmtKm(p.distance_km) + " km", pts: res.distance.state === "resolved" ? (s.distance + s.closest) * x2("distance") : null,
         note: state(res.distance, "He ran " + fmtKm(res.distance.km) + " km." + (s.closest ? " Closest guess." : ""), "No call for distance.") },
-      { label: "Busiest 3 hours", me: blockLabel(night, p.peak_block), pts: res.peak.state === "resolved" ? s.peak : null,
-        note: state(res.peak, s.peak === 20 ? "Spot on" + (tz ? " (" + tz + ")." : ".") : s.peak === 5 ? "Next to his busiest." :
+      { label: "Busiest 3 hours" + (s.double === "peak" ? " ×2" : ""), me: blockLabel(night, p.peak_block), pts: res.peak.state === "resolved" ? s.peak * x2("peak") : null,
+        note: state(res.peak, res.peak.winners && res.peak.winners.indexOf(p.peak_block) >= 0 ? "Spot on" + (tz ? " (" + tz + ")." : ".") : s.peak === 5 ? "Next to his busiest." :
           "He peaked " + (res.peak.winners ? blockLabel(night, res.peak.winners[0]) : "") + ".", "No call for the peak.") },
-      { label: "Squeek blocks", me: p.more_blocks ? "More" : "Fewer", pts: res.blocks.state === "resolved" ? s.blocks : null,
+      { label: "Squeek blocks" + (s.double === "blocks" ? " ×2" : ""), me: p.more_blocks ? "More" : "Fewer", pts: res.blocks.state === "resolved" ? s.blocks * x2("blocks") : null,
         note: state(res.blocks, fmtInt(res.blocks.cur) + " vs " + fmtInt(res.blocks.prev) + " the night before.", "No call for blocks.") }
     ];
     d.text = !counted ? "I called Squeektoshi's night on Squeek Picks. Results are coming in." :
       d.src === "pot" && d.won > 0n ? "I finished #" + d.place + " on Squeek Picks and won " + fmtEth(d.won) + " test ETH calling Squeektoshi's night on the wheel. Think you can call tonight better?" :
-      "I scored " + s.total + " of " + MAX_POINTS + " points calling Squeektoshi's night on Squeek Picks" + (d.of > 1 ? " (#" + d.place + " of " + d.of + ")" : "") + ". Think you can call tonight better?";
+      "I scored " + s.total + outOf + " calling Squeektoshi's night on Squeek Picks" + (d.of > 1 ? " (#" + d.place + " of " + d.of + ")" : "") + ". Think you can call tonight better?";
     d.alt = "Share card: " + d.headline + ". " + d.sub + ".";
     return d;
   }
@@ -4076,11 +4253,11 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     nights.forEach(function (night) {
       var picks = picksFor(night);
       if (!picks.length) return;
-      L.scoreNight(resolve(night, now), picks).forEach(function (s, id) {
+      scorePoints(resolve(night, now), picks).forEach(function (s, id) {
         if (!s.counted) return;
         var t = totals.get(id) || { points: 0, nights: 0, best: 0, perfect: 0, closest: 0 };
         t.points += s.total; t.nights++; t.best = Math.max(t.best, s.total);
-        if (s.total === MAX_POINTS) t.perfect++;
+        if (s.perfect) t.perfect++;
         if (s.closest) t.closest++;
         totals.set(id, t);
       });
@@ -4156,6 +4333,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     if (!rows.length) el.innerHTML = note || '<p class="empty">No scored nights yet. Points appear here once a night you picked has settled.</p>';
     else el.innerHTML = note + boardTable(rows.filter(function (x, i) { return i < 50 || x.id === G.uid; }), ctx);
     renderWeek(now, ctx, cur, note);
+    renderSeasonBoard(now, ctx);
   }
 
   // This week's board, and last week's champion.
@@ -4187,6 +4365,75 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     el.hidden = false;
   }
 
+  // ---------- Seasons ----------
+  function seasonInfo(i) { var x = SEASONS[i]; return x && x.start ? L.seasonOf(x.start, SEASONS) : null; }
+  function allSeasons() { var out = []; for (var i = 0; i < SEASONS.length; i++) { var s = seasonInfo(i); if (s) out.push(s); } return out; }
+  // The season being played: picking one of its nights, or its last night running.
+  function seasonNow() { return seasonOf(UI.open) || seasonOf(UI.live); }
+  // The season whose board shows: the one under way, or one that ended in the last week.
+  function boardSeason() {
+    var now = seasonNow();
+    if (now) return now;
+    var ended = allSeasons().filter(function (s) { return s.last < UI.live && s.last >= addDays(UI.live, -8); });
+    return ended.length ? ended[ended.length - 1] : null;
+  }
+  function seasonNights(s) {
+    var out = [];
+    for (var k = 0; k < s.nights; k++) { var n = addDays(s.start, k); if (n < UI.live) out.push(n); }
+    return out;
+  }
+  function seasonRows(s, now) { return ranked(pointsTotals(seasonNights(s), now)); }
+
+  function renderSeasonBoard(now, ctx) {
+    var el = $("board-season"), s = boardSeason();
+    if (!s) { el.innerHTML = ""; return; }
+    var rows = seasonRows(s, now), over = s.last < UI.live, lastIn = over ? resolve(s.last, now) : null;
+    var final = over && lastIn && [lastIn.distance, lastIn.peak, lastIn.blocks].every(function (m) { return m.state !== "wait" && m.state !== "live"; });
+    var top = rows.filter(function (x) { return x.rank === 1 && x.t.points > 0; });
+    var champ = final && top.length ? '<div class="champ"><span class="badge gold">' + esc(s.name) + " champion</span><span><strong>" + esc(top.map(function (x) { return nameOf(x.id); }).join(" and ")) +
+      "</strong> with " + top[0].t.points + " points.</span></div>" : "";
+    var body = rows.length ? boardTable(rows.filter(function (x, i) { return i < 50 || x.id === G.uid; }), ctx)
+      : '<p class="empty">No points yet this season. Each night\'s points show up after it ends.</p>';
+    el.innerHTML = champ + body + '<p class="board-note">' + esc(s.name) + ": the nights of " + esc(fmtNight(s.start)) + " to " + esc(fmtNight(s.last)) +
+      ". The peak window and blocks pay by the odds, and one pick a night counts double.</p>";
+  }
+
+  function renderSeason(now) {
+    var el = $("season-band"), cur = seasonNow(), html = "";
+    var next = allSeasons().filter(function (s) { return s.start > UI.open && s.start <= addDays(UI.open, 21); })[0];
+    var done = !cur && boardSeason();
+    var rules = "The peak window and blocks pay by the odds: the fewer players pick what happens, the more it's worth. One pick a night counts double.";
+    if (cur) {
+      var k = 0, dots = "";
+      for (var i = 0; i < cur.nights; i++) {
+        var n = addDays(cur.start, i);
+        if (n === UI.open) k = i + 1;
+        dots += '<span class="' + (n < UI.live ? "done" : n === UI.live ? "live" : n === UI.open ? "next" : "") + '" title="' + esc(fmtNight(n)) + '"></span>';
+      }
+      html ='<div class="sb-main"><span class="eyebrow">' + esc(cur.name) + " · " + esc(fmtNight(cur.start)) + " to " + esc(fmtNight(cur.last)) + "</span>" +
+        '<h2 id="season-h">' + (k ? "Picking night " + k + " of " + cur.nights : "The season's last night is running") + "</h2><p>" + rules + "</p>" +
+        '<div class="sb-dots" aria-hidden="true">' + dots + "</div></div>" +
+        // Players see their season place in the Your game card; newcomers get a way in.
+        (G.me ? "" : '<div class="sb-side"><a class="play-btn" href="#ticket" data-play="1">Join the season</a></div>');
+    } else if (next) {
+      html = '<div class="sb-main"><span class="eyebrow">Coming up</span><h2 id="season-h">' + esc(next.name) + " starts with the night of " + esc(fmtNight(next.start)) + "</h2>" +
+        "<p>" + next.nights + " nights. " + rules + " Free to play, and Night Cards for good calls are on the way.</p></div>";
+    } else if (done) {
+      var rows = seasonRows(done, now), top = rows.filter(function (x) { return x.rank === 1 && x.t.points > 0; });
+      html = '<div class="sb-main"><span class="eyebrow">' + esc(done.name) + " is over</span><h2 id=\"season-h\">" +
+        (top.length ? esc(top.map(function (x) { return nameOf(x.id); }).join(" and ")) + " won it with " + top[0].t.points + " points" : "Thanks for playing") + "</h2>" +
+        "<p>The final board is in the leaderboard below until the next season.</p></div>";
+    }
+    el.innerHTML = html;
+    el.hidden = !html;
+    // The season's rules, in How it works.
+    var r = $("rules-season"), s = cur || next || done;
+    r.hidden = !s;
+    if (s) r.innerHTML = "<h3>" + esc(s.name) + "</h3><ul><li>The nights of " + esc(fmtNight(s.start)) + " to " + esc(fmtNight(s.last)) + ", in the free points game.</li>" +
+      "<li>Distance scores as always. The peak window pays 5 to 40 points and blocks 5 to 25, by the odds: the fewer players picked what happened, the more it's worth.</li>" +
+      "<li>Double one pick a night: that market's points count twice.</li><li>The pot keeps the classic points.</li></ul>";
+  }
+
   // A returning player's night at a glance, above everything else: how last night went,
   // this week's place and streak, and whether the next night is picked.
   function renderYou(now) {
@@ -4197,7 +4444,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
         (d ? '<span class="d">' + d + "</span>" : "") + (extra || "") + "</div>";
     }
     // Last night
-    var last = addDays(UI.live, -1), res = resolve(last, now), scores = L.scoreNight(res, picksFor(last)), mine = scores.get(G.uid), t1;
+    var last = addDays(UI.live, -1), res = resolve(last, now), scores = scorePoints(res, picksFor(last)), mine = scores.get(G.uid), t1;
     var waiting = [res.distance, res.peak, res.blocks].some(function (m) { return m.state === "wait" || m.state === "live"; });
     var lastDay = esc(fmtNight(last));
     if (!mine) t1 = tile("Last night", "–", lastDay + " · you didn't call it");
@@ -4212,7 +4459,10 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     var streakText = streak >= 2 ? streak + "-night streak" : "";
     var ws = weekStart(UI.live), wk = ranked(pointsTotals(weekNights(ws, last), now)), me = null;
     wk.forEach(function (x) { if (x.id === G.uid) me = x; });
-    var t2 = me ? tile("This week", "#" + me.rank, me.t.points + " pts" + (streakText ? " · " + streakText : ""))
+    var sn = seasonNow();
+    if (sn) { me = null; seasonRows(sn, now).forEach(function (x) { if (x.id === G.uid) me = x; }); }
+    var t2 = sn ? tile(sn.name, me ? "#" + me.rank : "–", me ? me.t.points + " pts" + (streakText ? " · " + streakText : "") : "No points yet this season." + (streakText ? " " + streakText + "." : ""))
+      : me ? tile("This week", "#" + me.rank, me.t.points + " pts" + (streakText ? " · " + streakText : ""))
       : tile("This week", "–", ws > last ? "A new week starts with tonight." + (streakText ? " " + streakText + "." : "") : "No points yet this week." + (streakText ? " " + streakText + "." : ""));
     // The next night
     var p = myPick(UI.open), t3;
@@ -4263,7 +4513,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
         if (P.on) potRefresh().then(renderPot);
       }
     }
-    renderBanner(); renderMe(); renderYou(now); renderLive(now); renderTicket(now); renderRace(now); renderResults(now); renderBoard(now);
+    renderBanner(); renderMe(); renderYou(now); renderSeason(now); renderLive(now); renderTicket(now); renderRace(now); renderResults(now); renderBoard(now);
     renderPot(); renderDash(); renderPotBoard(); renderBoardTabs(); renderAdmin();
     if (currentView() === "diary") renderDiary(now);
     renderOverlay(now);
@@ -4271,7 +4521,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
   }
 
   // ---------- Events ----------
-  function draftChanged() { UI.dirty = true; $("save-msg").textContent = ""; renderSave(); renderPot(); }
+  function draftChanged() { UI.dirty = true; $("save-msg").textContent = ""; renderSave(); renderBest(); renderPot(); }
   function bind() {
     $("pick-distance").addEventListener("input", function (e) { UI.draft.distance = e.target.value; draftChanged(); });
     $("pick-peak").addEventListener("click", function (e) {
@@ -4302,7 +4552,8 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
       UI.saving = true; renderSave(); say("save-msg", joining ? "Joining and saving…" : "");
       var night = UI.open;
       (joining ? gameJoin(nick) : Promise.resolve()).then(function () {
-        return gameSave(night, { distance_km: v.km, peak_block: UI.draft.peak, more_blocks: UI.draft.more });
+        return gameSave(night, { distance_km: v.km, peak_block: UI.draft.peak, more_blocks: UI.draft.more,
+          double_market: seasonOf(night) && G.hasDouble ? UI.draft.double || null : undefined });
       }).then(function () {
         UI.saving = false; UI.dirty = false;
         UI.draft.distance = v.km.toFixed(1); $("pick-distance").value = UI.draft.distance;
@@ -4317,6 +4568,12 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
       });
     });
     $("quick-pick").addEventListener("click", quickPick);
+    $("pick-double").addEventListener("click", function (e) {
+      var btn = e.target.closest("button[data-double]"); if (!btn) return;
+      UI.draft.double = UI.draft.double === btn.dataset.double ? null : btn.dataset.double;
+      Array.prototype.forEach.call($("pick-double").children, function (b) { b.setAttribute("aria-pressed", String(UI.draft.double === b.dataset.double)); });
+      draftChanged();
+    });
     $("pb-go").addEventListener("click", goPick);
     document.addEventListener("click", function (e) {
       var a = e.target.closest("[data-play]"); if (!a) return;
@@ -4350,7 +4607,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
       else $("dash").scrollIntoView({ behavior: "smooth", block: "start" });
     });
     function pickTab(tab, focus) {
-      UI.boardTab = tab;
+      UI.boardTab = tab; UI.boardTabChosen = true;
       try { localStorage.setItem("squeekpicks.boardtab", tab); } catch (x) { /* storage blocked */ }
       renderBoardTabs();
       if (focus) $("tab-" + tab).focus();

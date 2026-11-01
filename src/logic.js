@@ -157,9 +157,63 @@
       }
       if (res.blocks.state === "resolved") { s.blocks = p.more_blocks === res.blocks.more ? 15 : 0; s.counted = true; }
       s.total = s.distance + s.closest + s.peak + s.blocks;
+      s.perfect = s.total === 75;
       out.set(p.player_id, s);
     });
     return out;
+  }
+
+  // ---------- Seasons ----------
+  // seasons: [{ name, start (the first night, "YYYY-MM-DD"), nights }]. The free points game
+  // scores a season's nights by the odds (below); other nights and the pot keep the classic rules.
+  function seasonOf(night, seasons) {
+    var list = Array.isArray(seasons) ? seasons : [];
+    for (var i = 0; i < list.length; i++) {
+      var x = list[i];
+      if (x && x.start && night >= x.start && night < addDays(x.start, Number(x.nights) || 14)) {
+        return { index: i, name: x.name || "Season " + (i + 1), start: x.start, nights: Number(x.nights) || 14, last: addDays(x.start, (Number(x.nights) || 14) - 1) };
+      }
+    }
+    return null;
+  }
+
+  // What a right call on the peak window or the blocks is worth in a season: the fewer
+  // players made the same pick, the more. Counts are smoothed with one imaginary player per
+  // option, so a handful of players can't swing a pick to the extremes.
+  var ODDS = { peak: { top: 40, low: 5, options: 8 }, blocks: { top: 25, low: 5, options: 2 } };
+  function oddsPoints(market, count, players) {
+    var m = ODDS[market], share = (count + 1) / (players + m.options);
+    return Math.max(m.low, Math.min(m.top, Math.round(m.top * (1 - share))));
+  }
+  // How many players picked each option: { players, peak: [8], more, fewer }.
+  function crowdOf(picks) {
+    var c = { players: picks.length, peak: [0, 0, 0, 0, 0, 0, 0, 0], more: 0, fewer: 0 };
+    picks.forEach(function (p) { c.peak[p.peak_block]++; if (p.more_blocks) c.more++; else c.fewer++; });
+    return c;
+  }
+  var DOUBLE_MARKETS = ["distance", "peak", "blocks"];
+
+  // A season night: distance as always; the peak window and blocks by the odds, from every
+  // pick that night; and one market per pick (double_market) counting twice.
+  function scoreSeason(res, picks) {
+    var base = scoreNight(res, picks), crowd = crowdOf(picks), out = new Map();
+    picks.forEach(function (p) {
+      var b = base.get(p.player_id), s = Object.assign({}, b);
+      s.worth = { peak: oddsPoints("peak", crowd.peak[p.peak_block], crowd.players), blocks: oddsPoints("blocks", p.more_blocks ? crowd.more : crowd.fewer, crowd.players) };
+      if (res.peak.state === "resolved") s.peak = res.peak.winners.indexOf(p.peak_block) >= 0 ? s.worth.peak : b.peak;
+      if (res.blocks.state === "resolved") s.blocks = p.more_blocks === res.blocks.more ? s.worth.blocks : 0;
+      s.double = DOUBLE_MARKETS.indexOf(p.double_market) >= 0 ? p.double_market : null;
+      s.bonus = s.double === "distance" ? s.distance + s.closest : s.double === "peak" ? s.peak : s.double === "blocks" ? s.blocks : 0;
+      s.total = s.distance + s.closest + s.peak + s.blocks + s.bonus;
+      s.perfect = b.perfect;
+      s.season = true;
+      out.set(p.player_id, s);
+    });
+    return out;
+  }
+  // The points game's scores for a night: a season's rules on its nights, classic otherwise.
+  function scoreGame(res, picks, seasons) {
+    return seasonOf(res.night, seasons) ? scoreSeason(res, picks) : scoreNight(res, picks);
   }
 
   // ---------- Pot ----------
@@ -237,9 +291,10 @@
   }
   // Orders entries the way the pot ranks tickets: points, then the closer distance guess,
   // then the earlier ticket. Entries tied on all of those share a place.
-  // Returns [{ entry, score, place }].
-  function liveStandings(res, entries) {
-    var scores = scoreNight(res, entries);
+  // Returns [{ entry, score, place }]. With `seasons`, entries are points-game picks and
+  // a season night is scored by its rules; without, by the classic (pot) rules.
+  function liveStandings(res, entries, seasons) {
+    var scores = seasons ? scoreGame(res, entries, seasons) : scoreNight(res, entries);
     function errKey(s) { return s.err == null ? 1e9 : s.err; }
     var rows = entries.map(function (e) { return { entry: e, score: scores.get(e.player_id) }; });
     rows.sort(function (a, b) {
@@ -357,6 +412,7 @@
     liveNightAt: liveNightAt, openNightAt: openNightAt, nightToDay: nightToDay, dayToNight: dayToNight, slotOf: slotOf,
     parseStats: parseStats, parseSettlements: parseSettlements,
     resolveNight: resolveNight, distancePoints: distancePoints, scoreNight: scoreNight, potPayouts: potPayouts,
+    seasonOf: seasonOf, ODDS: ODDS, oddsPoints: oddsPoints, crowdOf: crowdOf, scoreSeason: scoreSeason, scoreGame: scoreGame, DOUBLE_MARKETS: DOUBLE_MARKETS,
     potTicketId: potTicketId, potTickets: potTickets,
     provisionalResult: provisionalResult, liveStandings: liveStandings,
     RUN_MIN_SPINS: RUN_MIN_SPINS, nightFacts: nightFacts, diaryHabits: diaryHabits, describeNight: describeNight

@@ -14,6 +14,16 @@ Play it at **[squeekpicks.xyz](https://squeekpicks.xyz)**. The pot runs on the *
 - **Points:** distance 30 / 20 / 10 / 5 within 0.25 / 0.5 / 1 / 2 km, plus 10 for the closest guess. Peak window 20, or 5 for the window next to it. Blocks 15. Best possible night: 75.
 - **Results:** distance and peak come from closed, accepted rounds. Blocks come from blocks settled on Ethereum, counted by when they settled. A market with a data gap for over a day, a tied block count, or a night he doesn't run is void.
 
+### Seasons
+
+The free points game runs in seasons, set in `config.js` (`SEASONS`: a name, the first night, how many nights). Season 1 is the nights of Mon 16 Nov to Sun 29 Nov 2026.
+
+- **By the odds:** in a season the peak window pays 5 to 40 points and blocks 5 to 25, depending on how many players picked the same thing: the fewer, the more it's worth. Counts are smoothed so a handful of players can't swing a pick to the extremes. While picking, the page shows how many picked each option (never who) and what it pays.
+- **One double a night:** a player can pick one market whose points count twice.
+- Distance scores as always. The pot keeps the classic points, since a pot ticket on chain has no double.
+- The season has its own leaderboard tab and a champion. The rules live in `src/logic.js` (`scoreSeason`), shared by the page and the Telegram bot.
+- Needs the **Seasons** part at the end of `supabase.sql` (a `double_market` column and a `pick_odds` function that returns counts only). Until it's run, picks save without a double and no odds show.
+
 ### The pot
 
 - Every ticket costs the same. Up to 5 tickets per wallet per night, each with its own picks, so players can spread their guesses. Each ticket ranks on its own, so one wallet can win more than one place. Players can change any of their tickets until the lock, paying only gas.

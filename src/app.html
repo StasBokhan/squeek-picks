@@ -418,6 +418,29 @@ a.play-btn:hover { filter: brightness(1.05); }
   .you-tile button[data-play] { display: none; }   /* the bar at the bottom has it */
 }
 
+/* Seasons: odds on the options, the double, the season band */
+.opt .worth { font: 600 17px/1.1 var(--font-display); color: var(--ink); }
+.opt .worth.hi { color: var(--accent-ink); }
+.dbl { display: flex; flex-wrap: wrap; gap: 8px; }
+.dbl .opt { text-align: center; padding: 10px 16px; }
+.dbl .opt[aria-pressed="true"] { border-color: var(--gold); background: var(--gold); color: var(--on-gold); }
+.best { margin: 0; font-size: 14px; color: var(--ink-2); }
+.best strong { color: var(--ink); }
+.season-band { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: center; justify-content: space-between; border-color: color-mix(in srgb, var(--gold) 45%, var(--card-line)); }
+.season-band .sb-main { flex: 999 1 420px; min-width: 0; display: grid; gap: 6px; }
+.season-band .sb-main .eyebrow { color: var(--accent-ink); }
+.season-band .sb-main p { margin: 0; color: var(--ink-2); font-size: 15px; max-width: 64ch; }
+.season-band .sb-side { flex: 1 1 220px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: flex-end; }
+.season-band .sb-stat { padding: 10px 14px; border-radius: 14px; background: var(--raise); display: grid; gap: 1px; min-width: 84px; }
+.season-band .sb-stat .k { font: 800 11px/1.4 var(--font-body); color: var(--ink-3); text-transform: uppercase; letter-spacing: .05em; }
+.season-band .sb-stat .v { font: 600 22px/1.15 var(--font-display); font-variant-numeric: tabular-nums; }
+.sb-dots { display: flex; gap: 4px; margin-top: 4px; max-width: 520px; }
+.sb-dots span { flex: 1; height: 8px; border-radius: 4px; background: var(--rule); }
+.sb-dots span.done { background: var(--gold); }
+.sb-dots span.live { background: var(--accent-ink); }
+.sb-dots span.next { background: transparent; box-shadow: inset 0 0 0 2px var(--accent-ink); }
+@media (max-width: 720px) { .season-band .sb-side { justify-content: flex-start; } }
+
 /* Quick pick, and the nickname asked for when saving */
 .quick { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 8px; }
 .quick button.secondary { padding: 10px 16px; }
@@ -765,6 +788,9 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
   <!-- Your game: for a returning player, last night, this week and the next night's picks -->
   <section class="panel you game-only" id="you" aria-labelledby="you-h" hidden></section>
 
+  <!-- Seasons: coming up, under way, or just over -->
+  <section class="panel season-band game-only" id="season-band" aria-labelledby="season-h" hidden></section>
+
   <!-- Squeektoshi's diary: shown instead of the game at #diary -->
   <section class="panel dy-hero diary-only" aria-labelledby="diary-h">
     <img src="squeektoshi.jpg" width="665" height="413" alt="Squeektoshi sitting in front of his wheel on the night camera">
@@ -890,7 +916,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
 
       <form class="markets" id="pick-form" novalidate>
         <fieldset class="market" aria-labelledby="mk-distance">
-          <div class="m-head"><h3 class="m-name" id="mk-distance">Distance</h3><span class="m-pts">up to 40 pts</span></div>
+          <div class="m-head"><h3 class="m-name" id="mk-distance">Distance</h3><span class="m-pts" id="pts-distance">up to 40 pts</span></div>
           <p class="q">How far will he run that night?</p>
           <div class="km">
             <input type="text" id="pick-distance" inputmode="decimal" autocomplete="off" placeholder="9.5" aria-describedby="hint-distance">
@@ -900,20 +926,30 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
         </fieldset>
 
         <fieldset class="market" aria-labelledby="mk-peak">
-          <div class="m-head"><h3 class="m-name" id="mk-peak">Peak window</h3><span class="m-pts">up to 20 pts</span></div>
+          <div class="m-head"><h3 class="m-name" id="mk-peak">Peak window</h3><span class="m-pts" id="pts-peak">up to 20 pts</span></div>
           <p class="q">Which 3 hours will he spin the most?</p>
           <div class="opts" id="pick-peak"></div>
           <p class="hint" id="hint-peak">Your local time.</p>
         </fieldset>
 
         <fieldset class="market" aria-labelledby="mk-blocks">
-          <div class="m-head"><h3 class="m-name" id="mk-blocks">Blocks</h3><span class="m-pts">15 pts</span></div>
+          <div class="m-head"><h3 class="m-name" id="mk-blocks">Blocks</h3><span class="m-pts" id="pts-blocks">15 pts</span></div>
           <p class="q">Will more Squeek blocks settle that night than the night before?</p>
           <div class="duo" id="pick-more">
             <button type="button" class="opt" data-more="true" aria-pressed="false">More</button>
             <button type="button" class="opt" data-more="false" aria-pressed="false">Fewer</button>
           </div>
           <p class="hint" id="hint-blocks"></p>
+        </fieldset>
+
+        <fieldset class="market double-row" id="double-row" aria-labelledby="mk-double" hidden>
+          <div class="m-head"><h3 class="m-name" id="mk-double">Double one pick</h3><span class="m-pts">optional</span></div>
+          <p class="q">Pick the call you're surest of. It counts twice tonight.</p>
+          <div class="dbl" id="pick-double">
+            <button type="button" class="opt" data-double="distance" aria-pressed="false">Distance</button>
+            <button type="button" class="opt" data-double="peak" aria-pressed="false">Peak window</button>
+            <button type="button" class="opt" data-double="blocks" aria-pressed="false">Blocks</button>
+          </div>
         </fieldset>
 
         <div class="save-row">
@@ -923,6 +959,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
             <p class="hint" id="nick-hint">2 to 20 letters, numbers, dots, dashes or underscores. No sign-up.</p>
           </div>
           <button class="primary" type="submit" id="save">Save picks</button>
+          <p class="best" id="best-case" hidden></p>
           <p class="msg" id="save-msg" role="status"></p>
           <p class="hint save-note">Free. Saved picks score on the points leaderboard. They don't buy a pot ticket.</p>
           <p class="streak-note" id="streak-note" hidden></p>
@@ -982,11 +1019,13 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
           <h2 id="board-h">Points game, last 28 nights</h2>
         </div>
         <div class="tabs" role="tablist" aria-label="Leaderboard" id="board-tabs">
+          <button type="button" role="tab" id="tab-season" aria-controls="board-season" aria-selected="false" tabindex="-1" hidden>Season</button>
           <button type="button" role="tab" id="tab-week" aria-controls="board-week" aria-selected="true">This week</button>
           <button type="button" role="tab" id="tab-points" aria-controls="board" aria-selected="false" tabindex="-1">28 nights</button>
           <button type="button" role="tab" id="tab-pot" aria-controls="board-pot" aria-selected="false" tabindex="-1" hidden>Pot winners</button>
         </div>
       </div>
+      <div id="board-season" role="tabpanel" aria-labelledby="tab-season" hidden></div>
       <div id="board-week" role="tabpanel" aria-labelledby="tab-week"></div>
       <div id="board" role="tabpanel" aria-labelledby="tab-points" hidden></div>
       <div id="board-pot" role="tabpanel" aria-labelledby="tab-pot" hidden></div>
@@ -1028,6 +1067,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
         <h3>Results</h3>
         <p>Distance and peak come from closed, accepted rounds, so they settle once the night's data is in. Blocks come from blocks settled on Ethereum, counted by when they settled. If a market has a data gap, a tie or a night off, it doesn't count: no points either way.</p>
       </div>
+      <div id="rules-season" hidden></div>
       <div id="rules-pot" hidden>
         <h3>The pot</h3>
         <ul>
@@ -1117,7 +1157,8 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     MAINNET_RPC_URL: "https://ethereum-rpc.publicnode.com", // ENS names live on Ethereum mainnet
     ENS_AVATAR_URL: "https://metadata.ens.domains/mainnet/avatar/",
     SITE_URL: "",                                          // the link in share posts; empty means this page's address
-    TELEGRAM_URL: ""                                       // the bot's Telegram channel, shown as a button
+    TELEGRAM_URL: "",                                      // the bot's Telegram channel, shown as a button
+    SEASONS: []                                            // [{ name, start: "YYYY-MM-DD", nights }]: see config.js
   }, window.SQUEEK_CONFIG || {});
   var POT_ABI = /*@@POT_ABI@@*/[];          // version 3, which also reads version 2 pots
   var POT_BYTECODE = /*@@POT_BYTECODE@@*/"";
@@ -1134,6 +1175,11 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
   var STATUS_POLL_MS = 5000;
   var NICK_RE = /^[A-Za-z0-9_.-]{2,20}$/;
   var configured = !!(CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY);
+  // Seasons (config.js): the points game scores a season's nights by the odds, with one
+  // double a night. Other nights, and the pot, keep the classic points.
+  var SEASONS = Array.isArray(CONFIG.SEASONS) ? CONFIG.SEASONS : [];
+  function seasonOf(night) { return L.seasonOf(night, SEASONS); }
+  function scorePoints(res, picks) { return L.scoreGame(res, picks, SEASONS); }
   var addDays = L.addDays, nightStart = L.nightStart, nightEnd = L.nightEnd, liveNightAt = L.liveNightAt, openNightAt = L.openNightAt;
 
   function $(id) { return document.getElementById(id); }
@@ -1344,7 +1390,9 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
   var G = {
     mode: configured ? "remote" : "local",
     sb: null, uid: null, me: null,
-    players: new Map(), picks: [], sample: new Set()
+    players: new Map(), picks: [], sample: new Set(),
+    hasDouble: false,   // the database has the season's double_market column
+    odds: null          // { night, counts: { players, peak: [8], more, fewer } } for the open night
   };
   var LOCAL_KEY = "squeekpicks.local.v1";
 
@@ -1369,6 +1417,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
   function gameInit() {
     if (G.mode === "local") {
       var l = readLocal();
+      G.hasDouble = true;
       if (l.nickname) { G.uid = "me"; G.me = { id: "me", nickname: l.nickname }; }
       return gameRefresh();
     }
@@ -1384,13 +1433,19 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
       return G.sb.from("players").select("id,nickname").eq("id", G.uid).maybeSingle().then(function (p) {
         if (p.data) G.me = p.data;
       });
-    }).then(gameRefresh).catch(function (e) {
+    }).then(detectSeasonDb).then(gameRefresh).catch(function (e) {
       setBanner("Couldn't reach the game database: " + esc(e.message || e) + ". Reload to try again.");
     });
   }
 
+  // The season's double column and odds function exist once the Seasons part of
+  // supabase.sql has run. Until then picks save without a double and no odds show.
+  function detectSeasonDb() {
+    return G.sb.from("picks").select("double_market").limit(1).then(function (r) { G.hasDouble = !r.error; }, function () { G.hasDouble = false; });
+  }
+
   function gameRefresh() {
-    var since = addDays(liveNightAt(Date.now()), -(BOARD_NIGHTS + 1));
+    var since = addDays(liveNightAt(Date.now()), -(BOARD_NIGHTS + 1)), open = openNightAt(Date.now());
     if (G.mode === "local") {
       var l = readLocal(), picks = G.picks.filter(function (p) { return p.player_id !== "me"; });
       if (G.me) {
@@ -1400,21 +1455,26 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
         });
       }
       G.picks = picks;
+      G.odds = { night: open, counts: L.crowdOf(picks.filter(function (p) { return p.night === open; })) };
       return Promise.resolve();
     }
     if (!G.sb) return Promise.resolve();
     return Promise.all([
       fetchAll(function () { return G.sb.from("players").select("id,nickname").order("id"); }),
       fetchAll(function () {
-        return G.sb.from("picks").select("player_id,night,distance_km,peak_block,more_blocks")
+        return G.sb.from("picks").select("player_id,night,distance_km,peak_block,more_blocks" + (G.hasDouble ? ",double_market" : ""))
           .gte("night", since).order("night").order("player_id");
       }),
+      // The crowd's odds for the open night, in a season: counts only, never who.
+      seasonOf(open) ? G.sb.rpc("pick_odds", { p_night: open }).then(function (r) {
+        G.odds = r.error || !r.data ? null : { night: open, counts: r.data };
+      }, function () { G.odds = null; }) : (G.odds = null),
       // All-time calls, for the numbers under the header (locked nights plus your own).
       G.sb.from("picks").select("night", { count: "exact", head: true }).then(function (r) { G.calls = r && r.count != null ? r.count : null; }, function () {})
     ]).then(function (r) {
       G.players = new Map(r[0].map(function (p) { return [p.id, p.nickname]; }));
       G.picks = r[1].map(function (p) {
-        return { player_id: p.player_id, night: p.night, distance_km: Number(p.distance_km), peak_block: Number(p.peak_block), more_blocks: !!p.more_blocks };
+        return { player_id: p.player_id, night: p.night, distance_km: Number(p.distance_km), peak_block: Number(p.peak_block), more_blocks: !!p.more_blocks, double_market: p.double_market || null };
       });
     });
   }
@@ -1449,6 +1509,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
       return gameRefresh();
     }
     var row = { player_id: G.uid, night: night, distance_km: pick.distance_km, peak_block: pick.peak_block, more_blocks: pick.more_blocks };
+    if (G.hasDouble && pick.double_market !== undefined) row.double_market = pick.double_market;
     return G.sb.from("picks").upsert(row, { onConflict: "player_id,night" }).then(function (r) {
       if (r.error) {
         if (r.error.code === "42501") throw new Error("Picks for this night are closed.");
@@ -2342,17 +2403,25 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
       (P.demo ? '<p class="hint">Sample wallets in the preview.</p>' : "");
   }
 
-  function boardTabsShown() { return P.on || P.demo ? ["week", "points", "pot"] : ["week", "points"]; }
+  function boardTabsShown() {
+    var t = boardSeason() ? ["season", "week", "points"] : ["week", "points"];
+    if (P.on || P.demo) t.push("pot");
+    return t;
+  }
   function renderBoardTabs() {
-    var tabs = boardTabsShown(), tab = tabs.indexOf(UI.boardTab) >= 0 ? UI.boardTab : "week";
+    // While a season runs its board comes first, unless you picked another tab this visit.
+    var tabs = boardTabsShown(), bs = boardSeason();
+    var tab = !UI.boardTabChosen && bs ? "season" : tabs.indexOf(UI.boardTab) >= 0 ? UI.boardTab : tabs[0];
     $("tab-pot").hidden = tabs.indexOf("pot") < 0;
-    [["week", "tab-week", "board-week"], ["points", "tab-points", "board"], ["pot", "tab-pot", "board-pot"]].forEach(function (x) {
+    $("tab-season").hidden = !bs;
+    if (bs) $("tab-season").textContent = bs.name;
+    [["season", "tab-season", "board-season"], ["week", "tab-week", "board-week"], ["points", "tab-points", "board"], ["pot", "tab-pot", "board-pot"]].forEach(function (x) {
       var on = tab === x[0];
       $(x[1]).setAttribute("aria-selected", String(on));
       $(x[1]).tabIndex = on ? 0 : -1;
       $(x[2]).hidden = !on;
     });
-    $("board-h").textContent = tab === "pot" ? "Pot winners, last " + HISTORY_NIGHTS + " nights" : tab === "week" ? "Points game, this week" : "Points game, last " + BOARD_NIGHTS + " nights";
+    $("board-h").textContent = tab === "season" ? bs.name + " leaderboard" : tab === "pot" ? "Pot winners, last " + HISTORY_NIGHTS + " nights" : tab === "week" ? "Points game, this week" : "Points game, last " + BOARD_NIGHTS + " nights";
   }
 
   // Redraws the parts that show names and avatars, after ENS answers arrive.
@@ -2527,7 +2596,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
   }
 
   // ---------- UI state ----------
-  var UI = { open: null, live: null, draft: { distance: "", peak: null, more: null }, draftNight: null, dirty: false, saving: false, points: null, boardTab: "week" };
+  var UI = { open: null, live: null, draft: { distance: "", peak: null, more: null, double: null }, draftNight: null, dirty: false, saving: false, points: null, boardTab: "week" };
   try { var bt = localStorage.getItem("squeekpicks.boardtab"); if (bt === "pot" || bt === "points" || bt === "week") UI.boardTab = bt; } catch (x) { /* storage blocked */ }
   UI.raceTab = null; UI.raceAll = false;
   try { var rt = localStorage.getItem("squeekpicks.racetab"); if (rt === "pot" || rt === "points") UI.raceTab = rt; } catch (x) { /* storage blocked */ }
@@ -2538,7 +2607,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     var p = myPick(UI.open) || myTickets(UI.open).slice(-1)[0];
     UI.draftNight = UI.open;
     UI.dirty = false;
-    UI.draft = p ? { distance: p.distance_km.toFixed(1), peak: p.peak_block, more: p.more_blocks } : { distance: "", peak: null, more: null };
+    UI.draft = p ? { distance: p.distance_km.toFixed(1), peak: p.peak_block, more: p.more_blocks, double: p.double_market || null } : { distance: "", peak: null, more: null, double: null };
     $("pick-distance").value = UI.draft.distance;
   }
 
@@ -2698,16 +2767,21 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     var typ = H.typical || new Array(48).fill(0), tot = typ.reduce(function (a, v) { return a + v; }, 0) || 1;
     var shares = [], b, byNights = dh.ran > 0;
     for (b = 0; b < 8; b++) shares.push(Math.round(typ.slice(b * 6, b * 6 + 6).reduce(function (a, v) { return a + v; }, 0) / tot * 100));
-    var key = open + "|" + shares.join(",") + "|" + dh.counts.join(",");
+    var season = seasonOf(open), odds = oddsNow(open);
+    var key = open + "|" + shares.join(",") + "|" + dh.counts.join(",") + "|" + (odds ? odds.peak.join(",") + "/" + odds.players : "");
     if (UI.peakKey !== key) {
       var html = "";
       for (b = 0; b < 8; b++) {
         var k = dh.counts[b];
         html += '<button type="button" class="opt" data-block="' + b + '" aria-pressed="false">' +
           "<span>" + esc(blockLabel(open, b)) + "</span>" +
-          '<span class="share"><i style="width:' + (byNights ? Math.round(k / dh.top * 100) : shares[b]) + '%"></i></span>' +
-          (byNights ? '<span class="pct' + (k ? " on" : "") + '">' + (k ? "busiest " + k + (k === 1 ? " night" : " nights") : "not yet his busiest") + "</span>"
-            : '<span class="pct">' + (H.typical ? "usually " + shares[b] + "%" : "&nbsp;") + "</span>") + "</button>";
+          // In a season the bar is how much of the crowd picked it, and the number what it pays.
+          (odds ? '<span class="share"><i style="width:' + pctOf(odds.peak[b], odds) + '%"></i></span>' +
+              '<span class="pct">' + (odds.players ? "picked by " + pctOf(odds.peak[b], odds) + "%" : "nobody yet") + "</span>" +
+              '<span class="worth' + (odds.peakWorth[b] >= 30 ? " hi" : "") + '">' + odds.peakWorth[b] + " pts</span>"
+            : '<span class="share"><i style="width:' + (byNights ? Math.round(k / dh.top * 100) : shares[b]) + '%"></i></span>' +
+              (byNights ? '<span class="pct' + (k ? " on" : "") + '">' + (k ? "busiest " + k + (k === 1 ? " night" : " nights") : "not yet his busiest") + "</span>"
+                : '<span class="pct">' + (H.typical ? "usually " + shares[b] + "%" : "&nbsp;") + "</span>")) + "</button>";
       }
       $("pick-peak").innerHTML = html;
       UI.peakKey = key;
@@ -2717,6 +2791,15 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     });
     Array.prototype.forEach.call($("pick-more").querySelectorAll("button"), function (btn) {
       btn.setAttribute("aria-pressed", String(UI.draft.more === (btn.dataset.more === "true")));
+      var more = btn.dataset.more === "true", label = more ? "More" : "Fewer";
+      btn.textContent = odds ? label + " \u00b7 " + (more ? odds.moreWorth : odds.fewerWorth) + " pts" : label;
+    });
+    // Points labels, and the double, follow the night's rules.
+    $("pts-peak").textContent = season ? "5 to 40 pts, by the odds" : "up to 20 pts";
+    $("pts-blocks").textContent = season ? "5 to 25 pts, by the odds" : "15 pts";
+    $("double-row").hidden = !(season && G.hasDouble);
+    Array.prototype.forEach.call($("pick-double").querySelectorAll("button"), function (btn) {
+      btn.setAttribute("aria-pressed", String(UI.draft.double === btn.dataset.double));
     });
     // Quick pick: his usual night. The busiest window he has had most often (or, before any
     // recorded night, the one with most of a typical night's running), and more or fewer
@@ -2728,9 +2811,44 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     var liveBlocks = H.blocks.get(live);
     $("hint-blocks").innerHTML = (liveBlocks == null ? "The night before is tonight, " + esc(fmtNight(live)) + "."
       : "The night before is tonight, " + esc(fmtNight(live)) + ': <span class="num">' + fmtInt(liveBlocks) + "</span> blocks so far, final at " + esc(fmtDayTime(nightEnd(live))) + ".") +
-      (dh.flips.length ? " More blocks than the night before on " + dh.more + " of " + dh.flips.length + (dh.flips.length === 1 ? " night" : " nights") + " so far." + dlink : "");
+      (dh.flips.length ? " More blocks than the night before on " + dh.more + " of " + dh.flips.length + (dh.flips.length === 1 ? " night" : " nights") + " so far." + dlink : "") +
+      (odds && odds.players ? " So far " + pctOf(odds.more, odds) + "% of players picked more." : "");
+    if (season && !odds) $("hint-peak").innerHTML += " This season the peak window and blocks pay by the odds: the fewer players pick what happens, the more it's worth.";
     renderSave();
+    renderBest();
     renderPickbar(now);
+  }
+
+  // The crowd's picks for the open night without your own saved pick, so what an option
+  // shows is what it pays if you pick it. null outside a season or before the odds load.
+  function oddsNow(open) {
+    if (!seasonOf(open) || !G.odds || G.odds.night !== open || !G.odds.counts) return null;
+    var c = G.odds.counts, o = { players: Number(c.players) || 0, peak: [], more: Number(c.more) || 0, fewer: Number(c.fewer) || 0 };
+    for (var b = 0; b < 8; b++) o.peak.push(Number(c.peak && c.peak[b]) || 0);
+    var mine = myPick(open);
+    if (mine && o.players > 0) {
+      o.players--; o.peak[mine.peak_block] = Math.max(0, o.peak[mine.peak_block] - 1);
+      if (mine.more_blocks) o.more = Math.max(0, o.more - 1); else o.fewer = Math.max(0, o.fewer - 1);
+    }
+    o.peakWorth = o.peak.map(function (n) { return L.oddsPoints("peak", n + 1, o.players + 1); });
+    o.moreWorth = L.oddsPoints("blocks", o.more + 1, o.players + 1);
+    o.fewerWorth = L.oddsPoints("blocks", o.fewer + 1, o.players + 1);
+    return o;
+  }
+  function pctOf(n, o) { return o.players ? Math.round(n / o.players * 100) : 0; }
+
+  // In a season: what tonight's picks pay if they all come in, with the double.
+  function renderBest() {
+    var el = $("best-case"), o = oddsNow(UI.open), d = UI.draft;
+    if (!o || d.peak == null || d.more == null) { el.hidden = true; return; }
+    var parts = [
+      ["distance", 40], ["peak", o.peakWorth[d.peak]], ["blocks", d.more ? o.moreWorth : o.fewerWorth]
+    ], total = 0;
+    el.innerHTML = "If it all comes in: <strong>" + parts.map(function (x) {
+      var dbl = d.double === x[0]; total += x[1] * (dbl ? 2 : 1);
+      return x[1] + (dbl ? " \u00d7 2" : "");
+    }).join(" + ") + " = " + total + " pts</strong>";
+    el.hidden = false;
   }
 
   // Fills the draft with his usual night (see renderTicket).
@@ -2826,7 +2944,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
       });
     }
     return picksFor(live).map(function (p) {
-      return { player_id: p.player_id, distance_km: p.distance_km, peak_block: p.peak_block, more_blocks: p.more_blocks, kind: "points", mine: p.player_id === G.uid };
+      return { player_id: p.player_id, distance_km: p.distance_km, peak_block: p.peak_block, more_blocks: p.more_blocks, double_market: p.double_market, kind: "points", mine: p.player_id === G.uid };
     });
   }
 
@@ -2889,9 +3007,9 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     else { $("race-list").removeAttribute("role"); $("race-list").removeAttribute("aria-labelledby"); }
 
     var entries = raceEntries(tab) || [];
-    var rows = L.liveStandings(res, entries);
+    var rows = L.liveStandings(res, entries, tab === "points" ? SEASONS : null);
     var was = new Map();
-    if (before) L.liveStandings(L.provisionalResult(live, before), entries).forEach(function (r) { was.set(r.entry.player_id, r.place); });
+    if (before) L.liveStandings(L.provisionalResult(live, before), entries, tab === "points" ? SEASONS : null).forEach(function (r) { was.set(r.entry.player_id, r.place); });
     var prizes = new Map(), out = null;
     if (tab === "pot" && potN) {
       out = L.potPayouts(res, entries);
@@ -3041,7 +3159,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     });
     var picks = picksFor(night);
     if (picks.length) {
-      var rows = L.liveStandings(resolve(night, now), picks);
+      var rows = L.liveStandings(resolve(night, now), picks, SEASONS);
       if (rows.length && rows[0].score.counted && rows[0].score.total > 0) {
         var tops = rows.filter(function (r) { return r.place === 1; });
         parts.push("Points game: " + (tops.length > 1 ? tops.length + " players shared the top" : nameOf(rows[0].entry.player_id) + " on top") + " with " + rows[0].score.total + " points.");
@@ -3215,7 +3333,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     // Who's winning: the pot when it has tickets tonight, else the points game.
     var potN = (P.on || P.demo) ? P.nights.get(live) : null, tab = potN && potN.tickets.length ? "pot" : "points";
     var res = L.provisionalResult(live, st || { km: null, busiest: [], blocks: null, prevBlocks: null });
-    var entries = raceEntries(tab) || [], rows = L.liveStandings(res, entries), lead = "";
+    var entries = raceEntries(tab) || [], rows = L.liveStandings(res, entries, tab === "points" ? SEASONS : null), lead = "";
     if (rows.length && rows[0].score.total > 0) {
       var e = rows[0].entry, top = rows.filter(function (r) { return r.place === 1; }).length;
       var name = e.kind === "pot" ? (P.demo && e.mine ? "Preview wallet" : ensName(e.address) || shortAddr(e.address)) + (e.tno ? " #" + e.tno : "") : nameOf(e.player_id);
@@ -3267,13 +3385,14 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
       '<div class="kv"><span class="k">Blocks vs the night before</span>' + cell(res.blocks, res.blocks.state === "resolved" ? (res.blocks.more ? "More" : "Fewer") : "") +
       note(res.blocks, res.blocks.state === "resolved" ? fmtInt(res.blocks.cur) + " blocks vs " + fmtInt(res.blocks.prev) + " the night before." : "") + "</div>";
 
-    var scores = L.scoreNight(res, picks);
+    var scores = scorePoints(res, picks);
     var mine = G.uid && scores.get(G.uid);
     if (mine) {
       var parts = [];
       if (res.distance.state === "resolved") parts.push("distance " + mine.distance + (mine.closest ? " + closest 10" : ""));
       if (res.peak.state === "resolved") parts.push("peak " + mine.peak);
       if (res.blocks.state === "resolved") parts.push("blocks " + mine.blocks);
+      if (mine.bonus) parts.push("doubled " + (mine.double === "peak" ? "peak window" : mine.double) + " +" + mine.bonus);
       html += '<div class="yours"><span class="pts">' + mine.total + "</span> points for you" + (parts.length ? ": " + parts.join(", ") + "." : " so far.") + "</div>";
     }
     if (picks.length) {
@@ -3340,7 +3459,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     var picks = picksFor(night);
     d.players = picks.length;
     if (!d.top.length && picks.length) {
-      var rows = L.liveStandings(res, picks).filter(function (r) { return r.score.counted; });
+      var rows = L.liveStandings(res, picks, SEASONS).filter(function (r) { return r.score.counted; });
       if (rows.length) {
         d.topLabel = "Top of the points game";
         d.top = rows.slice(0, 3).map(function (r) { return { place: r.place, name: nameOf(r.entry.player_id), pts: r.score.total }; });
@@ -3380,12 +3499,14 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
       d.name = walletLabel(P.account); d.many = mine.length;
     } else if (pick) {
       var prow = null, picks = picksFor(night);
-      L.liveStandings(res, picks).forEach(function (r) { if (r.entry.player_id === G.uid) prow = r; });
+      L.liveStandings(res, picks, SEASONS).forEach(function (r) { if (r.entry.player_id === G.uid) prow = r; });
       d.src = "points"; d.pick = pick; d.score = prow.score; d.place = prow.place; d.of = picks.length; d.name = G.me ? G.me.nickname : nameOf(G.uid);
     } else {
       return null;
     }
-    var s = d.score, counted = s.counted, perfect = s.total === MAX_POINTS;
+    var s = d.score, counted = s.counted, perfect = !!s.perfect;
+    var outOf = s.season ? " points" : " of " + MAX_POINTS + " points";
+    function x2(m) { return s.double === m ? 2 : 1; }
     d.counted = counted;
     d.eyebrow = counted && d.place <= 3 && s.total > 0 ? "I called Squeektoshi's night" : "My night on Squeek Picks";
     if (!counted) d.headline = "Still counting";
@@ -3393,24 +3514,24 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     else if (d.src === "pot" && d.potVoid) d.headline = "Scored " + s.total + " points";
     else if (d.of > 1) d.headline = "Finished #" + d.place + " of " + d.of;
     else d.headline = "Scored " + s.total + " points";
-    d.sub = d.name + " · " + (counted ? s.total + " of " + MAX_POINTS + " points" + (perfect ? ", a perfect night" : "") : "results for " + fmtNight(night) + " are on their way") +
+    d.sub = d.name + " · " + (counted ? s.total + outOf + (perfect ? ", a perfect night" : "") : "results for " + fmtNight(night) + " are on their way") +
       (d.src === "pot" ? (d.potVoid ? " · pot refunded" : d.many > 1 ? " · best of " + d.many + " tickets" : "") : " · points game");
 
     // The three picks against what happened.
     var p = d.pick;
     function state(m, yes, no) { return m.state === "resolved" ? yes : m.state === "void" ? no : "Still counting."; }
     d.tiles = [
-      { label: "Distance", me: fmtKm(p.distance_km) + " km", pts: res.distance.state === "resolved" ? s.distance + s.closest : null,
+      { label: "Distance" + (s.double === "distance" ? " ×2" : ""), me: fmtKm(p.distance_km) + " km", pts: res.distance.state === "resolved" ? (s.distance + s.closest) * x2("distance") : null,
         note: state(res.distance, "He ran " + fmtKm(res.distance.km) + " km." + (s.closest ? " Closest guess." : ""), "No call for distance.") },
-      { label: "Busiest 3 hours", me: blockLabel(night, p.peak_block), pts: res.peak.state === "resolved" ? s.peak : null,
-        note: state(res.peak, s.peak === 20 ? "Spot on" + (tz ? " (" + tz + ")." : ".") : s.peak === 5 ? "Next to his busiest." :
+      { label: "Busiest 3 hours" + (s.double === "peak" ? " ×2" : ""), me: blockLabel(night, p.peak_block), pts: res.peak.state === "resolved" ? s.peak * x2("peak") : null,
+        note: state(res.peak, res.peak.winners && res.peak.winners.indexOf(p.peak_block) >= 0 ? "Spot on" + (tz ? " (" + tz + ")." : ".") : s.peak === 5 ? "Next to his busiest." :
           "He peaked " + (res.peak.winners ? blockLabel(night, res.peak.winners[0]) : "") + ".", "No call for the peak.") },
-      { label: "Squeek blocks", me: p.more_blocks ? "More" : "Fewer", pts: res.blocks.state === "resolved" ? s.blocks : null,
+      { label: "Squeek blocks" + (s.double === "blocks" ? " ×2" : ""), me: p.more_blocks ? "More" : "Fewer", pts: res.blocks.state === "resolved" ? s.blocks * x2("blocks") : null,
         note: state(res.blocks, fmtInt(res.blocks.cur) + " vs " + fmtInt(res.blocks.prev) + " the night before.", "No call for blocks.") }
     ];
     d.text = !counted ? "I called Squeektoshi's night on Squeek Picks. Results are coming in." :
       d.src === "pot" && d.won > 0n ? "I finished #" + d.place + " on Squeek Picks and won " + fmtEth(d.won) + " test ETH calling Squeektoshi's night on the wheel. Think you can call tonight better?" :
-      "I scored " + s.total + " of " + MAX_POINTS + " points calling Squeektoshi's night on Squeek Picks" + (d.of > 1 ? " (#" + d.place + " of " + d.of + ")" : "") + ". Think you can call tonight better?";
+      "I scored " + s.total + outOf + " calling Squeektoshi's night on Squeek Picks" + (d.of > 1 ? " (#" + d.place + " of " + d.of + ")" : "") + ". Think you can call tonight better?";
     d.alt = "Share card: " + d.headline + ". " + d.sub + ".";
     return d;
   }
@@ -3704,11 +3825,11 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     nights.forEach(function (night) {
       var picks = picksFor(night);
       if (!picks.length) return;
-      L.scoreNight(resolve(night, now), picks).forEach(function (s, id) {
+      scorePoints(resolve(night, now), picks).forEach(function (s, id) {
         if (!s.counted) return;
         var t = totals.get(id) || { points: 0, nights: 0, best: 0, perfect: 0, closest: 0 };
         t.points += s.total; t.nights++; t.best = Math.max(t.best, s.total);
-        if (s.total === MAX_POINTS) t.perfect++;
+        if (s.perfect) t.perfect++;
         if (s.closest) t.closest++;
         totals.set(id, t);
       });
@@ -3784,6 +3905,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     if (!rows.length) el.innerHTML = note || '<p class="empty">No scored nights yet. Points appear here once a night you picked has settled.</p>';
     else el.innerHTML = note + boardTable(rows.filter(function (x, i) { return i < 50 || x.id === G.uid; }), ctx);
     renderWeek(now, ctx, cur, note);
+    renderSeasonBoard(now, ctx);
   }
 
   // This week's board, and last week's champion.
@@ -3815,6 +3937,75 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     el.hidden = false;
   }
 
+  // ---------- Seasons ----------
+  function seasonInfo(i) { var x = SEASONS[i]; return x && x.start ? L.seasonOf(x.start, SEASONS) : null; }
+  function allSeasons() { var out = []; for (var i = 0; i < SEASONS.length; i++) { var s = seasonInfo(i); if (s) out.push(s); } return out; }
+  // The season being played: picking one of its nights, or its last night running.
+  function seasonNow() { return seasonOf(UI.open) || seasonOf(UI.live); }
+  // The season whose board shows: the one under way, or one that ended in the last week.
+  function boardSeason() {
+    var now = seasonNow();
+    if (now) return now;
+    var ended = allSeasons().filter(function (s) { return s.last < UI.live && s.last >= addDays(UI.live, -8); });
+    return ended.length ? ended[ended.length - 1] : null;
+  }
+  function seasonNights(s) {
+    var out = [];
+    for (var k = 0; k < s.nights; k++) { var n = addDays(s.start, k); if (n < UI.live) out.push(n); }
+    return out;
+  }
+  function seasonRows(s, now) { return ranked(pointsTotals(seasonNights(s), now)); }
+
+  function renderSeasonBoard(now, ctx) {
+    var el = $("board-season"), s = boardSeason();
+    if (!s) { el.innerHTML = ""; return; }
+    var rows = seasonRows(s, now), over = s.last < UI.live, lastIn = over ? resolve(s.last, now) : null;
+    var final = over && lastIn && [lastIn.distance, lastIn.peak, lastIn.blocks].every(function (m) { return m.state !== "wait" && m.state !== "live"; });
+    var top = rows.filter(function (x) { return x.rank === 1 && x.t.points > 0; });
+    var champ = final && top.length ? '<div class="champ"><span class="badge gold">' + esc(s.name) + " champion</span><span><strong>" + esc(top.map(function (x) { return nameOf(x.id); }).join(" and ")) +
+      "</strong> with " + top[0].t.points + " points.</span></div>" : "";
+    var body = rows.length ? boardTable(rows.filter(function (x, i) { return i < 50 || x.id === G.uid; }), ctx)
+      : '<p class="empty">No points yet this season. Each night\'s points show up after it ends.</p>';
+    el.innerHTML = champ + body + '<p class="board-note">' + esc(s.name) + ": the nights of " + esc(fmtNight(s.start)) + " to " + esc(fmtNight(s.last)) +
+      ". The peak window and blocks pay by the odds, and one pick a night counts double.</p>";
+  }
+
+  function renderSeason(now) {
+    var el = $("season-band"), cur = seasonNow(), html = "";
+    var next = allSeasons().filter(function (s) { return s.start > UI.open && s.start <= addDays(UI.open, 21); })[0];
+    var done = !cur && boardSeason();
+    var rules = "The peak window and blocks pay by the odds: the fewer players pick what happens, the more it's worth. One pick a night counts double.";
+    if (cur) {
+      var k = 0, dots = "";
+      for (var i = 0; i < cur.nights; i++) {
+        var n = addDays(cur.start, i);
+        if (n === UI.open) k = i + 1;
+        dots += '<span class="' + (n < UI.live ? "done" : n === UI.live ? "live" : n === UI.open ? "next" : "") + '" title="' + esc(fmtNight(n)) + '"></span>';
+      }
+      html ='<div class="sb-main"><span class="eyebrow">' + esc(cur.name) + " · " + esc(fmtNight(cur.start)) + " to " + esc(fmtNight(cur.last)) + "</span>" +
+        '<h2 id="season-h">' + (k ? "Picking night " + k + " of " + cur.nights : "The season's last night is running") + "</h2><p>" + rules + "</p>" +
+        '<div class="sb-dots" aria-hidden="true">' + dots + "</div></div>" +
+        // Players see their season place in the Your game card; newcomers get a way in.
+        (G.me ? "" : '<div class="sb-side"><a class="play-btn" href="#ticket" data-play="1">Join the season</a></div>');
+    } else if (next) {
+      html = '<div class="sb-main"><span class="eyebrow">Coming up</span><h2 id="season-h">' + esc(next.name) + " starts with the night of " + esc(fmtNight(next.start)) + "</h2>" +
+        "<p>" + next.nights + " nights. " + rules + " Free to play, and Night Cards for good calls are on the way.</p></div>";
+    } else if (done) {
+      var rows = seasonRows(done, now), top = rows.filter(function (x) { return x.rank === 1 && x.t.points > 0; });
+      html = '<div class="sb-main"><span class="eyebrow">' + esc(done.name) + " is over</span><h2 id=\"season-h\">" +
+        (top.length ? esc(top.map(function (x) { return nameOf(x.id); }).join(" and ")) + " won it with " + top[0].t.points + " points" : "Thanks for playing") + "</h2>" +
+        "<p>The final board is in the leaderboard below until the next season.</p></div>";
+    }
+    el.innerHTML = html;
+    el.hidden = !html;
+    // The season's rules, in How it works.
+    var r = $("rules-season"), s = cur || next || done;
+    r.hidden = !s;
+    if (s) r.innerHTML = "<h3>" + esc(s.name) + "</h3><ul><li>The nights of " + esc(fmtNight(s.start)) + " to " + esc(fmtNight(s.last)) + ", in the free points game.</li>" +
+      "<li>Distance scores as always. The peak window pays 5 to 40 points and blocks 5 to 25, by the odds: the fewer players picked what happened, the more it's worth.</li>" +
+      "<li>Double one pick a night: that market's points count twice.</li><li>The pot keeps the classic points.</li></ul>";
+  }
+
   // A returning player's night at a glance, above everything else: how last night went,
   // this week's place and streak, and whether the next night is picked.
   function renderYou(now) {
@@ -3825,7 +4016,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
         (d ? '<span class="d">' + d + "</span>" : "") + (extra || "") + "</div>";
     }
     // Last night
-    var last = addDays(UI.live, -1), res = resolve(last, now), scores = L.scoreNight(res, picksFor(last)), mine = scores.get(G.uid), t1;
+    var last = addDays(UI.live, -1), res = resolve(last, now), scores = scorePoints(res, picksFor(last)), mine = scores.get(G.uid), t1;
     var waiting = [res.distance, res.peak, res.blocks].some(function (m) { return m.state === "wait" || m.state === "live"; });
     var lastDay = esc(fmtNight(last));
     if (!mine) t1 = tile("Last night", "–", lastDay + " · you didn't call it");
@@ -3840,7 +4031,10 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     var streakText = streak >= 2 ? streak + "-night streak" : "";
     var ws = weekStart(UI.live), wk = ranked(pointsTotals(weekNights(ws, last), now)), me = null;
     wk.forEach(function (x) { if (x.id === G.uid) me = x; });
-    var t2 = me ? tile("This week", "#" + me.rank, me.t.points + " pts" + (streakText ? " · " + streakText : ""))
+    var sn = seasonNow();
+    if (sn) { me = null; seasonRows(sn, now).forEach(function (x) { if (x.id === G.uid) me = x; }); }
+    var t2 = sn ? tile(sn.name, me ? "#" + me.rank : "–", me ? me.t.points + " pts" + (streakText ? " · " + streakText : "") : "No points yet this season." + (streakText ? " " + streakText + "." : ""))
+      : me ? tile("This week", "#" + me.rank, me.t.points + " pts" + (streakText ? " · " + streakText : ""))
       : tile("This week", "–", ws > last ? "A new week starts with tonight." + (streakText ? " " + streakText + "." : "") : "No points yet this week." + (streakText ? " " + streakText + "." : ""));
     // The next night
     var p = myPick(UI.open), t3;
@@ -3891,7 +4085,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
         if (P.on) potRefresh().then(renderPot);
       }
     }
-    renderBanner(); renderMe(); renderYou(now); renderLive(now); renderTicket(now); renderRace(now); renderResults(now); renderBoard(now);
+    renderBanner(); renderMe(); renderYou(now); renderSeason(now); renderLive(now); renderTicket(now); renderRace(now); renderResults(now); renderBoard(now);
     renderPot(); renderDash(); renderPotBoard(); renderBoardTabs(); renderAdmin();
     if (currentView() === "diary") renderDiary(now);
     renderOverlay(now);
@@ -3899,7 +4093,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
   }
 
   // ---------- Events ----------
-  function draftChanged() { UI.dirty = true; $("save-msg").textContent = ""; renderSave(); renderPot(); }
+  function draftChanged() { UI.dirty = true; $("save-msg").textContent = ""; renderSave(); renderBest(); renderPot(); }
   function bind() {
     $("pick-distance").addEventListener("input", function (e) { UI.draft.distance = e.target.value; draftChanged(); });
     $("pick-peak").addEventListener("click", function (e) {
@@ -3930,7 +4124,8 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
       UI.saving = true; renderSave(); say("save-msg", joining ? "Joining and saving…" : "");
       var night = UI.open;
       (joining ? gameJoin(nick) : Promise.resolve()).then(function () {
-        return gameSave(night, { distance_km: v.km, peak_block: UI.draft.peak, more_blocks: UI.draft.more });
+        return gameSave(night, { distance_km: v.km, peak_block: UI.draft.peak, more_blocks: UI.draft.more,
+          double_market: seasonOf(night) && G.hasDouble ? UI.draft.double || null : undefined });
       }).then(function () {
         UI.saving = false; UI.dirty = false;
         UI.draft.distance = v.km.toFixed(1); $("pick-distance").value = UI.draft.distance;
@@ -3945,6 +4140,12 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
       });
     });
     $("quick-pick").addEventListener("click", quickPick);
+    $("pick-double").addEventListener("click", function (e) {
+      var btn = e.target.closest("button[data-double]"); if (!btn) return;
+      UI.draft.double = UI.draft.double === btn.dataset.double ? null : btn.dataset.double;
+      Array.prototype.forEach.call($("pick-double").children, function (b) { b.setAttribute("aria-pressed", String(UI.draft.double === b.dataset.double)); });
+      draftChanged();
+    });
     $("pb-go").addEventListener("click", goPick);
     document.addEventListener("click", function (e) {
       var a = e.target.closest("[data-play]"); if (!a) return;
@@ -3978,7 +4179,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
       else $("dash").scrollIntoView({ behavior: "smooth", block: "start" });
     });
     function pickTab(tab, focus) {
-      UI.boardTab = tab;
+      UI.boardTab = tab; UI.boardTabChosen = true;
       try { localStorage.setItem("squeekpicks.boardtab", tab); } catch (x) { /* storage blocked */ }
       renderBoardTabs();
       if (focus) $("tab-" + tab).focus();
