@@ -127,15 +127,15 @@ async function recordIfNeeded(night, res) {
   const day = L.nightToDay(night);
   if ((await cards.run(day)).set) return true;
   const slots = slotsOf(night), n = H.nights.get(night);
-  if (!slots || !n) { console.log(`  ${night}: no half-hour data, can't draw the card yet.`); return false; }
-  const vals = slots.map((x) => Number(x || 0)), max = Math.max(...vals) || 1;
-  const spokes = "0x" + vals.map((v) => Math.round((v / max) * 255).toString(16).padStart(2, "0")).join("");
+  if (!slots || slots.length !== 48 || !n) { console.log(`  ${night}: no half-hour data, can't print the card yet.`); return false; }
+  // His spins in each half hour, 2 bytes each: the card prints them hour by hour.
+  const spins = "0x" + slots.map((x) => Math.min(65535, Math.max(0, Math.round(Number(x || 0)))).toString(16).padStart(4, "0")).join("");
   const km = Math.min(999, Math.round(n.distanceKm * 10));
   const peak = res.peak.state === "resolved" ? res.peak.winners[0] : 255;
   const blocks = Math.min(65535, H.blocks.get(night) || 0);
   const more = res.blocks.state === "resolved" ? (res.blocks.more ? 1 : 0) : 2;
   if (DRY_RUN) { console.log(`  ${night}: would record his run (${(km / 10).toFixed(1)} km).`); return true; }
-  await (await cards.recordNight(day, spokes, km, peak, blocks, more)).wait();
+  await (await cards.recordNight(day, spins, km, peak, blocks, more)).wait();
   console.log(`  ${night}: recorded his run (${(km / 10).toFixed(1)} km).`);
   return true;
 }

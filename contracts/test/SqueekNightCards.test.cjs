@@ -8,11 +8,10 @@ const diary = require("../../data/diary.json").nights;
 
 const NIGHT = "2026-10-29";
 const day = (night) => Math.round(Date.parse(night + "T00:00:00Z") / 86400e3);
-// His real run that night, scaled the way the minting bot does it.
-function spokesOf(night) {
-  const s = diary[night].slots.map((x) => Number(x || 0)), max = Math.max(...s) || 1;
-  return "0x" + s.map((v) => Math.round((v / max) * 255).toString(16).padStart(2, "0")).join("");
-}
+// His real run that night: 48 half hours of spins, 2 bytes each, the way the minting bot sends it.
+const slotsOf = (night) => diary[night].slots.map((x) => Number(x || 0));
+const spinsOf = (night) => "0x" + slotsOf(night).map((v) => v.toString(16).padStart(4, "0")).join("");
+const commas = (n) => n.toLocaleString("en-US");
 const key = (night, player) => ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(["uint32", "string"], [day(night), player]));
 async function reverts(p, text) {
   try { await p; } catch (e) {
@@ -60,21 +59,22 @@ describe("Night Cards", function () {
   });
 
   it("records a night once, only from the minter, and checks it", async function () {
-    const sp = spokesOf(NIGHT);
+    const sp = spinsOf(NIGHT);
+    assert.equal((sp.length - 2) / 2, 96);
     await reverts(cards.connect(a).recordNight(day(NIGHT), sp, 117, 3, 1141, 1), "NotMinter");
-    await reverts(cards.connect(bot).recordNight(day(NIGHT), "0x" + "00".repeat(47), 117, 3, 1141, 1), "48 half hours");
+    await reverts(cards.connect(bot).recordNight(day(NIGHT), "0x" + "00".repeat(48), 117, 3, 1141, 1), "48 half hours");   // the old one-byte-a-spoke format
     await reverts(cards.connect(bot).recordNight(day(NIGHT), sp, 117, 8, 1141, 1), "bad peak window");
     await reverts(cards.connect(bot).recordNight(day(NIGHT), sp, 117, 3, 1141, 3), "bad blocks call");
     await cards.connect(bot).recordNight(day(NIGHT), sp, 117, 3, 1141, 1);
     await reverts(cards.connect(bot).recordNight(day(NIGHT), sp, 50, 2, 1, 0), "night already recorded");
     const r = await cards.run(day(NIGHT));
-    assert.deepEqual([r.set, Number(r.kmDeci), Number(r.peak), Number(r.blocks), Number(r.moreBlocks), r.spokes], [true, 117, 3, 1141, 1, sp]);
-    await cards.connect(bot).recordNight(day("2026-10-30"), spokesOf("2026-10-30"), 110, 255, 1069, 0);   // a night with no peak is allowed
+    assert.deepEqual([r.set, Number(r.kmDeci), Number(r.peak), Number(r.blocks), Number(r.moreBlocks), r.spins], [true, 117, 3, 1141, 1, sp]);
+    await cards.connect(bot).recordNight(day("2026-10-30"), spinsOf("2026-10-30"), 110, 255, 1069, 0);   // a night with no peak is allowed
   });
 
   it("mints each player's card for a night once, only from the minter", async function () {
     await reverts(cards.connect(bot).mint(a.address, day(NIGHT), 0, 40, key(NIGHT, "p1")), "night not recorded");
-    await cards.connect(bot).recordNight(day(NIGHT), spokesOf(NIGHT), 117, 3, 1141, 1);
+    await cards.connect(bot).recordNight(day(NIGHT), spinsOf(NIGHT), 117, 3, 1141, 1);
     await reverts(cards.connect(a).mint(a.address, day(NIGHT), 0, 40, key(NIGHT, "p1")), "NotMinter");
     await reverts(cards.connect(bot).mint(a.address, day(NIGHT), 5, 40, key(NIGHT, "p1")), "bad kind");
     await reverts(cards.connect(bot).mint(ethers.ZeroAddress, day(NIGHT), 0, 40, key(NIGHT, "p1")), "zero address");
@@ -92,25 +92,66 @@ describe("Night Cards", function () {
     assert.deepEqual(await Promise.all([0, 1, 2, 3, 4].map(async (k) => Number(await cards.rarityOf(k)))), [0, 1, 2, 2, 3]);
   });
 
-  it("draws the card on chain from his real run", async function () {
-    await cards.connect(bot).recordNight(day(NIGHT), spokesOf(NIGHT), 117, 3, 1141, 1);
-    await cards.connect(bot).mint(a.address, day(NIGHT), 4, 214, key(NIGHT, "p1"));
+  it("prints the card on chain as a receipt of his real run", async function () {
+    await cards.connect(bot).recordNight(day(NIGHT), spinsOf(NIGHT), 117, 3, 1141, 1);
+    await cards.connect(bot).mint(a.address, day(NIGHT), 1, 52, key(NIGHT, "p1"));
     const meta = decode(await cards.tokenURI(1));
-    assert.equal(meta.name, "Night Card 2026-10-29: Season champion");
+    const slots = slotsOf(NIGHT), total = slots.reduce((x, y) => x + y, 0);
+    const hours = [...Array(24)].map((_, h) => slots[2 * h] + slots[2 * h + 1]);
+    assert.equal(meta.name, "Night Card 2026-10-29: Bullseye");
     const attrs = Object.fromEntries(meta.attributes.map((x) => [x.trait_type, x.value]));
-    assert.deepEqual(attrs, { Rarity: "Legendary", "Earned for": "Season champion", Night: "2026-10-29", Distance: "11.7 km", Points: 214 });
-    const spokes = (meta.svg.match(/<line /g) || []).length, dots = (meta.svg.match(/r="3"/g) || []).length;
-    const zero = diary[NIGHT].slots.filter((x) => !Number(x)).length;
-    assert.equal(spokes + dots, 48, "one mark per half hour");
-    assert.equal(dots, zero, "quiet half hours are dots");
-    assert.equal((meta.svg.match(/stroke="#FFB074"/g) || []).length, diary[NIGHT].slots.slice(18, 24).filter((x) => Number(x)).length, "his busiest 3 hours are lit");
-    assert.ok(meta.svg.includes("11.7") && meta.svg.includes("Peak 21:00–0:00 UTC") && meta.svg.includes("1141 blocks, more") && meta.svg.includes("LEGENDARY") && meta.svg.includes("#FFB020"));
-    require("fs").writeFileSync(require("path").join(__dirname, "..", "cache", "sample-card.svg"), meta.svg);
+    assert.deepEqual(attrs, { Rarity: "Rare", "Earned for": "Bullseye", Night: "2026-10-29", Distance: "11.7 km", "Total spins": total, Points: 52 });
+    const svg = meta.svg;
+    for (const t of ["SQUEEK WHEEL CO.", "NIGHT SHIFT RECEIPT", "THU 29 OCT 2026", "CASHIER: SQUEEKTOSHI", "CARD #1", "TOTAL SPINS", commas(total), "11.7 KM", "21:00–0:00", "1,141 MORE", "BULLSEYE", "+52 PTS", "THANK YOU"])
+      assert.ok(svg.includes(t), `missing "${t}"`);
+    // One line per hour from 12:00 to 11:00, each with that hour's spins; his busiest 3 hours marked.
+    const times = [...svg.matchAll(/<text x="140" y="\d+" text-anchor="end"[^>]*>(\d+):00<\/text>/g)].map((m) => Number(m[1]));
+    assert.deepEqual(times, [...Array(24)].map((_, h) => (12 + h) % 24));
+    const values = [...svg.matchAll(/<text x="508" y="(\d+)" text-anchor="end"[^>]*>([\d,-]+)<\/text>/g)].filter((m) => Number(m[1]) < 630).map((m) => m[2]);
+    assert.deepEqual(values, hours.map((v) => (v ? commas(v) : "-")));
+    assert.equal((svg.match(/&gt;<\/text>/g) || []).length, 3, "three hours marked");
+    assert.ok(svg.includes(`<text x="140" y="${273 + 9 * 15}" text-anchor="end" font-weight="700">21:00</text>`), "21:00 is in his busiest window");
+    const bars = [...svg.matchAll(/<rect x="168" y="(\d+)" width="(\d+)"/g)].filter((m) => Number(m[1]) < 630).map((m) => Number(m[2]));
+    assert.equal(bars.length, hours.filter(Boolean).length);
+    assert.equal(Math.max(...bars), 230, "the busiest hour is the longest bar");
+    // The stamp is the rarity, in blue for Rare; the hamster's in the logo.
+    assert.ok(svg.includes('stroke="#2F5BD8"') && svg.includes(">RARE</text>") && svg.includes("· BULLSEYE ·"));
+    assert.ok(svg.includes('<g id="hm">') && (svg.match(/href="#hm"/g) || []).length === 2, "the hamster in his wheel");
+    assert.ok((svg.match(/<rect x="\d+" y="760"/g) || []).length > 40, "a barcode");
+    require("fs").writeFileSync(require("path").join(__dirname, "..", "cache", "sample-card.svg"), svg);
     await reverts(cards.tokenURI(2));
   });
 
+  it("stamps each rarity in its own ink, and every card's barcode differs", async function () {
+    await cards.connect(bot).recordNight(day(NIGHT), spinsOf(NIGHT), 117, 3, 1141, 1);
+    const want = [["COMMON", "#3A3D44", "CALLED IT"], ["RARE", "#2F5BD8", "BULLSEYE"], ["EPIC", "#7A3FD3", "LONE CALL"], ["EPIC", "#7A3FD3", "PERFECT NIGHT"], ["LEGENDARY", "#C28A12", "SEASON CHAMPION"]];
+    const codes = new Set();
+    for (let k = 0; k < 5; k++) {
+      await cards.connect(bot).mint(a.address, day(NIGHT), k, 20 + k, key(NIGHT, "p" + k));
+      const svg = decode(await cards.tokenURI(k + 1)).svg, [name, ink, kind] = want[k];
+      assert.ok(svg.includes(`>${name}</text>`) && svg.includes(`stroke="${ink}"`) && svg.includes(`· ${kind} ·`) && svg.includes(`+${20 + k} PTS`), name + " " + kind);
+      assert.ok(svg.includes(`textLength="${name.length * 26}"`), "the stamp's word fits its frame");
+      codes.add((svg.match(/<rect x="\d+" y="760" width="\d+"/g) || []).join(""));
+      require("fs").writeFileSync(require("path").join(__dirname, "..", "cache", `sample-card-${k}.svg`), svg);
+    }
+    assert.equal(codes.size, 5);
+    // A night he didn't run still prints.
+    await cards.connect(bot).recordNight(day("2026-10-30"), "0x" + "00".repeat(96), 0, 255, 0, 2);
+    await cards.connect(bot).mint(b.address, day("2026-10-30"), 0, 20, key("2026-10-30", "p1"));
+    const off = decode(await cards.tokenURI(6)).svg;
+    assert.ok(off.includes("NIGHT OFF") && off.includes("0.0 KM") && !off.includes("&gt;") && !off.includes(" MORE") && !off.includes(" FEWER"));
+  });
+
+  it("reads cheaply enough for wallets and marketplaces", async function () {
+    await cards.connect(bot).recordNight(day(NIGHT), spinsOf(NIGHT), 117, 3, 1141, 1);
+    await cards.connect(bot).mint(a.address, day(NIGHT), 4, 214, key(NIGHT, "p1"));
+    const gas = await ethers.provider.estimateGas({ to: await cards.getAddress(), data: cards.interface.encodeFunctionData("tokenURI", [1]) });
+    assert.ok(gas < 15_000_000n, `tokenURI takes ${gas} gas`);
+    console.log(`      tokenURI: ${gas} gas, ${(await cards.tokenURI(1)).length} characters`);
+  });
+
   it("cards move like any NFT, and the lists follow", async function () {
-    await cards.connect(bot).recordNight(day(NIGHT), spokesOf(NIGHT), 117, 3, 1141, 1);
+    await cards.connect(bot).recordNight(day(NIGHT), spinsOf(NIGHT), 117, 3, 1141, 1);
     await cards.connect(bot).mint(a.address, day(NIGHT), 0, 30, key(NIGHT, "p1"));
     await cards.connect(bot).mint(a.address, day(NIGHT), 2, 61, key(NIGHT, "p2"));
     await reverts(cards.connect(b).transferFrom(a.address, b.address, 1));

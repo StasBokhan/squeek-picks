@@ -27,7 +27,7 @@ The free points game runs in seasons, set in `config.js` (`SEASONS`: a name, the
 
 ### Night Cards
 
-A collectible for each season night a player calls well, on Sepolia (`contracts/SqueekNightCards.sol`, an ERC-721). The art is drawn on chain from his real run that night: a wheel with one spoke per half hour of spins, his busiest 3 hours lit.
+A collectible for each season night a player calls well, on Sepolia (`contracts/SqueekNightCards.sol`, an ERC-721). The art is printed on chain from his real run that night, as a receipt from his wheel's till: a hamster-in-wheel logo, his spins hour by hour with his busiest 3 hours marked, the night's totals, and a rubber stamp for the rarity (black Common, blue Rare, purple Epic, gold Legendary).
 
 - **Common · Called it:** 20+ points that night. **Rare · Bullseye:** distance within 0.25 km. **Epic · Lone call:** right when nobody else was (3+ players), or **Perfect night:** all three right and the closest distance. **Legendary · Season champion:** one per season, showing the champion's best night.
 - Players link a wallet on the page by signing a message (no fee). The payout bot (`settler/cards.mjs`, in the hourly workflow) checks the signature, records each finished night's run on the contract once, and mints each player's best card for that night. A card can only be minted once per player and night.
