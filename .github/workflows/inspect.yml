@@ -10,6 +10,10 @@ on:
         description: "Pot address to check (optional: the pots in config.js are always shown)"
         required: false
         default: ""
+      cards:
+        description: "Night Cards address to check (optional)"
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -31,4 +35,5 @@ jobs:
         env:
           SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
           CHECK_ADDRESS: ${{ inputs.address }}
+          CHECK_CARDS: ${{ inputs.cards }}
         run: node inspect.mjs

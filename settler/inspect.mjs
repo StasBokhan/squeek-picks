@@ -9,6 +9,9 @@
 // Settings (environment variables):
 //   SEPOLIA_RPC_URL   the RPC to read from (optional, a public one by default)
 //   CHECK_ADDRESS     the pot to check (optional)
+//   CHECK_CARDS       a Night Cards contract to check before config.js points at it (optional):
+//                     its code must be exactly what contracts/SqueekNightCards.json deploys, its
+//                     owner the pot's owner and its minter the pot's payout bot
 //   CONFIG_FILE       config.js (optional, the repository's)
 //   NOW_MS            override the clock, for tests only
 
@@ -94,4 +97,24 @@ if (check && info[check]) {
   const others = current && info[current] && current !== check ? info[current].openTickets : 0;
   console.log(`::notice::Pot ${check} checks out: version 3${expected ? ", code identical to contracts/SqueekPot.json" : ""}, same owner and payout bot as the current pot. ` +
     (others ? `The current pot already has ${others} tickets for ${open}: switch after picks close, so that night isn't split.` : `The current pot has no tickets for ${open}, so the page can switch now.`));
+}
+
+const cardsAt = env.CHECK_CARDS && env.CHECK_CARDS.trim();
+if (cardsAt) {
+  if (!ethers.isAddress(cardsAt)) fail(`${cardsAt} isn't an address.`);
+  const addr = ethers.getAddress(cardsAt), CARDS = JSON.parse(readFileSync(new URL("../contracts/SqueekNightCards.json", import.meta.url), "utf8"));
+  const code = await provider.getCode(addr);
+  if (code === "0x") fail(`No contract at ${addr}.`);
+  const cards = new ethers.Contract(addr, CARDS.abi, provider);
+  const [owner, minter, name, minted] = await Promise.all([cards.owner(), cards.minter(), cards.name(), cards.totalMinted()]);
+  const problems = [];
+  let expected = null;
+  try { expected = await provider.call({ data: CARDS.bytecode + ethers.AbiCoder.defaultAbiCoder().encode(["address"], [minter]).slice(2) }); }
+  catch (e) { console.log(`::warning::Couldn't simulate the deployment to compare code (${e.shortMessage || e.message}).`); }
+  if (expected && expected !== code) problems.push("its code is not what contracts/SqueekNightCards.json deploys (an older page version?)");
+  const pot = current && info[current];
+  if (pot && owner !== pot.owner) problems.push(`its owner ${owner} isn't the pot's owner (${pot.owner})`);
+  if (pot && minter !== pot.resolver) problems.push(`its minter ${minter} isn't the payout bot (${pot.resolver})`);
+  if (problems.length) fail(`Night Cards ${addr}: ${problems.join("; ")}.`);
+  console.log(`::notice::Night Cards ${addr} checks out: "${name}"${expected ? ", code identical to contracts/SqueekNightCards.json" : ""}, owner ${owner}, minter ${minter} (the payout bot), ${minted} cards minted so far.`);
 }
