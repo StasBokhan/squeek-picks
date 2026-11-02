@@ -26,7 +26,7 @@ window.SQUEEK_CONFIG = {
   ],
 
   // The Night Cards collectibles on Sepolia, deployed from index.html?admin. Empty: no cards.
-  CARDS_ADDRESS: "",
+  CARDS_ADDRESS: "0x8B61ee5BD98Ce76F6bb9c8fF59dc86B6b38ea61b",
 
   // Optional: a different Sepolia RPC endpoint for reading the pot.
   // RPC_URL: "https://ethereum-sepolia-rpc.publicnode.com",
