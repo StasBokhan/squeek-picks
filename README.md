@@ -16,14 +16,14 @@ Play it at **[squeekpicks.xyz](https://squeekpicks.xyz)**. The pot runs on the *
 
 ### Seasons
 
-The free points game runs in seasons, set in `config.js` (`SEASONS`: a name, the first night, how many nights). Season 1 is the nights of Mon 16 Nov to Sun 29 Nov 2026.
+The free points game runs in seasons, set in `config.js` (`SEASONS`: a name, the first night, how many nights). Season 1 is the nights of Mon 2 Nov to Sun 15 Nov 2026.
 
-- **By the odds:** in a season the peak window pays 5 to 40 points and blocks 5 to 25, depending on how many players picked the same thing: the fewer, the more it's worth. Counts are smoothed so a handful of players can't swing a pick to the extremes. While picking, the page shows how many picked each option (never who) and what it pays.
+- **By the odds:** in a season the peak window pays 5 to 40 points and blocks 5 to 25, depending on how many players picked the same thing: the fewer, the more it's worth. Counts are smoothed so a handful of players can't swing a pick to the extremes. Nobody sees how others picked until picks close, not even as counts: everything to go on is in his diary, so the players who read it best win.
 - **One double a night:** a player can pick one market whose points count twice.
-- **Live calls:** three quick calls a night, on the hours 21:00, 23:00 and 01:00 UTC: more or fewer spins than his median for that hour over the archived nights. Each closes when its hour starts (the database enforces it), settles from the half-hour stats, and pays 5 to 15 points by the odds. The Telegram bot posts each one within the hour before it closes.
+- **Live calls:** three quick calls a night, on the hours 21:00, 23:00 and 01:00 UTC: more or fewer spins than his median for that hour over the archived nights. Each closes when its hour starts (the database enforces it), settles from the half-hour stats, and pays 5 to 15 points by the odds. Answers stay hidden until the call closes. The Telegram bot posts each one within the hour before it closes.
 - Distance scores as always. The pot keeps the classic points, since a pot ticket on chain has no double.
 - The season has its own leaderboard tab and a champion. The rules live in `src/logic.js` (`scoreSeason`), shared by the page and the Telegram bot.
-- Needs the **Seasons** and **Live calls** parts at the end of `supabase.sql` (a `double_market` column, a `call_answers` table, and `pick_odds` / `call_odds` functions that return counts only). Until they're run, picks save without a double, no odds show and no live calls appear.
+- Needs the **Seasons** and **Live calls** parts at the end of `supabase.sql` (a `double_market` column and a `call_answers` table; it also drops the `pick_odds` function an earlier version had). Until they're run, picks save without a double and no live calls appear.
 
 ### Night Cards
 

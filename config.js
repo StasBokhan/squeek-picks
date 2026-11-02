@@ -22,7 +22,7 @@ window.SQUEEK_CONFIG = {
   // season the peak window and blocks pay by the odds and one pick a night counts double;
   // the pot keeps the classic points. Needs the Seasons part of supabase.sql.
   SEASONS: [
-    { name: "Season 1", start: "2026-11-16", nights: 14 },
+    { name: "Season 1", start: "2026-11-02", nights: 14 },
   ],
 
   // The Night Cards collectibles on Sepolia, deployed from index.html?admin. Empty: no cards.

@@ -424,14 +424,10 @@ a.play-btn:hover { filter: brightness(1.05); }
   .you-tile button[data-play] { display: none; }   /* the bar at the bottom has it */
 }
 
-/* Seasons: odds on the options, the double, the season band */
-.opt .worth { font: 600 17px/1.1 var(--font-display); color: var(--ink); }
-.opt .worth.hi { color: var(--accent-ink); }
+/* Seasons: the double, the season band */
 .dbl { display: flex; flex-wrap: wrap; gap: 8px; }
 .dbl .opt { text-align: center; padding: 10px 16px; }
 .dbl .opt[aria-pressed="true"] { border-color: var(--gold); background: var(--gold); color: var(--on-gold); }
-.best { margin: 0; font-size: 14px; color: var(--ink-2); }
-.best strong { color: var(--ink); }
 .season-band { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: center; justify-content: space-between; border-color: color-mix(in srgb, var(--gold) 45%, var(--card-line)); }
 .season-band .sb-main { flex: 999 1 420px; min-width: 0; display: grid; gap: 6px; }
 .season-band .sb-main .eyebrow { color: var(--accent-ink); }
@@ -1001,7 +997,6 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
             <p class="hint" id="nick-hint">2 to 20 letters, numbers, dots, dashes or underscores. No sign-up.</p>
           </div>
           <button class="primary" type="submit" id="save">Save picks</button>
-          <p class="best" id="best-case" hidden></p>
           <p class="msg" id="save-msg" role="status"></p>
           <p class="hint save-note">Free. Saved picks score on the points leaderboard. They don't buy a pot ticket.</p>
           <p class="streak-note" id="streak-note" hidden></p>
@@ -1974,9 +1969,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     hasCalls: false,    // the database has the live calls table
     hasLinks: false,    // the database has the Night Cards wallet links
     link: null,         // your linked wallet: { wallet, message, signature }
-    answers: [],        // live call answers: [{ player_id, night, call_no, over }] (yours, and others' once closed)
-    callOdds: null,     // { night, counts: { 1: { over, under }, ... } } for the running night
-    odds: null          // { night, counts: { players, peak: [8], more, fewer } } for the open night
+    answers: []         // live call answers: [{ player_id, night, call_no, over }] (yours, and others' once closed)
   };
   var LOCAL_KEY = "squeekpicks.local.v1";
 
@@ -2023,8 +2016,8 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     });
   }
 
-  // The season's double column and odds function exist once the Seasons part of
-  // supabase.sql has run. Until then picks save without a double and no odds show.
+  // The season's double column, the live calls table and the wallet links exist once
+  // those parts of supabase.sql have run. Until then the page plays without them.
   function detectSeasonDb() {
     return Promise.all([
       G.sb.from("picks").select("double_market").limit(1).then(function (r) { G.hasDouble = !r.error; }, function () { G.hasDouble = false; }),
@@ -2032,14 +2025,9 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
       G.sb.from("wallet_links").select("player_id").limit(1).then(function (r) { G.hasLinks = !r.error; }, function () { G.hasLinks = false; })
     ]);
   }
-  function callOddsFrom(rows) {
-    var c = {};
-    (rows || []).forEach(function (x) { c[Number(x.call)] = { over: Number(x.over) || 0, under: Number(x.under) || 0 }; });
-    return c;
-  }
 
   function gameRefresh() {
-    var since = addDays(liveNightAt(Date.now()), -(BOARD_NIGHTS + 1)), open = openNightAt(Date.now());
+    var since = addDays(liveNightAt(Date.now()), -(BOARD_NIGHTS + 1));
     if (G.mode === "local") {
       var l = readLocal(), picks = G.picks.filter(function (p) { return p.player_id !== "me"; });
       if (G.me) {
@@ -2049,16 +2037,13 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
         });
       }
       G.picks = picks;
-      G.odds = { night: open, counts: L.crowdOf(picks.filter(function (p) { return p.night === open; })) };
       // Your live call answers, kept in this browser.
-      var ans = [], live = liveNightAt(Date.now()), lc = {};
+      var ans = [];
       if (G.me) Object.keys(l.calls || {}).forEach(function (night) {
         if (night < since) return;
         Object.keys(l.calls[night]).forEach(function (no) { ans.push({ player_id: "me", night: night, call_no: Number(no), over: !!l.calls[night][no] }); });
       });
       G.answers = ans;
-      ans.filter(function (a) { return a.night === live; }).forEach(function (a) { var x = lc[a.call_no] = lc[a.call_no] || { over: 0, under: 0 }; if (a.over) x.over++; else x.under++; });
-      G.callOdds = { night: live, counts: lc };
       return Promise.resolve();
     }
     if (!G.sb) return Promise.resolve();
@@ -2068,19 +2053,12 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
         return G.sb.from("picks").select("player_id,night,distance_km,peak_block,more_blocks" + (G.hasDouble ? ",double_market" : ""))
           .gte("night", since).order("night").order("player_id");
       }),
-      // The crowd's odds for the open night, in a season: counts only, never who.
-      seasonOf(open) ? G.sb.rpc("pick_odds", { p_night: open }).then(function (r) {
-        G.odds = r.error || !r.data ? null : { night: open, counts: r.data };
-      }, function () { G.odds = null; }) : (G.odds = null),
-      // Live calls: answers (yours, and everyone's once a call closes) and the running night's odds.
+      // Live calls: your answers, and everyone's once a call closes.
       G.hasCalls ? fetchAll(function () { return G.sb.from("call_answers").select("player_id,night,call_no,over").gte("night", since).order("night").order("player_id").order("call_no"); })
         .then(function (rows) { G.answers = rows.map(function (a) { return { player_id: a.player_id, night: a.night, call_no: Number(a.call_no), over: !!a.over }; }); }) : (G.answers = []),
       G.hasLinks && G.uid ? G.sb.from("wallet_links").select("wallet,message,signature").eq("player_id", G.uid).maybeSingle().then(function (r) {
         G.link = r.error ? null : r.data || null;
       }, function () {}) : null,
-      G.hasCalls && seasonOf(liveNightAt(Date.now())) ? G.sb.rpc("call_odds", { p_night: liveNightAt(Date.now()) }).then(function (r) {
-        G.callOdds = r.error ? null : { night: liveNightAt(Date.now()), counts: callOddsFrom(r.data) };
-      }, function () { G.callOdds = null; }) : (G.callOdds = null),
       // All-time calls, for the numbers under the header (locked nights plus your own).
       G.sb.from("picks").select("night", { count: "exact", head: true }).then(function (r) { G.calls = r && r.count != null ? r.count : null; }, function () {})
     ]).then(function (r) {
@@ -3422,21 +3400,19 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     var typ = H.typical || new Array(48).fill(0), tot = typ.reduce(function (a, v) { return a + v; }, 0) || 1;
     var shares = [], b, byNights = dh.ran > 0;
     for (b = 0; b < 8; b++) shares.push(Math.round(typ.slice(b * 6, b * 6 + 6).reduce(function (a, v) { return a + v; }, 0) / tot * 100));
-    var season = seasonOf(open), odds = oddsNow(open);
-    var key = open + "|" + shares.join(",") + "|" + dh.counts.join(",") + "|" + (odds ? odds.peak.join(",") + "/" + odds.players : "");
+    // Only his diary shows here, never how other players picked: in a season the odds decide
+    // the points, so reading the diary well is the edge. The crowd shows once picks close.
+    var season = seasonOf(open);
+    var key = open + "|" + shares.join(",") + "|" + dh.counts.join(",");
     if (UI.peakKey !== key) {
       var html = "";
       for (b = 0; b < 8; b++) {
         var k = dh.counts[b];
         html += '<button type="button" class="opt" data-block="' + b + '" aria-pressed="false">' +
           "<span>" + esc(blockLabel(open, b)) + "</span>" +
-          // In a season the bar is how much of the crowd picked it, and the number what it pays.
-          (odds ? '<span class="share"><i style="width:' + pctOf(odds.peak[b], odds) + '%"></i></span>' +
-              '<span class="pct">' + (odds.players ? "picked by " + pctOf(odds.peak[b], odds) + "%" : "nobody yet") + "</span>" +
-              '<span class="worth' + (odds.peakWorth[b] >= 30 ? " hi" : "") + '">' + odds.peakWorth[b] + " pts</span>"
-            : '<span class="share"><i style="width:' + (byNights ? Math.round(k / dh.top * 100) : shares[b]) + '%"></i></span>' +
-              (byNights ? '<span class="pct' + (k ? " on" : "") + '">' + (k ? "busiest " + k + (k === 1 ? " night" : " nights") : "not yet his busiest") + "</span>"
-                : '<span class="pct">' + (H.typical ? "usually " + shares[b] + "%" : "&nbsp;") + "</span>")) + "</button>";
+          '<span class="share"><i style="width:' + (byNights ? Math.round(k / dh.top * 100) : shares[b]) + '%"></i></span>' +
+          (byNights ? '<span class="pct' + (k ? " on" : "") + '">' + (k ? "busiest " + k + (k === 1 ? " night" : " nights") : "not yet his busiest") + "</span>"
+            : '<span class="pct">' + (H.typical ? "usually " + shares[b] + "%" : "&nbsp;") + "</span>") + "</button>";
       }
       $("pick-peak").innerHTML = html;
       UI.peakKey = key;
@@ -3446,8 +3422,6 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     });
     Array.prototype.forEach.call($("pick-more").querySelectorAll("button"), function (btn) {
       btn.setAttribute("aria-pressed", String(UI.draft.more === (btn.dataset.more === "true")));
-      var more = btn.dataset.more === "true", label = more ? "More" : "Fewer";
-      btn.textContent = odds ? label + " \u00b7 " + (more ? odds.moreWorth : odds.fewerWorth) + " pts" : label;
     });
     // Points labels, and the double, follow the night's rules.
     $("pts-peak").textContent = season ? "5 to 40 pts, by the odds" : "up to 20 pts";
@@ -3466,44 +3440,10 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     var liveBlocks = H.blocks.get(live);
     $("hint-blocks").innerHTML = (liveBlocks == null ? "The night before is tonight, " + esc(fmtNight(live)) + "."
       : "The night before is tonight, " + esc(fmtNight(live)) + ': <span class="num">' + fmtInt(liveBlocks) + "</span> blocks so far, final at " + esc(fmtDayTime(nightEnd(live))) + ".") +
-      (dh.flips.length ? " More blocks than the night before on " + dh.more + " of " + dh.flips.length + (dh.flips.length === 1 ? " night" : " nights") + " so far." + dlink : "") +
-      (odds && odds.players ? " So far " + pctOf(odds.more, odds) + "% of players picked more." : "");
-    if (season && !odds) $("hint-peak").innerHTML += " This season the peak window and blocks pay by the odds: the fewer players pick what happens, the more it's worth.";
+      (dh.flips.length ? " More blocks than the night before on " + dh.more + " of " + dh.flips.length + (dh.flips.length === 1 ? " night" : " nights") + " so far." + dlink : "");
+    if (season) $("hint-peak").innerHTML += " This season the peak window and blocks pay by the odds: the fewer players get it right, the more it's worth. How everyone picked shows once picks close.";
     renderSave();
-    renderBest();
     renderPickbar(now);
-  }
-
-  // The crowd's picks for the open night without your own saved pick, so what an option
-  // shows is what it pays if you pick it. null outside a season or before the odds load.
-  function oddsNow(open) {
-    if (!seasonOf(open) || !G.odds || G.odds.night !== open || !G.odds.counts) return null;
-    var c = G.odds.counts, o = { players: Number(c.players) || 0, peak: [], more: Number(c.more) || 0, fewer: Number(c.fewer) || 0 };
-    for (var b = 0; b < 8; b++) o.peak.push(Number(c.peak && c.peak[b]) || 0);
-    var mine = myPick(open);
-    if (mine && o.players > 0) {
-      o.players--; o.peak[mine.peak_block] = Math.max(0, o.peak[mine.peak_block] - 1);
-      if (mine.more_blocks) o.more = Math.max(0, o.more - 1); else o.fewer = Math.max(0, o.fewer - 1);
-    }
-    o.peakWorth = o.peak.map(function (n) { return L.oddsPoints("peak", n + 1, o.players + 1); });
-    o.moreWorth = L.oddsPoints("blocks", o.more + 1, o.players + 1);
-    o.fewerWorth = L.oddsPoints("blocks", o.fewer + 1, o.players + 1);
-    return o;
-  }
-  function pctOf(n, o) { return o.players ? Math.round(n / o.players * 100) : 0; }
-
-  // In a season: what tonight's picks pay if they all come in, with the double.
-  function renderBest() {
-    var el = $("best-case"), o = oddsNow(UI.open), d = UI.draft;
-    if (!o || d.peak == null || d.more == null) { el.hidden = true; return; }
-    var parts = [
-      ["distance", 40], ["peak", o.peakWorth[d.peak]], ["blocks", d.more ? o.moreWorth : o.fewerWorth]
-    ], total = 0;
-    el.innerHTML = "If it all comes in: <strong>" + parts.map(function (x) {
-      var dbl = d.double === x[0]; total += x[1] * (dbl ? 2 : 1);
-      return x[1] + (dbl ? " \u00d7 2" : "");
-    }).join(" + ") + " = " + total + " pts</strong>";
-    el.hidden = false;
   }
 
   // Fills the draft with his usual night (see renderTicket).
@@ -4674,24 +4614,14 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
   }
 
   // ---------- Live calls panel ----------
-  // The running night's answers without your own, so each button shows what it pays you.
-  function callOddsNow(night) {
-    if (!G.callOdds || G.callOdds.night !== night) return null;
-    var out = {};
-    L.CALLS.forEach(function (c) {
-      var x = G.callOdds.counts[c.no] || { over: 0, under: 0 }, o = { over: x.over, under: x.under };
-      callsFor(night).forEach(function (a) { if (a.player_id === G.uid && a.call_no === c.no) { if (a.over) o.over = Math.max(0, o.over - 1); else o.under = Math.max(0, o.under - 1); } });
-      out[c.no] = o;
-    });
-    return out;
-  }
+  // While a call is open nobody sees how others answered; the split shows once it closes.
   function renderCalls(now) {
     var el = $("calls"), night = UI.live;
     var lines = seasonOf(night) && G.hasCalls ? callLines(night) : {};
     var any = L.CALLS.some(function (c) { return lines[c.no] != null; });
     el.hidden = !any;
     if (!any) return;
-    var results = callResults(night, now), odds = callOddsNow(night), mine = {}, all = callsFor(night);
+    var results = callResults(night, now), mine = {}, all = callsFor(night);
     all.forEach(function (a) { if (a.player_id === G.uid) mine[a.call_no] = !!a.over; });
     var html = L.CALLS.map(function (c) {
       var line = lines[c.no];
@@ -4700,11 +4630,9 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
       var said = my == null ? "" : " You said " + (my ? "more" : "fewer") + ".";
       var body, label;
       if (r.state === "open") {
-        var o = odds && odds[c.no], tot = o ? o.over + o.under : 0;
         var btn = function (over) {
-          var n = o ? (over ? o.over : o.under) : 0, w = L.oddsPoints("call", n + 1, tot + 1);
           return '<button type="button" class="opt" data-call="' + c.no + '" data-over="' + over + '" aria-pressed="' + (my === over) + '"' + (G.me ? "" : " disabled") + ">" +
-            (over ? "More" : "Fewer") + " · " + w + " pts" + (tot ? '<span class="pct">' + Math.round(n / tot * 100) + "% so far</span>" : "") + "</button>";
+            (over ? "More" : "Fewer") + "</button>";
         };
         label = "Open";
         body = '<div class="duo">' + btn(true) + btn(false) + "</div>" +
@@ -4797,6 +4725,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
     r.hidden = !s;
     if (s) r.innerHTML = "<h3>" + esc(s.name) + "</h3><ul><li>The nights of " + esc(fmtNight(s.start)) + " to " + esc(fmtNight(s.last)) + ", in the free points game.</li>" +
       "<li>Distance scores as always. The peak window pays 5 to 40 points and blocks 5 to 25, by the odds: the fewer players picked what happened, the more it's worth.</li>" +
+      "<li>Nobody sees how others picked until picks close. Everything to go on is in his diary.</li>" +
       "<li>Double one pick a night: that market's points count twice.</li>" +
       "<li>Live calls: three quick calls a night, each on one hour of his running (more or fewer spins than his usual for that hour). Each closes when its hour starts and pays 5 to 15 points by the odds.</li>" +
       "<li>The pot keeps the classic points.</li></ul>";
@@ -4890,7 +4819,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg { d
   }
 
   // ---------- Events ----------
-  function draftChanged() { UI.dirty = true; $("save-msg").textContent = ""; renderSave(); renderBest(); renderPot(); }
+  function draftChanged() { UI.dirty = true; $("save-msg").textContent = ""; renderSave(); renderPot(); }
   function bind() {
     $("pick-distance").addEventListener("input", function (e) { UI.draft.distance = e.target.value; draftChanged(); });
     $("pick-peak").addEventListener("click", function (e) {

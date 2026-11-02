@@ -111,27 +111,10 @@ grant execute on function public.open_night() to anon, authenticated;
 alter table public.picks add column if not exists double_market text
   check (double_market in ('distance', 'peak', 'blocks'));
 
--- The crowd's odds for a night: how many players picked each option, never who.
--- Picks themselves stay hidden until the night starts.
-create or replace function public.pick_odds(p_night date)
-returns json
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select json_build_object(
-    'players', (select count(*) from public.picks where night = p_night),
-    'peak', (select json_agg(coalesce(c.n, 0) order by b.i)
-             from generate_series(0, 7) as b(i)
-             left join (select peak_block, count(*) as n from public.picks where night = p_night group by peak_block) c
-               on c.peak_block = b.i),
-    'more', (select count(*) from public.picks where night = p_night and more_blocks),
-    'fewer', (select count(*) from public.picks where night = p_night and not more_blocks)
-  )
-$$;
-
-grant execute on function public.pick_odds(date) to anon, authenticated;
+-- Nobody sees how others picked a night until it starts (the picks policy above), not even
+-- as counts: the diary is what players go on. An earlier version had a pick_odds function
+-- that showed the counts; this removes it.
+drop function if exists public.pick_odds(date);
 
 -- ---------- Live calls ----------
 -- In a season, three quick calls a night on one hour of his running each (more or fewer
@@ -184,23 +167,8 @@ grant select on public.call_answers to anon, authenticated;
 grant insert, update on public.call_answers to authenticated;
 grant execute on function public.call_closes(date, smallint) to anon, authenticated;
 
--- How many answered more and fewer on each of a night's calls, never who.
-create or replace function public.call_odds(p_night date)
-returns json
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select json_agg(json_build_object(
-    'call', c.i,
-    'over', (select count(*) from public.call_answers where night = p_night and call_no = c.i and over),
-    'under', (select count(*) from public.call_answers where night = p_night and call_no = c.i and not over)
-  ) order by c.i)
-  from generate_series(1, 3) as c(i)
-$$;
-
-grant execute on function public.call_odds(date) to anon, authenticated;
+-- Answers stay hidden while a call is open, even as counts.
+drop function if exists public.call_odds(date);
 
 -- ---------- Night Cards ----------
 -- Where a player's Night Cards go: a wallet, proven with a signature the minting bot checks
