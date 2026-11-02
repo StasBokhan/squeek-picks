@@ -203,6 +203,13 @@ async function walletName(addr) {
   return label;
 }
 
+// Whether the database has the live calls table.
+async function hasCallsTable() {
+  if (!CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_ANON_KEY) return false;
+  const h = { apikey: CONFIG.SUPABASE_ANON_KEY, authorization: "Bearer " + CONFIG.SUPABASE_ANON_KEY };
+  try { await getJson(CONFIG.SUPABASE_URL.replace(/\/$/, "") + "/rest/v1/call_answers?select=night&limit=1", h); return true; } catch (e) { return false; }
+}
+
 // The points game's picks for a night, and the nicknames, from Supabase (public once locked).
 async function loadPoints(night) {
   if (!CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_ANON_KEY) return null;
@@ -378,7 +385,10 @@ if (!wantResults && !wantCall && !wantLive.length) {
     state.calls[open] = new Date(NOW).toISOString();
     console.log(`::notice::Posted the last call for ${open} to Telegram.`);
   }
-  for (const c of wantLive) {
+  // Live calls need the Live calls part of supabase.sql; without it players can't answer.
+  const callsReady = wantLive.length ? await hasCallsTable() : false;
+  if (wantLive.length && !callsReady) console.log("::notice::No call_answers table yet (run the Live calls part of supabase.sql), so no live call posts.");
+  for (const c of callsReady ? wantLive : []) {
     const r = liveCallPost(live, c.no, H);
     if (!r) continue;
     await send(r.text);
