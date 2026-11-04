@@ -85,3 +85,7 @@ To run the tests: `cd contracts && npm ci && npm test` (the pot and the Night Ca
 ## Welfare
 
 The game rewards guessing, never running. Squeekchain's care policy says he's never woken or pushed to mine, and quiet nights are expected. Keep it that way: no features that tip, ping or pay anyone around his wheel time.
+
+## Squeekchain Genesis
+
+squeekchain-project: 66af5fa9-77e6-4063-94a0-a7113106afe9
