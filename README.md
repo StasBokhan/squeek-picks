@@ -8,6 +8,12 @@ A prediction game on Squeektoshi's wheel. Every night players call three things:
 
 Play it at **[squeekpicks.xyz](https://squeekpicks.xyz)**. The pot runs on the **Sepolia testnet only**. The contract refuses to deploy anywhere else.
 
+## The page
+
+The site is a little night-shift shop, Squeek Wheel Co. On the dark counter: his wheel, drawn from tonight's half hours (a usual night faint, tonight in red) and turning at his real speed while he runs, the till's display with tonight's numbers, and a three-line note on how to play. On paper: your ticket for the next night (stamped SAVED once printed), the pot as an optional coupon, and the till's receipt with tonight so far, last night, the leaderboards and your Night Cards. The full rules are the receipt's small print. Share pictures are receipts too.
+
+Everything is served from the site: the fonts in `fonts/` (Courier Prime, Doto, Anton, all SIL Open Font License) and the libraries in `vendor/`.
+
 ## How a night works
 
 - **A night** runs from 12:00 UTC to 12:00 UTC, the same day the Squeekchain API uses. Picks and tickets for a night close when it starts, so players pick the next night while watching the current one.
