@@ -10,9 +10,9 @@ Play it at **[squeekpicks.xyz](https://squeekpicks.xyz)**. The pot runs on the *
 
 ## The page
 
-The site is a little night-shift shop, Squeek Wheel Co. On the dark counter: his wheel, drawn from tonight's half hours (a usual night faint, tonight in red) and turning at his real speed while he runs, the till's display with tonight's numbers, and a three-line note on how to play. On paper: your ticket for the next night (stamped SAVED once printed), the pot as an optional coupon, and the till's receipt with tonight so far, last night, the leaderboards and your Night Cards. The full rules are the receipt's small print. Share pictures are receipts too.
+The page is a dark counter with one piece of paper on it. On the counter: his wheel, turning at his real speed while he runs, with tonight's spins marked around it half hour by half hour; the till's display with tonight's numbers; and a three-line note on how to play. The paper is your picks for the next night, stamped SAVED once they're saved. Below it, plain sections on the counter: tonight so far, last night, the leaderboards, your Night Cards and the optional pot. The full rules are the small print at the bottom. Share pictures are little receipts.
 
-Everything is served from the site: the fonts in `fonts/` (Courier Prime, Doto, Anton, all SIL Open Font License) and the libraries in `vendor/`.
+Everything is served from the site: the fonts in `fonts/` (Hanken Grotesk, Courier Prime, Doto, Anton, all SIL Open Font License) and the libraries in `vendor/`.
 
 ## How a night works
 
