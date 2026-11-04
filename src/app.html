@@ -99,9 +99,9 @@ a { color: inherit; text-underline-offset: 3px; }
 .counter { display: grid; gap: 18px; justify-items: center; }
 .flow { display: grid; gap: 0; min-width: 0; width: 100%; max-width: 620px; justify-self: center; }
 @media (min-width: 1000px) {
-  .layout { grid-template-columns: minmax(0, 440px) minmax(0, 620px); justify-content: space-between; gap: 48px; padding-top: 6px; }
-  .counter { position: sticky; top: 12px; }
+  .layout { grid-template-columns: minmax(0, 440px) minmax(0, 620px); justify-content: space-between; gap: 48px; }
 }
+@media (min-width: 1000px) and (min-height: 660px) { .counter { position: sticky; top: 12px; } }
 
 /* ---------- The wheel ---------- */
 .wheel-box { position: relative; width: 100%; max-width: 420px; }
@@ -139,17 +139,17 @@ a { color: inherit; text-underline-offset: 3px; }
 .vfd .sm { font-weight: 700; font-size: 17px; letter-spacing: .05em; text-transform: uppercase; opacity: .82; white-space: nowrap; }
 .vfd .stamp { font: 500 12px/1.4 var(--sans); letter-spacing: .02em; color: var(--chalk-3); text-shadow: none; }
 
-/* ---------- How to play ---------- */
-.howto { position: relative; width: 100%; max-width: 420px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: start;
-  background: var(--paper); color: var(--ink); padding: 16px 16px 15px 18px; border-radius: 3px; transform: rotate(-.8deg); box-shadow: 0 10px 24px rgba(0, 0, 0, .3); color-scheme: light; }
-.howto h2 { margin: 0 0 6px; font: 700 16px/1.25 var(--sans); }
-.howto ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
-.howto li { display: grid; grid-template-columns: 18px 1fr; gap: 4px; font-size: 15px; line-height: 1.4; }
-.howto li .n { font-weight: 700; color: var(--red); }
-.howto .more-rules { display: inline-block; margin-top: 8px; font-size: 13.5px; color: var(--ink-2); }
-.cam-thumb { display: grid; gap: 4px; justify-items: center; text-decoration: none; color: var(--ink-2); font: 600 11.5px/1.2 var(--sans); }
-.cam-thumb img { display: block; width: 76px; height: 76px; object-fit: cover; object-position: 46% 40%; border-radius: 3px; }
-.cam-thumb:hover img { filter: brightness(1.08); }
+/* ---------- How to play: three lines under the header ---------- */
+.howto { display: grid; gap: 10px; padding: 6px 0 20px; margin-bottom: 22px; border-bottom: 1px solid var(--line); }
+.howto h2 { margin: 0; font: 700 12px/1.3 var(--sans); letter-spacing: .09em; text-transform: uppercase; color: var(--chalk-2); }
+.howto ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.howto li { display: grid; grid-template-columns: 20px 1fr; font-size: 16px; line-height: 1.42; }
+.howto li .n { font-weight: 700; color: var(--hot); }
+.howto-links { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 20px; font-size: 14px; }
+.howto-links a { color: var(--chalk-2); }
+.howto-links a:hover { color: var(--chalk); }
+@media (min-width: 760px) { .howto ol { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; } .howto li { font-size: 16.5px; } }
+@media (max-width: 520px) { .howto { gap: 8px; padding-bottom: 16px; margin-bottom: 16px; } .howto li { font-size: 15.5px; line-height: 1.38; } }
 
 /* ---------- Paper: your picks ---------- */
 .paper { position: relative; width: 100%; background: var(--paper); color: var(--ink); color-scheme: light; box-shadow: 0 22px 50px rgba(0, 0, 0, .42); --dot-off: var(--rule); }
@@ -196,7 +196,7 @@ a { color: inherit; text-underline-offset: 3px; }
 .box:hover { border-color: var(--ink-3); }
 .box .t { grid-column: 1 / -1; font: 650 15px/1.2 var(--sans); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .box .bar { height: 5px; border-radius: 3px; background: var(--paper-2); overflow: hidden; }
-.box .bar i { display: block; height: 100%; min-width: 2px; background: var(--ink-3); border-radius: 3px; }
+.box .bar i { display: block; height: 100%; min-width: 4px; background: var(--ink-3); border-radius: 3px; }
 .box .bar.on i { background: var(--red); }
 .box .h { font-size: 12.5px; line-height: 1; color: var(--ink-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .box .h.on { color: var(--red); font-weight: 700; }
@@ -571,8 +571,19 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg, ht
 
   <div class="banner" id="banner" role="status" hidden></div>
 
+  <!-- How to play: the first thing on the page, on every screen -->
+  <section class="howto game-only" id="howto" aria-labelledby="howto-h">
+    <h2 id="howto-h">How to play</h2>
+    <ol>
+      <li><span class="n">1</span><span>Squeektoshi is a real hamster. Every night he runs on this wheel.</span></li>
+      <li><span class="n">2</span><span>Guess his next night: how far, his busiest 3 hours, more or fewer blocks.</span></li>
+      <li><span class="n">3</span><span>Good guesses win points. It's free, just pick a nickname.</span></li>
+    </ol>
+    <p class="howto-links"><a class="more-rules" href="#small-print">How points work</a><a href="https://sepolia.squeekchain.com/" target="_blank" rel="noopener">Watch him live</a></p>
+  </section>
+
   <main class="layout game-only" id="game">
-    <!-- On the counter: his wheel tonight, the till's display, how to play -->
+    <!-- On the counter: his wheel tonight and the till's display -->
     <section class="counter" aria-labelledby="live-h">
       <h2 class="sr-only" id="live-h">Squeektoshi's wheel tonight</h2>
       <div class="wheel-box">
@@ -583,21 +594,6 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg, ht
         <div class="row"><span class="st" id="m-status" data-state="offline">Loading</span><span class="sm"><span id="m-speed">–</span> KM/H</span></div>
         <div class="row"><span class="big"><span id="m-dist">–</span><small>KM</small></span><span class="sm">TONIGHT</span></div>
         <span class="stamp" id="m-stamp"></span>
-      </div>
-      <div class="howto" id="howto">
-        <div>
-          <h2>How to play</h2>
-          <ol>
-            <li><span class="n">1</span><span>Squeektoshi is a real hamster. Every night he runs on this wheel.</span></li>
-            <li><span class="n">2</span><span>Guess his next night: how far, his busiest 3 hours, more or fewer blocks.</span></li>
-            <li><span class="n">3</span><span>Good guesses win points. It's free, just pick a nickname.</span></li>
-          </ol>
-          <a class="more-rules" href="#small-print">How points work</a>
-        </div>
-        <a class="cam-thumb" href="https://sepolia.squeekchain.com/" target="_blank" rel="noopener">
-          <img src="squeektoshi.jpg" width="665" height="413" alt="Squeektoshi on the night camera">
-          <span>Live cam</span>
-        </a>
       </div>
     </section>
 
@@ -1933,7 +1929,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg, ht
     if (!(P.on || P.demo)) { rp.innerHTML = ""; return; }
     var night = addDays(UI.live, -1), rn = P.nights.get(night);
     if (!rn) { rp.innerHTML = ""; return; }
-    if (!rn.tickets.length) { rp.innerHTML = '<div class="pot-list"><h3>Pot</h3><p class="hint">No pot tickets this night.</p></div>'; return; }
+    if (!rn.tickets.length) { rp.innerHTML = ""; return; }
     var head = "<h3>Pot · " + fmtEth(rn.pot) + " ETH from " + rn.tickets.length + " ticket" + (rn.tickets.length === 1 ? "" : "s") + "</h3>";
     var out = L.potPayouts(resolve(night, Date.now()), rn.tickets), body = "";
     var mineIds = new Set(rn.tickets.filter(isMine).map(function (t) { return t.player_id; }));
@@ -2469,7 +2465,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg, ht
     for (var b = 0; b < 8; b++) {
       ticks += "<line " + spoke(141, 147, b * 45) + "/>";
       if (b % 2) continue;
-      var p = pol(212, b * 45), anchor = b === 0 || b === 4 ? "middle" : b < 4 ? "start" : "end";
+      var p = pol(216, b * 45), anchor = b === 0 || b === 4 ? "middle" : b < 4 ? "start" : "end";
       labels += '<text class="lbl" x="' + p[0] + '" y="' + (Number(p[1]) + 4.5).toFixed(1) + '" text-anchor="' + anchor + '">' + esc(fmtTime(blockStart(live, b))) + "</text>";
     }
     var out = '<circle cx="200" cy="200" r="150" fill="none" stroke="rgba(239,230,210,.12)" stroke-width="1.5"/>' +
@@ -2551,8 +2547,8 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg, ht
         var said = byNights ? (c ? "his busiest on " + c + (c === 1 ? " night" : " nights") : "not yet his busiest") : H.typical ? "usually " + shares[b] + "% of his running" : "";
         html += '<button type="button" class="box" data-block="' + b + '" aria-pressed="false" aria-label="' + esc(blockLabel(open, b) + (said ? ", " + said : "")) + '">' +
           '<span class="t" aria-hidden="true">' + esc(shortBlock(open, b)) + "</span>" +
-          (note ? '<span class="bar' + (top ? " on" : "") + '" aria-hidden="true"><i style="width:' + Math.round((val || 0) / most * 100) + '%"></i></span>' +
-            '<span class="h' + (top ? " on" : "") + '" aria-hidden="true">' + note + "</span>" : "") + "</button>";
+          (note ? '<span class="bar' + (top ? " on" : "") + '" aria-hidden="true">' + (val ? '<i style="width:' + Math.round(val / most * 100) + '%"></i>' : "") + "</span>" +
+            '<span class="h' + (top ? " on" : "") + '" aria-hidden="true">' + (val ? note : "") + "</span>" : "") + "</button>";
       }
       $("pick-peak").innerHTML = html;
       UI.peakKey = key;
