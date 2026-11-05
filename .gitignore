@@ -4,3 +4,6 @@ settler/node_modules/
 contracts/node_modules/
 contracts/cache/
 contracts/artifacts/
+tests/node_modules/
+tests/out/
+__pycache__/

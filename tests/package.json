@@ -1,0 +1,14 @@
+{
+  "name": "squeek-picks-tests",
+  "private": true,
+  "type": "module",
+  "description": "Tests for the page, the bots and the database rules. See README.md.",
+  "scripts": {
+    "test": "./run.sh all"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.2.17",
+    "ethers": "6.13.4",
+    "hardhat": "2.22.15"
+  }
+}

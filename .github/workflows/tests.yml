@@ -1,0 +1,125 @@
+name: Tests
+
+# Runs the tests in tests/ on every push and pull request: the database rules, the bots, and
+# the page in a real browser, each against local stand-ins (nothing touches Sepolia, Supabase,
+# Telegram or the Squeekchain API). The bots' own diary commits (data/) don't start it.
+# Reads only. To run them on your computer: see tests/README.md.
+on:
+  push:
+    paths-ignore: ["data/**"]
+  pull_request:
+    paths-ignore: ["data/**"]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: index.html is built from src/
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Build and compare
+        run: |
+          node build.mjs
+          if ! git diff --quiet -- index.html; then
+            echo "::error file=index.html::index.html is out of date with src/. Run: node build.mjs, then commit index.html."
+            git diff --stat -- index.html
+            exit 1
+          fi
+
+  database:
+    name: Database rules
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tests/package-lock.json
+      - name: Install
+        working-directory: tests
+        run: npm ci --no-audit --no-fund
+      - name: Test
+        working-directory: tests
+        run: ./run.sh database
+
+  bots:
+    name: Bots
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            tests/package-lock.json
+            settler/package-lock.json
+      - name: Install
+        run: |
+          (cd tests && npm ci --no-audit --no-fund)
+          (cd settler && npm ci --no-audit --no-fund)
+      - name: Test
+        working-directory: tests
+        env:
+          HARDHAT_DISABLE_TELEMETRY_PROMPT: "true"
+        run: ./run.sh bots
+      - name: Keep the logs
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: bots-logs
+          path: tests/out/logs
+          retention-days: 7
+
+  page:
+    name: Page
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            tests/package-lock.json
+            settler/package-lock.json
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - name: Install
+        run: |
+          (cd tests && npm ci --no-audit --no-fund)
+          (cd settler && npm ci --no-audit --no-fund)
+          python -m pip install --quiet playwright==1.63.0
+          python -m playwright install --with-deps chromium
+      - name: Test
+        working-directory: tests
+        env:
+          HARDHAT_DISABLE_TELEMETRY_PROMPT: "true"
+          PYTHON: python
+        run: ./run.sh page
+      - name: Keep the screenshots and logs
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: page-screenshots-and-logs
+          path: |
+            tests/out/logs
+            tests/out/page/*.png
+            tests/out/page/acct
+          retention-days: 7

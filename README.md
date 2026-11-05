@@ -86,7 +86,7 @@ The pot contract was audited by the **[IMD swarm](https://github.com/Identity-md
 
 The other two info findings are recorded in [`contracts/AUDIT-SCOPE.md`](contracts/AUDIT-SCOPE.md): the payout bot decides which of a night's tickets win, and an owner price change just before a night's first ticket makes that purchase fail (the page says to reload).
 
-To run the tests: `cd contracts && npm ci && npm test` (the pot and the Night Cards).
+To run the contract tests: `cd contracts && npm ci && npm test` (the pot and the Night Cards). The page, the bots and the database rules have their own tests in [`tests/`](tests/README.md), which GitHub runs on every push.
 
 ## Limits worth knowing
 
