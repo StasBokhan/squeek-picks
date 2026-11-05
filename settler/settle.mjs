@@ -143,9 +143,13 @@ async function main() {
     if (!s || !b) {
       console.log("::warning::The Squeekchain API returned no usable data. Will try again next hour.");
     } else {
+      // The saved diary stands in for nights the API's history no longer has whole.
+      let diary = null;
+      try { diary = JSON.parse(readFileSync(env.DIARY_FILE || new URL("../data/diary.json", import.meta.url), "utf8")); } catch (e) { diary = null; }
       const data = {
         nights: s.nights, statsAt: s.at, statsFrom: s.from, firstAt: s.firstAt,
         blocks: b.blocks, blocksAt: b.at, blocksFrom: b.from, settledTs: b.settledTs,
+        archive: L.archiveNights(diary),
       };
       for (const c of candidates) {
         const res = L.resolveNight(c.night, now, data);

@@ -993,7 +993,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg, ht
   // ---------- Identity: ENS names and avatars ----------
   // A wallet's ENS name (reverse record, checked forwards) and its ENS avatar.
   // Wallets without one get a dot-grid avatar drawn from their address.
-  var ENS = { names: {}, pending: {}, provider: null, queue: [], running: 0, dirty: false };
+  var ENS = { names: {}, pending: {}, provider: null, queue: [], running: 0, dirty: false, noAvatar: {} };
   var ENS_KEY = "squeekpicks.ens.v1";
   try {
     var savedEns = JSON.parse(localStorage.getItem(ENS_KEY) || "{}");
@@ -1066,7 +1066,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg, ht
   }
   function avatar(addr, cls) {
     var name = ensName(addr);
-    if (!name) return dotAvatar(addr, cls);
+    if (!name || ENS.noAvatar[String(addr).toLowerCase()]) return dotAvatar(addr, cls);
     return '<img class="av' + (cls ? " " + cls : "") + '" alt="" loading="lazy" referrerpolicy="no-referrer" data-seed="' + esc(addr) +
       '" src="' + esc(CONFIG.ENS_AVATAR_URL + encodeURIComponent(name)) + '">';
   }
@@ -1078,10 +1078,12 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg, ht
     if (opts.plain || P.demo) return '<span class="who">' + avatar(addr) + label + "</span>";
     return '<a class="who" href="' + esc(CONFIG.EXPLORER + "/address/" + addr) + '" target="_blank" rel="noopener" title="' + esc(addr) + '">' + avatar(addr) + label + "</a>";
   }
-  // ENS avatars that fail to load (no avatar set, or a broken link) fall back to dots.
+  // ENS avatars that fail to load (no avatar set, or a broken link) fall back to dots, and
+  // stay dots for that wallet, so redrawing a list doesn't ask for them again.
   document.addEventListener("error", function (e) {
     var t = e.target;
     if (t && t.tagName === "IMG" && t.classList.contains("av")) {
+      ENS.noAvatar[(t.getAttribute("data-seed") || "").toLowerCase()] = true;
       var tmp = document.createElement("span");
       tmp.innerHTML = dotAvatar(t.getAttribute("data-seed") || "", t.classList.contains("lg") ? "lg" : "");
       t.replaceWith(tmp.firstChild);
@@ -1092,6 +1094,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg, ht
   var H = {
     status: null, nights: new Map(), typical: null, blocks: new Map(),
     statsAt: 0, statsFrom: 0, blocksAt: 0, blocksFrom: 0, settledTs: 0,
+    archive: null,      // the saved diary's complete nights, for nights the API no longer has whole
     demo: false, apiOk: false, apiError: ""
   };
   function resolve(night, now) { return L.resolveNight(night, now, H); }
@@ -1329,6 +1332,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg, ht
     if (/sending|smtp|not authorized|unable to send/i.test(m)) return "Couldn't send the email right now. Try again in a while.";
     if (/email/i.test(m) && /invalid|validate/i.test(m)) return "That doesn't look like an email address.";
     if (/fetch|network/i.test(m)) return "Couldn't reach the game. Check your connection and try again.";
+    if (/session/i.test(m) && /missing|expired|not found|invalid/i.test(m)) return "Your sign-in here has expired. Reload the page and try again.";
     return m;
   }
   // Under the Save button: keep your nickname with an email, or who you're signed in as.
@@ -3037,7 +3041,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg, ht
     if (H.demo || typeof fetch !== "function") return Promise.resolve();
     return Promise.all([
       fetch("data/diary.json", { cache: "no-cache" }).then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (j) { if (j && j.nights) D.file = j; }, function () { /* no saved nights yet */ }),
+        .then(function (j) { if (j && j.nights) { D.file = j; H.archive = L.archiveNights(j); } }, function () { /* no saved nights yet */ }),
       fetch("data/stats.json", { cache: "no-cache" }).then(function (r) { return r.ok ? r.json() : null; })
         .then(function (j) { if (j) D.stats = j; }, function () { /* not counted yet */ })
     ]);
@@ -3052,6 +3056,8 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg, ht
     H.nights.forEach(function (n, k) {
       if (!hasData(n) || now < nightEnd(k)) return;
       var prev = m.get(k), b = now >= nightEnd(k) + 20 * 60e3 && H.blocks.has(k) ? H.blocks.get(k) : prev ? prev.blocks : null;
+      // The saved copy wins when it's more complete (Squeekchain restarted its history partway).
+      if (prev && prev.coverageBps > n.coverageBps) return;
       m.set(k, { night: k, km: n.distanceKm, coverageBps: n.coverageBps, work: n.work, slots: n.slots, blocks: b });
     });
     var out = Array.from(m.values()).sort(function (a, b) { return a.night < b.night ? -1 : 1; });
@@ -3061,8 +3067,14 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg, ht
   function slotTime(night, i) { return fmtTime(nightStart(night) + i * SLOT_MS); }
     // The night a record belongs to, from the API's record timestamp.
   function recordNight(rec) { var t = rec && Date.parse(rec.occurredAt); return t ? liveNightAt(t) : null; }
-  function diaryRecords() { return H.records || (D.file && D.file.records) || null; }
-  function diaryLifetime() { return H.lifetime || (D.file && D.file.lifetime) || null; }
+  function diaryRecords() { return L.mergeRecords(D.file && D.file.records, H.records); }
+  function diaryLifetime() {
+    var api = H.lifetime, first = D.file && D.file.firstObservedAt;
+    // After Squeekchain restarts its history, the API's totals count from the restart only;
+    // then the saved nights tell the whole story (totals are added up from them).
+    if (api && first && Date.parse(api.firstObservedAt) > Date.parse(first)) return { firstObservedAt: first };
+    return api || (D.file && D.file.lifetime) || null;
+  }
   function firstRecorded() {
     var t = (diaryLifetime() && Date.parse(diaryLifetime().firstObservedAt)) || H.firstAt || 0;
     return t ? liveNightAt(t) : null;
@@ -3870,7 +3882,6 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg, ht
   function saveLink(row) {
     if (G.mode === "local") { var l = readLocal(); l.wallet = row; writeLocal(l); G.link = row; return Promise.resolve(); }
     return G.sb.from("wallet_links").upsert(Object.assign({ player_id: G.uid }, row), { onConflict: "player_id" }).then(function (r) {
-      if (r.error && r.error.code === "23505") throw new Error("That wallet already gets another nickname's cards. Link a different wallet.");
       if (r.error) throw new Error(r.error.message);
       G.link = row;
     });

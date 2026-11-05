@@ -17,16 +17,17 @@ concurrency:
 
 permissions:
   contents: read
+  actions: write   # to start the diary run when GitHub's own schedule is late (last step)
 
 jobs:
   settle:
     runs-on: ubuntu-latest
     timeout-minutes: 20    # room for retries: a timed-out request can take 100 s
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22   # Node 20 is past its end of life
       - name: Install
         working-directory: settler
         run: npm ci --no-audit --no-fund
@@ -63,7 +64,7 @@ jobs:
       # and TELEGRAM_CHAT_ID (variable) are set. Runs even if the payout step failed.
       - name: Load what was already posted
         if: always()
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: .bot-state
           key: announce-${{ github.run_id }}-${{ github.run_attempt }}
@@ -89,7 +90,29 @@ jobs:
           exit $code
       - name: Remember what was posted
         if: always() && steps.post.outputs.changed == 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: .bot-state
           key: announce-${{ github.run_id }}-${{ github.run_attempt }}
+      # GitHub often starts the diary's daily run hours late, or skips it. This workflow runs
+      # every 15 minutes, so it starts that run once the last night has ended and the diary
+      # hasn't run since (or its run failed over 2 hours ago).
+      - name: Start the diary run if it's late
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          run=$(gh run list --workflow archive.yml --limit 1 --json createdAt,status,conclusion --jq '.[0] // {}' || echo '{}')
+          start=$(node -e '
+            const L = require("./src/logic.js");
+            const run = JSON.parse(process.argv[1] || "{}"), now = Date.now();
+            const ended = L.nightEnd(L.addDays(L.liveNightAt(now - 40 * 60e3), -1)) + 40 * 60e3;   // last night, 40 minutes on
+            const at = Date.parse(run.createdAt) || 0;
+            const fine = run.status !== "completed" || run.conclusion === "success" || now - at < 2 * 3600e3;
+            console.log(at >= ended && fine ? "no" : "yes");' "$run")
+          if [ "$start" = yes ]; then
+            gh workflow run archive.yml --ref main && echo "Started the diary run: it hadn't run since the last night ended."
+          else
+            echo "The diary run is up to date."
+          fi

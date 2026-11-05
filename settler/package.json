@@ -7,6 +7,6 @@
     "settle": "node settle.mjs"
   },
   "dependencies": {
-    "ethers": "6.13.4"
+    "ethers": "6.17.0"
   }
 }

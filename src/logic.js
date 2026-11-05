@@ -83,11 +83,47 @@
     return { blocks: blocks, settledTs: settledTs, at: Date.parse(set.generatedAt) || Date.now(), from: from === Infinity ? 0 : from };
   }
 
+  // ---------- The saved diary ----------
+  // data/diary.json keeps every finished night (the API keeps 30 days). Squeekchain can also
+  // start its history again with a new deployment: the API then has nothing complete from
+  // before, while the diary still does. Results and the diary use the saved copy there.
+  // A night counts only if it's complete and Squeekchain was recording from its start.
+  function archiveNights(file) {
+    var out = new Map();
+    if (!file || !file.nights) return out;
+    var first = Date.parse(file.firstObservedAt) || 0;
+    Object.keys(file.nights).forEach(function (k) {
+      var v = file.nights[k];
+      if (!v || !(Number(v.coverageBps) >= COVERAGE_OK_BPS) || first > nightStart(k)) return;
+      var slots = (v.slots || []).map(function (x) { return x == null ? null : Number(x); });
+      var blocks = new Array(8).fill(0);
+      slots.forEach(function (w, i) { if (w) blocks[Math.floor(i / 6)] += w; });
+      out.set(k, { distanceKm: Number(v.km || 0), work: Number(v.work || 0), coverageBps: Number(v.coverageBps), slots: slots, blocks: blocks,
+        settledBlocks: v.blocks == null ? null : Number(v.blocks) });
+    });
+    return out;
+  }
+  // His records from two sources (the API's start over with a new history): the better of each.
+  function mergeRecords(a, b) {
+    if (!a) return b || null;
+    if (!b) return a;
+    var out = {};
+    Object.keys(Object.assign({}, a, b)).forEach(function (k) {
+      var x = a[k], y = b[k];
+      out[k] = !x ? y || null : !y ? x : Number(y.value) > Number(x.value) ? y : x;
+    });
+    return out;
+  }
+
   // ---------- Results ----------
-  // data: { nights, statsAt, statsFrom, firstAt, blocks, blocksAt, blocksFrom, settledTs }
+  // data: { nights, statsAt, statsFrom, firstAt, blocks, blocksAt, blocksFrom, settledTs, archive }
+  // (archive: archiveNights(data/diary.json), optional)
   // Each market comes back as live, wait (data not in yet), void, or resolved.
   // Missing or stale data means "wait", never "void", except for a night that began
   // before Squeekchain started recording: that one can never be complete.
+  function compareBlocks(cur, prev) {
+    return cur === prev ? { state: "void", reason: "Tie: " + cur + " blocks both nights" } : { state: "resolved", more: cur > prev, cur: cur, prev: prev };
+  }
   function resolveNight(night, now, data) {
     var end = nightEnd(night), ended = now >= end, old = now >= end + VOID_AFTER;
     var res = { night: night, ended: ended, distance: { state: "live" }, peak: { state: "live" }, blocks: { state: "live" } };
@@ -96,14 +132,22 @@
     var started = data.firstAt || 0;
     var n = data.nights.get(night);
     var statsCover = data.statsAt >= end + 10 * 60e3 && data.statsFrom <= nightStart(night);
-    if (started > nightStart(night)) {
+    // The diary's copy stands in where the API's isn't complete: the API restarted its history
+    // after this night began, or doesn't reach back this far any more.
+    var saved = data.archive ? data.archive.get(night) || null : null;
+    var apiFull = started <= nightStart(night) && statsCover && !!n && n.coverageBps >= COVERAGE_OK_BPS;
+    if (!apiFull && saved) { n = saved; res.fromDiary = true; }
+    if (res.fromDiary) {
+      /* resolved below */
+    } else if (started > nightStart(night)) {
       res.distance = res.peak = { state: "void", reason: "Squeekchain started recording partway through this night" };
     } else if (!statsCover) {
       res.distance = res.peak = { state: "wait", reason: "The night's stats aren't published yet" };
     } else if (!n || n.coverageBps < COVERAGE_OK_BPS) {
       var why = !n ? "No data for this night" : "Data gap: " + Math.floor(n.coverageBps / 100) + "% of the night's rounds are in";
       res.distance = res.peak = old ? { state: "void", reason: why } : { state: "wait", reason: why + " so far" };
-    } else {
+    }
+    if (res.fromDiary || apiFull) {
       res.distance = { state: "resolved", km: n.distanceKm };
       var max = Math.max.apply(null, n.blocks);
       if (n.work === 0 || max === 0) res.peak = { state: "void", reason: "He took the night off" };
@@ -117,19 +161,24 @@
     // Blocks are bucketed by when they settled on Ethereum, so a night's count is final
     // once its bucket has closed and the 12-confirmation delay (about 2.5 minutes) has
     // passed. 20 minutes leaves room for the API's indexer to catch up.
-    var cur = data.blocks.get(night), prev = data.blocks.get(addDays(night, -1));
-    var blocksCover = data.blocksAt >= end + 20 * 60e3 && data.blocksFrom <= nightStart(addDays(night, -1));
-    if (started > nightStart(addDays(night, -1))) {
-      // The night before wasn't fully recorded, so its count is too low to compare with.
-      res.blocks = { state: "void", reason: "No fully recorded night before this one to compare with" };
+    var prevNight = addDays(night, -1);
+    var cur = data.blocks.get(night), prev = data.blocks.get(prevNight);
+    var blocksCover = data.blocksAt >= end + 20 * 60e3 && data.blocksFrom <= nightStart(prevNight);
+    var savedPrev = data.archive ? data.archive.get(prevNight) || null : null;
+    var diaryBlocks = !!(saved && savedPrev && saved.settledBlocks != null && savedPrev.settledBlocks != null);
+    if (started > nightStart(prevNight)) {
+      // The API's history starts after the night before began, so its count of that night is
+      // too low to compare with. Only two saved nights from the same earlier history compare.
+      res.blocks = res.fromDiary && diaryBlocks ? compareBlocks(saved.settledBlocks, savedPrev.settledBlocks)
+        : { state: "void", reason: "No fully recorded night before this one to compare with" };
+    } else if (!blocksCover && diaryBlocks) {
+      res.blocks = compareBlocks(saved.settledBlocks, savedPrev.settledBlocks);   // the API no longer reaches back this far
     } else if (!blocksCover) {
       res.blocks = { state: "wait", reason: "Block counts are final 20 minutes after the night ends" };
     } else if (cur == null || prev == null) {
       res.blocks = old ? { state: "void", reason: "No settlement data" } : { state: "wait" };
-    } else if (cur === prev) {
-      res.blocks = { state: "void", reason: "Tie: " + cur + " blocks both nights" };
     } else {
-      res.blocks = { state: "resolved", more: cur > prev, cur: cur, prev: prev };
+      res.blocks = compareBlocks(cur, prev);
     }
     return res;
   }
@@ -513,7 +562,7 @@
     POT_SHARES_3: POT_SHARES_3, POT_SHARES_2: POT_SHARES_2, MAX_WINNERS: MAX_WINNERS,
     dateStr: dateStr, addDays: addDays, nightStart: nightStart, nightEnd: nightEnd,
     liveNightAt: liveNightAt, openNightAt: openNightAt, nightToDay: nightToDay, dayToNight: dayToNight, slotOf: slotOf,
-    parseStats: parseStats, parseSettlements: parseSettlements,
+    parseStats: parseStats, parseSettlements: parseSettlements, archiveNights: archiveNights, mergeRecords: mergeRecords,
     resolveNight: resolveNight, distancePoints: distancePoints, scoreNight: scoreNight, potPayouts: potPayouts,
     CARD_KINDS: CARD_KINDS, CARD_RARITY: CARD_RARITY, nightCards: nightCards, linkMessage: linkMessage,
     CALLS: CALLS, CALL_MIN_LINE: CALL_MIN_LINE, callOf: callOf, callCloses: callCloses, callEnds: callEnds, callLine: callLine, resolveCall: resolveCall, scoreCalls: scoreCalls,

@@ -132,9 +132,11 @@ async function send(text) {
 }
 
 // ----- data -----
-// His archived nights (data/diary.json), so live call lines match the page's.
-let DIARY = null;
-try { DIARY = JSON.parse(readFileSync(new URL("../data/diary.json", import.meta.url), "utf8")).nights || null; } catch (e) { DIARY = null; }
+// His saved nights (data/diary.json), so live call lines match the page's, and results can use
+// them where the API's history no longer has a night whole.
+let DIARY_FILE = null;
+try { DIARY_FILE = JSON.parse(readFileSync(env.DIARY_FILE || new URL("../data/diary.json", import.meta.url), "utf8")); } catch (e) { DIARY_FILE = null; }
+const DIARY = DIARY_FILE && DIARY_FILE.nights || null;
 function slotsOf(H) {
   return (date) => {
     const d = DIARY && DIARY[date];
@@ -156,6 +158,7 @@ async function loadHamster() {
     data: {
       nights: s.nights, statsAt: s.at, statsFrom: s.from, firstAt: s.firstAt,
       blocks: b ? b.blocks : new Map(), blocksAt: b ? b.at : 0, blocksFrom: b ? b.from : 0, settledTs: b ? b.settledTs : 0,
+      archive: L.archiveNights(DIARY_FILE),
     },
   };
 }
@@ -243,18 +246,27 @@ async function resultsPost(night, H, pots, points) {
     if (p.status === 0 && out.action !== "wait" && NOW < L.nightEnd(night) + 6 * L.HOUR) return { wait: "the pot isn't paid out yet" };
   }
 
-  // The diary write-up, as the site shows it.
-  const recRaw = H.raw.records || {};
+  // The diary write-up, as the site shows it: the saved nights plus the API's, the more
+  // complete copy of each (after Squeekchain restarts its history, the saved one).
+  const recRaw = L.mergeRecords(DIARY_FILE && DIARY_FILE.records, H.raw.records) || {};
   const recNight = (r) => (r && Date.parse(r.occurredAt) ? L.liveNightAt(Date.parse(r.occurredAt)) : null);
-  const finished = [];
+  const byNight = new Map();
+  for (const [k, v] of Object.entries(DIARY || {})) {
+    if (NOW < L.nightEnd(k) || (!v.coverageBps && !v.work)) continue;
+    byNight.set(k, { night: k, km: Number(v.km), coverageBps: Number(v.coverageBps), slots: (v.slots || []).map((x) => (x == null ? null : Number(x))), blocks: null, prevBlocks: null });
+  }
   for (const [k, n] of H.stats.nights) {
     if (NOW < L.nightEnd(k) || (!n.coverageBps && !n.work)) continue;
-    finished.push({ night: k, km: n.distanceKm, coverageBps: n.coverageBps, slots: n.slots, blocks: null, prevBlocks: null });
+    const saved = byNight.get(k);
+    if (saved && saved.coverageBps > n.coverageBps) continue;
+    byNight.set(k, { night: k, km: n.distanceKm, coverageBps: n.coverageBps, slots: n.slots, blocks: null, prevBlocks: null });
   }
-  finished.sort((a, b) => (a.night < b.night ? -1 : 1));
+  const finished = [...byNight.values()].sort((a, b) => (a.night < b.night ? -1 : 1));
   finished.forEach((n) => { n.facts = L.nightFacts(n); });
   const me = finished.find((n) => n.night === night);
-  const firstAt = Date.parse((H.raw.lifetime || {}).firstObservedAt) || H.stats.firstAt;
+  const apiFirst = Date.parse((H.raw.lifetime || {}).firstObservedAt) || H.stats.firstAt;
+  const savedFirst = DIARY_FILE && Date.parse(DIARY_FILE.firstObservedAt);
+  const firstAt = savedFirst && (!apiFirst || savedFirst < apiFirst) ? savedFirst : apiFirst;
   const ctx = {
     habits: L.diaryHabits(finished.filter((n) => n.night <= night)),
     firstNight: firstAt ? L.liveNightAt(firstAt) : finished[0] && finished[0].night,

@@ -181,11 +181,11 @@ create table if not exists public.wallet_links (
   updated_at timestamptz not null default now()
 );
 
--- One wallet, one nickname: otherwise extra nicknames could farm cards into one wallet.
--- If this line fails, two nicknames already share a wallet. See which with
---   select lower(wallet), array_agg(player_id) from public.wallet_links group by 1 having count(*) > 1;
--- and delete all but one of those rows, then run this file again.
-create unique index if not exists wallet_links_wallet_key on public.wallet_links (lower(wallet));
+-- One wallet, one nickname's cards: the minting bot gives a wallet's cards to the first
+-- nickname that proved it with a signature, and ignores the rest. (An earlier version made
+-- the database refuse a second link to a wallet. It can't check signatures, so anyone could
+-- claim someone else's wallet first and lock them out. This removes that rule.)
+drop index if exists public.wallet_links_wallet_key;
 
 drop trigger if exists wallet_links_touch on public.wallet_links;
 create trigger wallet_links_touch

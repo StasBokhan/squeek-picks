@@ -1,7 +1,10 @@
 // Saves Squeektoshi's finished nights to data/diary.json, once a day from GitHub Actions.
 // The Squeekchain API only keeps the last 30 days, so this is how the diary keeps nights
 // for longer. Nights still inside the API's 30 days are refreshed on every run (late data
-// can fill a gap); older nights stay as they were saved.
+// can fill a gap); older nights stay as they were saved. A saved night is never replaced by
+// a less complete copy: when Squeekchain starts its history again with a new deployment, the
+// API only half sees the night of the restart and nothing before it. The records keep the
+// best of the saved ones and the API's, and firstObservedAt the earliest ever seen.
 //
 // Needs no packages and no secrets: it only reads the public API and writes one file.
 //
@@ -66,6 +69,7 @@ for (const [night, n] of stats.nights) {
   if (NOW < L.nightEnd(night)) continue;            // still running
   if (empty(n)) continue;                            // no data at all for that day
   const prev = nights[night];
+  if (prev && prev.coverageBps > n.coverageBps) continue;   // keep the more complete copy
   const blocksFinal = NOW >= L.nightEnd(night) + BLOCKS_FINAL_AFTER;
   const blocks = settlements && blocksFinal && settlements.blocks.has(night) ? settlements.blocks.get(night) : prev ? prev.blocks : null;
   const rec = {
@@ -81,12 +85,16 @@ for (const [night, n] of stats.nights) {
   nights[night] = rec;
 }
 
+function earliest(a, b) {
+  if (!a || !b) return a || b || null;
+  return Date.parse(a) <= Date.parse(b) ? a : b;
+}
 const sorted = Object.fromEntries(Object.keys(nights).sort().map((k) => [k, nights[k]]));
 const next = {
   about: "Squeektoshi's finished nights, saved once a day from the Squeekchain API. A night runs 12:00 to 12:00 UTC and is named by its first day. km is the distance run, slots the wheel work per half hour from 12:00 UTC, blocks the Squeek blocks settled that night.",
-  firstObservedAt: raw.lifetime && raw.lifetime.firstObservedAt || old.firstObservedAt || null,
+  firstObservedAt: earliest(old.firstObservedAt, raw.lifetime && raw.lifetime.firstObservedAt),
   lifetime: raw.lifetime || old.lifetime || null,
-  records: raw.records || old.records || null,
+  records: L.mergeRecords(old.records, raw.records),
   nights: sorted,
 };
 const same = JSON.stringify(Object.assign({}, old, { updatedAt: undefined })) === JSON.stringify(Object.assign({}, next, { updatedAt: undefined }));

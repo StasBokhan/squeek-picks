@@ -69,12 +69,15 @@ const [statsRaw, setRaw] = await Promise.all([
 ]);
 const st = L.parseStats(statsRaw), sb = L.parseSettlements(setRaw);
 if (!st) fail("The Squeekchain API returned no activity data.");
+// The saved diary: its nights stand in where the API's history no longer has them whole.
+let DIARY_FILE = null;
+try { DIARY_FILE = JSON.parse(readFileSync(env.DIARY_FILE || new URL("../data/diary.json", import.meta.url), "utf8")); } catch (e) { DIARY_FILE = null; }
+const DIARY = DIARY_FILE && DIARY_FILE.nights || null;
 const H = {
   nights: st.nights, statsAt: st.at, statsFrom: st.from, firstAt: st.firstAt,
   blocks: sb ? sb.blocks : new Map(), blocksAt: sb ? sb.at : 0, blocksFrom: sb ? sb.from : 0, settledTs: sb ? sb.settledTs : 0,
+  archive: L.archiveNights(DIARY_FILE),
 };
-let DIARY = null;
-try { DIARY = JSON.parse(readFileSync(new URL("../data/diary.json", import.meta.url), "utf8")).nights || null; } catch (e) { DIARY = null; }
 const slotsOf = (date) => {
   const d = DIARY && DIARY[date];
   if (d && d.slots) return d.slots.map((x) => (x == null ? null : Number(x)));

@@ -69,7 +69,8 @@ It's off until email sending is set up (`EMAIL_LOGIN` in `config.js`). Supabase'
 - Pot tickets lock in the contract. Pot picks are public on the blockchain once bought.
 - The bot can only pay a night to players who hold a ticket for it, and only between the end of the night and the 3-day refund window.
 - Settings can only be changed by the owner wallet, and never the money in the pot.
-- A wallet gets one nickname's Night Cards: the database refuses to link it to a second nickname, and the minting bot ignores a wallet linked twice. Extra nicknames can't farm cards into one wallet.
+- A wallet gets one nickname's Night Cards: the minting bot gives a wallet's cards to the first nickname that proved it owns it with a signature, and ignores any other link to it. Extra nicknames can't farm cards into one wallet, and nobody can lock a wallet's owner out by linking it first.
+- Results don't depend on Squeekchain keeping its history. Every finished night is saved to `data/diary.json` once a day, and a saved night is never replaced by a less complete copy. When Squeekchain restarts its history with a new deployment (as it did on 4 to 5 November 2026), the page and the bots score the nights before from the saved copies, and never compare block counts across the restart (that market voids).
 
 ## Audit
 

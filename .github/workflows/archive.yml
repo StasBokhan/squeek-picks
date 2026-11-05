@@ -20,10 +20,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20    # room for retries: a timed-out request can take 100 s
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 22   # Node 20 is past its end of life
       - name: Save finished nights
         run: |
           # Up to 3 tries, 30 s apart: the API or the RPC sometimes times out. Safe to repeat.
