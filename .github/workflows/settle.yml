@@ -21,7 +21,7 @@ permissions:
 jobs:
   settle:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20    # room for retries: a timed-out request can take 100 s
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -36,7 +36,13 @@ jobs:
           SETTLER_PRIVATE_KEY: ${{ secrets.SETTLER_PRIVATE_KEY }}
           SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
           POT_ADDRESS: ${{ vars.POT_ADDRESS }}
-        run: node settle.mjs
+        run: |
+          # Up to 3 tries, 30 s apart: the API or the RPC sometimes times out. Safe to repeat.
+          for try in 1 2 3; do
+            node settle.mjs && exit 0
+            [ "$try" -lt 3 ] && { echo "Try $try failed; trying again in 30 s."; sleep 30; }
+          done
+          exit 1
       # Night Cards: once a season night's results are final, mints players' cards to the
       # wallets they linked. Does nothing until CARDS_ADDRESS is set in config.js.
       - name: Mint Night Cards
@@ -46,7 +52,13 @@ jobs:
         env:
           SETTLER_PRIVATE_KEY: ${{ secrets.SETTLER_PRIVATE_KEY }}
           SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
-        run: node cards.mjs
+        run: |
+          # Up to 3 tries, 30 s apart: the API or the RPC sometimes times out. Safe to repeat.
+          for try in 1 2 3; do
+            node cards.mjs && exit 0
+            [ "$try" -lt 3 ] && { echo "Try $try failed; trying again in 30 s."; sleep 30; }
+          done
+          exit 1
       # Telegram: results and the last call. Does nothing until TELEGRAM_BOT_TOKEN (secret)
       # and TELEGRAM_CHAT_ID (variable) are set. Runs even if the payout step failed.
       - name: Load what was already posted

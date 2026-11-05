@@ -94,14 +94,18 @@ async function pointsNight(night) {
   catch (e) { answers = []; }
   return { picks, answers };
 }
-// Linked wallets, only where the signature proves the wallet asked for the cards.
-const wallets = new Map();
+// Linked wallets, only where the signature proves the wallet asked for the cards. A wallet
+// counts for one nickname only, the first that linked it (the database refuses a second).
+const wallets = new Map(), owner = new Map();
 try {
-  for (const w of await sbGet("wallet_links?select=player_id,wallet,message,signature&limit=10000")) {
+  for (const w of await sbGet("wallet_links?select=player_id,wallet,message,signature,updated_at&order=updated_at.asc&limit=10000")) {
     try {
       if (w.message !== L.linkMessage(w.wallet, w.player_id)) continue;
       if (ethers.verifyMessage(w.message, w.signature).toLowerCase() !== String(w.wallet).toLowerCase()) continue;
-      wallets.set(w.player_id, ethers.getAddress(w.wallet));
+      const addr = ethers.getAddress(w.wallet);
+      if (owner.has(addr)) { console.log(`::warning::${addr} is linked to more than one nickname; its cards go to the first only.`); continue; }
+      owner.set(addr, w.player_id);
+      wallets.set(w.player_id, addr);
     } catch (e) { /* a bad signature: no cards to that wallet */ }
   }
 } catch (e) { console.log(`::warning::Couldn't read linked wallets (${e.message}).`); }

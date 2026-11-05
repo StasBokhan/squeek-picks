@@ -181,6 +181,12 @@ create table if not exists public.wallet_links (
   updated_at timestamptz not null default now()
 );
 
+-- One wallet, one nickname: otherwise extra nicknames could farm cards into one wallet.
+-- If this line fails, two nicknames already share a wallet. See which with
+--   select lower(wallet), array_agg(player_id) from public.wallet_links group by 1 having count(*) > 1;
+-- and delete all but one of those rows, then run this file again.
+create unique index if not exists wallet_links_wallet_key on public.wallet_links (lower(wallet));
+
 drop trigger if exists wallet_links_touch on public.wallet_links;
 create trigger wallet_links_touch
   before insert or update on public.wallet_links

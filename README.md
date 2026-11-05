@@ -50,12 +50,26 @@ A collectible for each season night a player calls well, on Sepolia (`contracts/
 - If a payout can't be sent to a wallet, it waits in the contract and the player collects it from the page.
 - The page and the bot use the same rules file (`src/logic.js`), so the expected winners shown on the page match what the bot pays.
 
+### Email sign-in
+
+Players start with no sign-up: a nickname and their picks, kept in the browser they played in. Adding an email keeps the nickname for good: the page emails a code, the player types it, and from then on the same email signs in on any phone or computer, with a new code each time. No passwords, and no wallet needed. Signing out only signs out that browser. Without an email, a nickname is lost when the browser's data is cleared (Safari clears it after a week without a visit), and the nickname can't be taken again.
+
+It's off until email sending is set up (`EMAIL_LOGIN` in `config.js`). Supabase's own email only reaches the project's team, so it needs a sender of your own, for example Resend (free for 3,000 emails a month):
+
+1. **Resend:** sign up at resend.com, add the domain `squeekpicks.xyz`, and add the DNS records it shows (for `send` and `resend._domainkey`) in Porkbun. Press Verify. Then create an API key with sending access. It goes into Supabase only, nowhere else.
+2. **Supabase, Authentication → Emails → SMTP Settings:** turn on custom SMTP. Sender email `login@squeekpicks.xyz`, sender name `Squeek Picks`, host `smtp.resend.com`, port `465`, username `resend`, password: the API key.
+3. **Supabase, Authentication → Emails → Templates:** set **Magic Link** to `email-templates/sign-in.html` and **Change Email Address** to `email-templates/add-email.html`, both with the subject `Your Squeek Picks code`. They send a code (`{{ .Token }}`) instead of a link, so it works in any browser, including the ones inside X and Telegram.
+4. **Supabase, Authentication → Sign In / Providers:** keep **Allow anonymous sign-ins** on, turn on **Allow manual linking** (Supabase needs it to give an anonymous player an email), and under **Email** keep **Confirm email** on (that's what makes adding an email need the code).
+5. **Supabase, Authentication → URL Configuration:** Site URL `https://squeekpicks.xyz`.
+6. Set `EMAIL_LOGIN: true` in `config.js`.
+
 ## What protects the game
 
 - Points picks lock in the database and stay hidden until the night starts.
 - Pot tickets lock in the contract. Pot picks are public on the blockchain once bought.
 - The bot can only pay a night to players who hold a ticket for it, and only between the end of the night and the 3-day refund window.
 - Settings can only be changed by the owner wallet, and never the money in the pot.
+- A wallet gets one nickname's Night Cards: the database refuses to link it to a second nickname, and the minting bot ignores a wallet linked twice. Extra nicknames can't farm cards into one wallet.
 
 ## Audit
 
@@ -78,7 +92,7 @@ To run the tests: `cd contracts && npm ci && npm test` (the pot and the Night Ca
 - **The results are only as good as the device.** Squeekchain's docs say a signature proves which key signed a record, not that a hamster ran. That's fine for test ETH, and the reason this stays on Sepolia.
 - **Picks in the pot are public** once a ticket is bought, so a later player can see earlier picks.
 - **GitHub pauses scheduled workflows** in repositories with no activity for 60 days. Re-enable it in the Actions tab if that happens. Missed nights can still be refunded.
-- **The public Sepolia RPC** can be slow or rate limited. If the bot's runs fail with network errors, get a free Sepolia RPC URL from Alchemy or Infura and add it as a secret named `SEPOLIA_RPC_URL`.
+- **The public Sepolia RPC** can be slow or rate limited. The bots try each step up to 3 times. If their runs still fail with network errors, get a free Sepolia RPC URL from Alchemy or Infura and add it as a secret named `SEPOLIA_RPC_URL`.
 - **A deployed contract can't be changed.** To change the rules, deploy a new pot (the admin page, `?admin`, offers it when the source has a newer version), set `POT_ADDRESS` to it and add the old one to `OLD_POTS` in `config.js`, so the old pot's last nights still show and get paid. Unpaid nights on the old pot become refundable after 3 days.
 - **The Squeekchain API is in active development.** If it changes, parts of the page show as unavailable rather than wrong, and the bot waits instead of paying out.
 

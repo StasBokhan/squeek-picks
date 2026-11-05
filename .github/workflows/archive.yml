@@ -18,14 +18,20 @@ permissions:
 jobs:
   archive:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20    # room for retries: a timed-out request can take 100 s
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
       - name: Save finished nights
-        run: node archive/archive.mjs
+        run: |
+          # Up to 3 tries, 30 s apart: the API or the RPC sometimes times out. Safe to repeat.
+          for try in 1 2 3; do
+            node archive/archive.mjs && exit 0
+            [ "$try" -lt 3 ] && { echo "Try $try failed; trying again in 30 s."; sleep 30; }
+          done
+          exit 1
       # All-time numbers for the page's stats line (pot tickets, ETH paid, players, calls).
       - name: Install
         working-directory: settler
@@ -36,7 +42,13 @@ jobs:
         env:
           SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
           POT_ADDRESS: ${{ vars.POT_ADDRESS }}
-        run: node stats.mjs
+        run: |
+          # Up to 3 tries, 30 s apart: the API or the RPC sometimes times out. Safe to repeat.
+          for try in 1 2 3; do
+            node stats.mjs && exit 0
+            [ "$try" -lt 3 ] && { echo "Try $try failed; trying again in 30 s."; sleep 30; }
+          done
+          exit 1
       - name: Commit if anything changed
         run: |
           git add -N data/

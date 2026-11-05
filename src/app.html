@@ -3,6 +3,19 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="squeekchain-project" content="66af5fa9-77e6-4063-94a0-a7113106afe9">
 <meta name="description" content="Squeektoshi is a real hamster on a real wheel. Guess how his next night goes: how far he runs, his busiest 3 hours, more or fewer blocks. Free.">
+<!-- The picture and words a link to the site shows on X, Telegram, Discord and the like -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Squeek Picks">
+<meta property="og:title" content="Squeek Picks: guess how a real hamster runs tonight">
+<meta property="og:description" content="Squeektoshi is a real hamster on a real wheel. Guess his next night: how far he runs, his busiest 3 hours, more or fewer blocks. Free, just a nickname.">
+<meta property="og:url" content="https://squeekpicks.xyz/">
+<meta property="og:image" content="https://squeekpicks.xyz/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Squeektoshi running in his wheel, his distance tonight on the till's display, and squeekpicks.xyz">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://squeekpicks.xyz/og.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preload" href="fonts/hanken-grotesk.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/courier-prime-700.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/doto.woff2" as="font" type="font/woff2" crossorigin>
@@ -31,14 +44,14 @@
   --counter: #1A1815;          /* the dark counter everything sits on */
   --chalk: #EFE6D2;            /* text and line art on the counter */
   --chalk-2: rgba(239, 230, 210, .70);
-  --chalk-3: rgba(239, 230, 210, .46);
+  --chalk-3: rgba(239, 230, 210, .56);   /* small grey text: still 5:1 on the counter */
   --line: rgba(239, 230, 210, .13);
   --wash: rgba(239, 230, 210, .06);
   --paper: #F4EFE4;
   --paper-2: #E9E2D3;
   --ink: #1E1B17;
   --ink-2: rgba(30, 27, 23, .70);
-  --ink-3: rgba(30, 27, 23, .50);
+  --ink-3: rgba(30, 27, 23, .64);        /* small grey text: 4.6:1 on paper */
   --rule: rgba(30, 27, 23, .16);
   --rule-2: rgba(30, 27, 23, .26);   /* edges of the buttons on paper */
   --dot-off: rgba(239, 230, 210, .16);
@@ -228,6 +241,8 @@ a { color: inherit; text-underline-offset: 3px; }
 .quick { justify-self: center; font-size: 14px; color: var(--ink-2); }
 .linklike { background: none; border: 0; padding: 0; color: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; font: inherit; }
 .streak-note { margin: 0; text-align: center; font-size: 14px; color: var(--ink-2); }
+.after-note { margin: 0; text-align: center; font-size: 14px; line-height: 1.5; color: var(--ink-2); overflow-wrap: anywhere; }
+.after-note b { color: var(--ink); font-weight: 650; }
 .streak-note strong { color: var(--ink); }
 .msg { margin: 0; font-size: 14px; }
 .msg:empty { display: none; }
@@ -435,6 +450,19 @@ tr.mine td { background: var(--wash); }
 .share-dlg .msg.ok { color: var(--good-ink); }
 .share-dlg .msg.err { color: var(--bad-ink); }
 .btn-2[aria-disabled="true"] { opacity: .45; pointer-events: none; }
+/* Your account */
+.acct-dlg { width: min(460px, calc(100vw - 24px)); }
+.acct-body { display: grid; gap: 12px; }
+.acct-body p { margin: 0; font-size: 15.5px; line-height: 1.5; overflow-wrap: anywhere; }
+.acct-body p.hint { font-size: 13.5px; }
+.acct-form { display: grid; gap: 8px; }
+.acct-form label { font: 650 14px/1.3 var(--sans); }
+.acct-form input { min-width: 0; height: 48px; border: 1.5px solid var(--rule-2); border-radius: 6px; background: #FBF8F1; font: 600 17px var(--sans); padding: 0 12px; color: var(--ink); }
+.acct-form input:focus { outline: none; border-color: var(--ink); }
+.acct-form #acct-code { font: 700 26px var(--mono); letter-spacing: .18em; }
+.acct-body .btn-2 { justify-self: start; min-height: 42px; padding: 0 18px; border-radius: 999px; border: 1px solid var(--ink-3); background: none; font: 600 14.5px/1 var(--sans); cursor: pointer; }
+.me button.who-me { background: none; border: 0; cursor: pointer; }
+.me button.who-me:hover b { text-decoration: underline; text-underline-offset: 3px; }
 
 /* ---------- Views: the game, or his diary (#diary) ---------- */
 body[data-view="diary"] .game-only, body:not([data-view="diary"]) .diary-only { display: none !important; }
@@ -643,11 +671,14 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg, ht
               <label for="nick">Your nickname</label>
               <input type="text" id="nick" maxlength="20" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="wheel_watcher" aria-describedby="nick-hint">
               <p class="hint" id="nick-hint">For the leaderboard. 2 to 20 letters, numbers, dots, dashes or underscores. No sign-up.</p>
+              <p class="hint" id="signin-line" hidden>Played on another device? <button type="button" class="linklike" data-acct="signin">Sign in with your email</button></p>
             </div>
             <button class="primary" type="submit" id="save">Save my picks</button>
             <p class="msg" id="save-msg" role="status"></p>
             <div class="quick" id="quick" hidden>or <button type="button" class="linklike" id="quick-pick">fill in his usual night</button></div>
             <p class="streak-note" id="streak-note" hidden></p>
+            <p class="after-note" id="acct-note" hidden></p>
+            <p class="after-note" id="tg-note" hidden>Results and a last call before picks close: <a id="tg-note-link" href="#" target="_blank" rel="noopener">Telegram</a></p>
           </div>
         </form>
       </section>
@@ -845,6 +876,18 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg, ht
   </div>
   <p class="hint">On phones, Share image opens your apps with the picture attached. Post on X opens a ready post; add the downloaded picture to it.</p>
   <p class="msg" id="share-msg" role="status"></p>
+</dialog>
+
+<!-- Your account: an email keeps your nickname on any device -->
+<dialog class="share-dlg acct-dlg" id="acct" aria-labelledby="acct-h">
+  <div class="sd-head">
+    <h2 id="acct-h">Your account</h2>
+    <button type="button" class="icon-btn" data-acct="close" aria-label="Close">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="acct-body" id="acct-body"></div>
+  <p class="msg" id="acct-msg" role="status"></p>
 </dialog>
 
 <script src="config.js"></script>
@@ -1104,6 +1147,8 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg, ht
   var G = {
     mode: configured ? "remote" : "local",
     sb: null, uid: null, me: null,
+    email: null,        // the email your nickname signs in with, once you've added one
+    anon: false,        // playing without an email: the nickname lives in this browser only
     players: new Map(), picks: [], sample: new Set(),
     hasDouble: false,   // the database has the season's double_market column
     hasCalls: false,    // the database has the live calls table
@@ -1148,6 +1193,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg, ht
       var session = r.data && r.data.session;
       if (!session) return;
       G.uid = session.user.id;
+      setUser(session.user);
       return G.sb.from("players").select("id,nickname").eq("id", G.uid).maybeSingle().then(function (p) {
         if (p.data) G.me = p.data;
       });
@@ -1220,6 +1266,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg, ht
         throw new Error(/disabled/i.test(r.error.message || "") ? "New players can't sign up right now: anonymous sign-ins are turned off for this site." : r.error.message);
       }
       G.uid = r.data.user.id;
+      setUser(r.data.user);
     });
     return ready.then(function () {
       return G.sb.from("players").insert({ id: G.uid, nickname: nick });
@@ -1250,6 +1297,150 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg, ht
   }
 
   function picksFor(night) { return G.picks.filter(function (p) { return p.night === night; }); }
+
+  // ---------- Your account: the nickname on any device ----------
+  // Players start without signing up: an anonymous Supabase account, kept in this browser.
+  // Adding an email keeps the nickname for good: a code sent to the address proves it, and
+  // the same email then signs in on any phone or computer, with a new code each time. No
+  // passwords. Needs EMAIL_LOGIN in config.js and email sending set up in Supabase (README).
+  var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  var RESEND_MS = 60e3;   // Supabase sends one code a minute per address
+  var A = { kind: "save", step: "email", email: "", busy: false, sentAt: 0 };
+  function emailOn() { return G.mode === "remote" && !!G.sb && !!CONFIG.EMAIL_LOGIN; }
+  function setUser(u) {
+    G.anon = !!(u && u.is_anonymous);
+    G.email = u && !u.is_anonymous && u.email ? u.email : null;
+  }
+  function acctMsg(text, kind) { say("acct-msg", text, kind); }
+  function authError(e) {
+    var m = (e && (e.message || e.msg || e.error_description)) || String(e);
+    if (/rate limit|security purposes|too many/i.test(m)) return "Too many tries for now. Wait a minute, then try again.";
+    if (/(token|otp|code).*(expired|invalid)|(expired|invalid).*(token|otp|code)/i.test(m)) return "That code didn't work. Use the newest email, or send a new code.";
+    if (/already (been )?registered|email_exists|already in use/i.test(m)) return "That email already belongs to another nickname. Sign in with it instead.";
+    if (/signups not allowed|not allowed for otp|user not found/i.test(m)) return "No nickname uses this email yet. Save your picks with a nickname first, then add your email.";
+    if (/sending|smtp|not authorized|unable to send/i.test(m)) return "Couldn't send the email right now. Try again in a while.";
+    if (/email/i.test(m) && /invalid|validate/i.test(m)) return "That doesn't look like an email address.";
+    if (/fetch|network/i.test(m)) return "Couldn't reach the game. Check your connection and try again.";
+    return m;
+  }
+  // Under the Save button: keep your nickname with an email, or who you're signed in as.
+  function renderAcctNote() {
+    var on = emailOn(), el = $("acct-note");
+    $("signin-line").hidden = !on || !!G.me;
+    if (!on || !G.me) { el.hidden = true; return; }
+    el.innerHTML = G.email
+      ? "Signed in as <b>" + esc(G.email) + '</b> · <button type="button" class="linklike" data-acct="open">Account</button>'
+      : 'Your nickname is only in this browser. <button type="button" class="linklike" data-acct="save">Add your email</button> to play on any device.';
+    el.hidden = false;
+  }
+  function openAcct(kind) {
+    if (!emailOn()) return;
+    if (!kind || kind === "open") kind = G.email ? "account" : G.me ? "save" : "signin";
+    A = { kind: kind, step: "email", email: "", busy: false, sentAt: 0 };
+    acctMsg("");
+    renderAcct();
+    var d = $("acct");
+    if (!d.open) { try { d.showModal(); } catch (x) { d.setAttribute("open", ""); } }
+    var f = $("acct-email") || $("acct-body").querySelector("button");
+    if (f) f.focus();
+  }
+  function closeAcct() { var d = $("acct"); if (d.open) { try { d.close(); } catch (x) { d.removeAttribute("open"); } } }
+  function renderAcct() {
+    var nick = G.me ? "<b>" + esc(G.me.nickname) + "</b>" : "your nickname", html, title;
+    function form(id, label, input, button) {
+      return '<form class="acct-form" id="acct-form" novalidate><label for="' + id + '">' + label + "</label>" + input +
+        '<button class="primary" type="submit">' + button + "</button></form>";
+    }
+    if (A.step === "done") {
+      title = "Email added";
+      html = "<p>Done. To play as " + nick + " on another phone or computer, sign in there with <b>" + esc(A.email) + "</b>.</p>" +
+        '<button type="button" class="primary" data-acct="close">Back to my picks</button>';
+    } else if (A.kind === "account") {
+      title = "Your account";
+      html = "<p>You play as " + nick + ". To play on another device, sign in there with <b>" + esc(G.email || "") + "</b>.</p>" +
+        '<button type="button" class="btn-2" data-acct="signout">Sign out of this browser</button>';
+    } else if (A.step === "code") {
+      title = A.kind === "save" ? "Add your email" : "Sign in";
+      html = "<p>We sent a code to <b>" + esc(A.email) + "</b>. It can take a minute, and sometimes lands in spam.</p>" +
+        form("acct-code", "Code from the email", '<input type="text" id="acct-code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456" spellcheck="false">',
+          A.kind === "save" ? "Add my email" : "Sign in") +
+        '<p class="hint"><button type="button" class="linklike" data-acct="back">Use another email</button> · <button type="button" class="linklike" data-acct="resend">Send a new code</button></p>';
+    } else {
+      title = A.kind === "save" ? "Add your email" : "Sign in";
+      html = (A.kind === "save"
+        ? "<p>You play as " + nick + ", but only in this browser. Add your email and play as " + nick + " on your phone, your laptop, anywhere.</p>"
+        : "<p>Added an email to your nickname? Enter it and we'll send you a code to sign in.</p>" +
+          (G.me && G.anon ? '<p class="hint">This browser plays as ' + nick + " without an email. If you sign in, it switches to the nickname on your email and " + nick + " stays behind.</p>" : "")) +
+        form("acct-email", "Email", '<input type="email" id="acct-email" autocomplete="email" autocapitalize="off" spellcheck="false" placeholder="you@example.com" value="' + esc(A.email) + '">', "Send me a code") +
+        '<p class="hint">We only email you a code to sign in: no password, no newsletter.' +
+        (A.kind === "save" ? ' Already added an email to another nickname? <button type="button" class="linklike" data-acct="signin">Sign in instead</button>' : "") + "</p>";
+    }
+    $("acct-h").textContent = title;
+    $("acct-body").innerHTML = html;
+  }
+  // Disables the dialog's main button while a request runs, without redrawing what was typed.
+  function setBusy(on, label) {
+    A.busy = on;
+    var b = $("acct-body").querySelector("button[type=submit], button[data-acct=signout]");
+    if (!b) return;
+    if (on) { b.dataset.label = b.textContent; b.textContent = label; } else if (b.dataset.label) b.textContent = b.dataset.label;
+    b.disabled = on;
+  }
+  function sendCode(again) {
+    if (A.busy) return;
+    var email = again ? A.email : ((($("acct-email") || {}).value) || "").trim().toLowerCase();
+    if (!EMAIL_RE.test(email)) { acctMsg("Enter your email address, like you@example.com.", "err"); return; }
+    var wait = A.sentAt + RESEND_MS - Date.now();
+    if (again && wait > 0) { acctMsg("You can ask for a new code in " + Math.ceil(wait / 1000) + " s.", "err"); return; }
+    setBusy(true, "Sending…"); acctMsg(again ? "Sending a new code…" : "");
+    var req = A.kind === "save" ? G.sb.auth.updateUser({ email: email })
+      : G.sb.auth.signInWithOtp({ email: email, options: { shouldCreateUser: false } });
+    return req.then(function (r) {
+      if (r.error) throw r.error;
+      A.email = email; A.sentAt = Date.now(); A.busy = false;
+      // With email confirmation off in Supabase, the address is saved at once, with no code.
+      var u = r.data && r.data.user;
+      if (A.kind === "save" && u && !u.is_anonymous && u.email === email && !u.new_email) { setUser(u); A.step = "done"; renderAcct(); renderAll(); return; }
+      A.step = "code"; renderAcct(); acctMsg(again ? "New code sent." : "", "ok");
+      $("acct-code").focus();
+    }).catch(function (e) { setBusy(false); acctMsg(authError(e), "err"); });
+  }
+  function checkCode() {
+    if (A.busy) return;
+    var token = ((($("acct-code") || {}).value) || "").replace(/\D/g, "");
+    if (token.length < 6) { acctMsg("Enter the code from the email.", "err"); return; }
+    var signin = A.kind !== "save";
+    setBusy(true, "Checking…"); acctMsg("");
+    return G.sb.auth.verifyOtp({ email: A.email, token: token, type: signin ? "email" : "email_change" }).then(function (r) {
+      if (r.error) throw r.error;
+      var u = r.data && (r.data.user || (r.data.session && r.data.session.user));
+      if (!u) throw new Error("Couldn't sign in. Try again.");
+      setUser(u);
+      if (!signin) { A.busy = false; A.step = "done"; renderAcct(); renderAll(); return; }
+      // Signed in: this browser plays as the nickname on that email from now on.
+      G.uid = u.id; G.me = null; G.link = null;
+      return G.sb.from("players").select("id,nickname").eq("id", G.uid).maybeSingle().then(function (p) {
+        if (p.data) G.me = p.data;
+        return gameRefresh();
+      }).then(function () {
+        A.busy = false; closeAcct();
+        syncDraftFromSaved(); renderAll();
+        say("save-msg", G.me ? "Signed in. You play as " + G.me.nickname + "." : "Signed in. Pick a nickname to play.", "ok");
+      });
+    }).catch(function (e) { setBusy(false); acctMsg(authError(e), "err"); });
+  }
+  // Signs out here only: other devices stay signed in.
+  function signOut() {
+    if (A.busy) return;
+    setBusy(true, "Signing out…");
+    G.sb.auth.signOut({ scope: "local" }).then(function (r) {
+      if (r && r.error) throw r.error;
+      G.uid = null; G.me = null; G.email = null; G.anon = false; G.link = null;
+      A.busy = false; closeAcct();
+      syncDraftFromSaved(); renderAll();
+      say("save-msg", "Signed out of this browser. Sign in with your email to play here again.", "ok");
+    }).catch(function (e) { setBusy(false); acctMsg(authError(e), "err"); });
+  }
 
   // ---------- Live calls ----------
   function callSave(night, no, over) {
@@ -2575,7 +2766,6 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg, ht
     if (dh.topIdx >= 0) UI.usual.peak = dh.topIdx;
     else if (H.typical) UI.usual.peak = shares.indexOf(Math.max.apply(null, shares));
     if (dh.flips.length && dh.more * 2 !== dh.flips.length) UI.usual.more = dh.more * 2 > dh.flips.length;
-    $("quick").hidden = UI.usual.km == null && UI.usual.peak == null;
     var liveBlocks = H.blocks.get(live);
     $("hint-blocks").innerHTML = (liveBlocks == null ? "Tonight's count settles " + esc(fmtDayTime(nightEnd(live))) + "."
       : "Tonight so far: " + fmtInt(liveBlocks) + ", final " + esc(fmtDayTime(nightEnd(live))) + ".") +
@@ -2632,7 +2822,15 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg, ht
   function renderSave() {
     var btn = $("save"), v = draftValid(), saved = myPick(UI.open);
     renderStreak();
+    renderAcctNote();
     $("nick-row").hidden = !!G.me;
+    // "Fill in his usual night" helps before saving; once the picks are saved it's noise.
+    var u = UI.usual || {};
+    $("quick").hidden = (u.km == null && u.peak == null) || !!(saved && !UI.dirty);
+    // The Telegram channel, once there's something to follow: your saved picks.
+    var tg = /^https:\/\/(t\.me|telegram\.me)\//.test(CONFIG.TELEGRAM_URL || "");
+    $("tg-note").hidden = !(tg && G.me && saved);
+    if (tg) $("tg-note-link").href = CONFIG.TELEGRAM_URL;
     // The SAVED stamp sits on saved picks until they're changed.
     var stamped = !!(G.me && saved && !UI.dirty && !UI.saving);
     $("saved-stamp").hidden = !stamped;
@@ -3664,6 +3862,7 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg, ht
   function saveLink(row) {
     if (G.mode === "local") { var l = readLocal(); l.wallet = row; writeLocal(l); G.link = row; return Promise.resolve(); }
     return G.sb.from("wallet_links").upsert(Object.assign({ player_id: G.uid }, row), { onConflict: "player_id" }).then(function (r) {
+      if (r.error && r.error.code === "23505") throw new Error("That wallet already gets another nickname's cards. Link a different wallet.");
       if (r.error) throw new Error(r.error.message);
       G.link = row;
     });
@@ -3862,7 +4061,9 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg, ht
 
   function renderMe() {
     var el = $("me"), html = "";
-    if (G.me) html = '<span class="who-me" title="' + esc("Playing as " + G.me.nickname) + '"><i aria-hidden="true"></i><b>' + esc(G.me.nickname) + "</b></span>";
+    if (G.me) html = emailOn()
+      ? '<button type="button" class="who-me" data-acct="open" title="' + esc("Playing as " + G.me.nickname + ". Your account") + '"><i aria-hidden="true"></i><b>' + esc(G.me.nickname) + "</b></button>"
+      : '<span class="who-me" title="' + esc("Playing as " + G.me.nickname) + '"><i aria-hidden="true"></i><b>' + esc(G.me.nickname) + "</b></span>";
     else if (H.demo) html = '<span class="chip">Preview</span>';
     if (P.on || P.demo) {
       if (!P.account) html += '<button class="wallet-btn connect" type="button" data-wallet="connect"><span class="nav-txt">Connect wallet</span><span class="nav-short">Wallet</span></button>';
@@ -3954,6 +4155,25 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg, ht
       });
     });
     $("quick-pick").addEventListener("click", quickPick);
+    // Your account
+    $("acct").addEventListener("submit", function (e) {
+      e.preventDefault();
+      if (A.step === "code") checkCode(); else sendCode(false);
+    });
+    $("acct").addEventListener("click", function (e) {
+      if (e.target !== this) return;   // a click on the dimmed area around the window
+      var r = this.getBoundingClientRect();
+      if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) closeAcct();
+    });
+    document.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-acct]"); if (!b) return;
+      var k = b.dataset.acct;
+      if (k === "close") closeAcct();
+      else if (k === "signout") signOut();
+      else if (k === "resend") sendCode(true);
+      else if (k === "back") { A.step = "email"; acctMsg(""); renderAcct(); $("acct-email").focus(); }
+      else openAcct(k);   // "open", "save" or "signin"
+    });
     $("cards").addEventListener("click", function (e) {
       var btn = e.target.closest("button[data-cards]"); if (!btn) return;
       if (btn.dataset.cards === "link") linkWallet();
