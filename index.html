@@ -94,23 +94,31 @@ a { color: inherit; text-underline-offset: 3px; }
 .wrap { max-width: 1200px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 40px; }
 @media (min-width: 720px) { .wrap { padding-left: max(28px, env(safe-area-inset-left, 0px)); padding-right: max(28px, env(safe-area-inset-right, 0px)); } }
 .top { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 0 10px; }
-.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--chalk); min-width: 0; }
+.brand { flex: none; display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--chalk); }
 .brand svg { flex: none; width: 30px; height: 34px; }
 .title { margin: 0; font: 700 18px/1.1 var(--sans); letter-spacing: -.005em; white-space: nowrap; }
-.top-right { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.top-right { flex: none; display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
 .nav-btn, .me .wallet-btn { display: inline-flex; align-items: center; gap: 7px; height: 38px; padding: 0 13px; border: 1px solid var(--line); border-radius: 999px; background: none; color: var(--chalk);
   font: 600 14px/1 var(--sans); text-decoration: none; cursor: pointer; white-space: nowrap; }
 .nav-btn:hover, .me .wallet-btn:hover { border-color: var(--chalk-3); background: var(--wash); }
 .nav-btn svg { flex: none; }
 .me { display: flex; align-items: center; gap: 6px; }
-.me .who-me { display: inline-flex; align-items: center; gap: 7px; height: 38px; padding: 0 6px; font: 600 14px/1 var(--sans); color: var(--chalk-2); max-width: 180px; }
-.me .who-me b { color: var(--chalk); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+/* Who you are, always in the header: your nickname (tap it for your account), or Sign in */
+.me .who-me { display: inline-flex; align-items: center; gap: 7px; height: 38px; padding: 0 13px; border: 1px solid var(--line); border-radius: 999px; background: none;
+  font: 600 14px/1 var(--sans); color: var(--chalk); max-width: 200px; min-width: 0; }
+.me .who-me b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
 .me .who-me i { width: 8px; height: 8px; border-radius: 50%; background: var(--hot); flex: none; }
+.me .who-me.anon i { background: none; box-shadow: inset 0 0 0 1.5px var(--hot); }   /* no email yet: this browser only */
 .me .wallet-btn .av { width: 18px; height: 18px; }
 .me .wallet-btn .nm { max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
 .nav-short { display: none; }
 .me .chip { font: 600 12px/1 var(--sans); color: var(--chalk-2); border: 1px dashed var(--chalk-3); border-radius: 999px; padding: 5px 9px; }
-@media (max-width: 520px) { .nav-txt { display: none; } .nav-short { display: inline; } .nav-btn { padding: 0 11px; } .me .who-me { display: none; } }
+@media (max-width: 520px) { .nav-txt { display: none; } .nav-short { display: inline; } .nav-btn, .me .wallet-btn, .me .who-me { padding: 0 11px; } .me .who-me { max-width: 150px; } }
+/* Short on room (phones): the Telegram icon goes first, then the site's name, then the wallet's name */
+.top.fit-1 .top-right > .tg-link { display: none; }
+.top.fit-2 .title { display: none; }
+.top.fit-3 .me .wallet-btn .nm { display: none; }
+.top.fit-3 .me .who-me { max-width: 112px; }
 .banner { margin: 0 0 14px; padding: 10px 14px; border: 1px dashed var(--chalk-3); border-radius: 6px; color: var(--chalk-2); font-size: 14px; }
 .banner strong { color: var(--chalk); }
 
@@ -467,8 +475,8 @@ tr.mine td { background: var(--wash); }
 .acct-form input:focus { outline: none; border-color: var(--ink); }
 .acct-form #acct-code { font: 700 26px var(--mono); letter-spacing: .18em; }
 .acct-body .btn-2 { justify-self: start; min-height: 42px; padding: 0 18px; border-radius: 999px; border: 1px solid var(--ink-3); background: none; font: 600 14.5px/1 var(--sans); cursor: pointer; }
-.me button.who-me { background: none; border: 0; cursor: pointer; }
-.me button.who-me:hover b { text-decoration: underline; text-underline-offset: 3px; }
+.me button.who-me { cursor: pointer; }
+.me button.who-me:hover { border-color: var(--chalk-3); background: var(--wash); }
 
 /* ---------- Views: the game, or his diary (#diary) ---------- */
 body[data-view="diary"] .game-only, body:not([data-view="diary"]) .diary-only { display: none !important; }
@@ -4592,18 +4600,32 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg, ht
     el.hidden = !parts.length;
   }
 
+  // The header always says who you are: your nickname (tap it for your account: add an email,
+  // or sign out), or Sign in when this browser has none; and your wallet, or Connect wallet.
   function renderMe() {
-    var el = $("me"), html = "";
-    if (G.me) html = emailOn()
-      ? '<button type="button" class="who-me" data-acct="open" title="' + esc("Playing as " + G.me.nickname + ". Your account") + '"><i aria-hidden="true"></i><b>' + esc(G.me.nickname) + "</b></button>"
-      : '<span class="who-me" title="' + esc("Playing as " + G.me.nickname) + '"><i aria-hidden="true"></i><b>' + esc(G.me.nickname) + "</b></span>";
+    var el = $("me"), html = "", on = emailOn();
+    if (G.me) {
+      var tip = !on ? "Playing as " + G.me.nickname : G.email ? "Playing as " + G.me.nickname + ", signed in with " + G.email
+        : "Playing as " + G.me.nickname + " in this browser only. Tap to add your email";
+      html = (on ? '<button type="button" class="who-me' + (G.email ? "" : " anon") + '" data-acct="open"' : '<span class="who-me"') +
+        ' title="' + esc(tip) + '"><i aria-hidden="true"></i><b>' + esc(G.me.nickname) + "</b>" + (on ? "</button>" : "</span>");
+    } else if (on) html = '<button type="button" class="nav-btn signin-btn" data-acct="signin">Sign in</button>';
     else if (H.demo) html = '<span class="chip">Preview</span>';
     if (P.on || P.demo) {
       if (!P.account) html += '<button class="wallet-btn connect" type="button" data-wallet="connect"><span class="nav-txt">Connect wallet</span><span class="nav-short">Wallet</span></button>';
       else html += '<button class="wallet-btn" type="button" data-wallet="account" title="' + esc(P.account) + '">' + avatar(P.account) +
         '<span class="nm">' + esc(P.demo ? "Preview wallet" : ensName(P.account) || shortAddr(P.account)) + "</span></button>";
     }
-    el.innerHTML = html;
+    if (el.innerHTML !== html) el.innerHTML = html;
+    fitHeader();
+  }
+  // Phones: makes room for who you are by letting go of the Telegram icon, then the site's
+  // name, then the wallet's name, only as far as needed.
+  function fitHeader() {
+    var top = document.querySelector(".top");
+    if (!top) return;
+    top.classList.remove("fit-1", "fit-2", "fit-3");
+    for (var n = 1; n <= 3 && top.scrollWidth > top.clientWidth + 1; n++) top.classList.add("fit-" + n);
   }
 
   function renderBanner() {
@@ -4800,7 +4822,10 @@ html[data-view="overlay"] body > .wrap, html[data-view="overlay"] .share-dlg, ht
       Array.prototype.forEach.call(document.querySelectorAll(".tg-link"), function (a) { a.href = CONFIG.TELEGRAM_URL; a.hidden = false; });
     }
     // The diary view. A link inside the same view (the small print) just scrolls there.
-    window.addEventListener("hashchange", function () { applyView(currentView() !== document.body.dataset.view); });
+    window.addEventListener("hashchange", function () { applyView(currentView() !== document.body.dataset.view); fitHeader(); });
+    var fitting = 0;
+    window.addEventListener("resize", function () { cancelAnimationFrame(fitting); fitting = requestAnimationFrame(fitHeader); });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitHeader);
     document.addEventListener("click", function (e) {
       if (e.target.closest('a[href="#small-print"]')) $("small-print").open = true;
     });
