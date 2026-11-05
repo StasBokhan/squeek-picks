@@ -29,7 +29,7 @@ window.SQUEEK_CONFIG = {
   // Email sign-in: players add an email to their nickname (a code is emailed, no password)
   // and play as it on any device. Turn on once email sending is set up in Supabase
   // (README, "Email sign-in"); until then nicknames stay in the browser they were made in.
-  EMAIL_LOGIN: false,
+  EMAIL_LOGIN: true,
 
   // The Night Cards collectibles on Sepolia, deployed from index.html?admin. Empty: no cards.
   CARDS_ADDRESS: "0x8B61ee5BD98Ce76F6bb9c8fF59dc86B6b38ea61b",
