@@ -2,14 +2,14 @@
  "about": "Squeektoshi's finished nights, saved once a day from the Squeekchain API. A night runs 12:00 to 12:00 UTC and is named by its first day. km is the distance run, slots the wheel work per half hour from 12:00 UTC, blocks the Squeek blocks settled that night.",
  "firstObservedAt": "2026-10-26T13:50:00.000Z",
  "lifetime": {
-  "acceptedWorkUnits": "3817",
-  "observedDistanceMm": "3351326",
-  "activeDayCount": 1,
-  "settledBlockCount": "366",
-  "settlementCount": "104",
+  "acceptedWorkUnits": "11048",
+  "observedDistanceMm": "9700144",
+  "activeDayCount": 2,
+  "settledBlockCount": "1140",
+  "settlementCount": "203",
   "coverageBps": 10000,
   "firstObservedAt": "2026-11-03T19:50:00.000Z",
-  "settledWorkUnits": "3817"
+  "settledWorkUnits": "11048"
  },
  "records": {
   "mostWorkHalfHour": {
@@ -38,8 +38,8 @@
    "coverage": "complete"
   },
   "longestActiveWindowMinutes": {
-   "value": "180",
-   "occurredAt": "2026-10-28T22:30:00.000Z",
+   "value": "220",
+   "occurredAt": "2026-11-06T03:50:00.000Z",
    "coverage": "complete"
   },
   "longestActiveDayStreak": {
@@ -58,7 +58,8 @@
   "2026-11-01": {"km":7.888,"coverageBps":10000,"work":8984,"slots":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,962,1197,1394,811,0,0,0,1296,1162,153,0,0,0,717,733,0,0,0,0,559,0,0,0,0,0,0,0,0,0,0],"blocks":835},
   "2026-11-02": {"km":7.661,"coverageBps":10000,"work":8725,"slots":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1202,1223,1336,1361,1275,275,588,0,0,0,0,296,1169,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"blocks":853},
   "2026-11-03": {"km":7.022,"coverageBps":10000,"work":7998,"slots":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,409,1309,953,1181,876,498,0,0,0,877,891,0,0,0,0,1004,0,0,0,0,0,0,0,0,0,0,0,0,0],"blocks":769},
-  "2026-11-04": {"km":3.351,"coverageBps":10000,"work":3817,"slots":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6,0,0,721,1130,669,962,0,329,0,0,0,0,0,0,0,0,0,0],"blocks":366}
+  "2026-11-04": {"km":3.351,"coverageBps":10000,"work":3817,"slots":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6,0,0,721,1130,669,962,0,329,0,0,0,0,0,0,0,0,0,0],"blocks":366},
+  "2026-11-05": {"km":6.349,"coverageBps":10000,"work":7231,"slots":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,258,1197,1079,995,1006,1174,996,526,0,0,0,0,0,0,0,0,0],"blocks":774}
  },
- "updatedAt": "2026-11-05T20:30:23.720Z"
+ "updatedAt": "2026-11-06T12:45:50.860Z"
 }
