@@ -1,8 +1,8 @@
 {
  "about": "All-time numbers for the stats line on the page, updated once a day. Pot numbers come from each pot's state on Sepolia; players and calls from the points game.",
  "players": 7,
- "calls": 12,
- "potTickets": 17,
+ "calls": 13,
+ "potTickets": 18,
  "potWallets": 5,
  "paidWei": "140000000000000000",
  "refundedWei": "10000000000000000",
@@ -39,11 +39,11 @@
   },
   "0xB6D75572e18ccb0D4f39Fa6Ad1A1891F1FD6E24f": {
    "version": 3,
-   "tickets": 12,
+   "tickets": 13,
    "paidWei": "100000000000000000",
    "refundedWei": "0",
    "nightsPaid": 3,
-   "nightsCancelled": 1,
+   "nightsCancelled": 2,
    "nights": {
     "2026-11-01": {
      "status": 1,
@@ -83,6 +83,15 @@
      "refundedWei": "0"
     },
     "2026-11-06": {
+     "status": 2,
+     "tickets": 1,
+     "wallets": [
+      "0xbcd309c7f99bde5018c217c1a6dc9f454c91950f"
+     ],
+     "potWei": "10000000000000000",
+     "refundedWei": "0"
+    },
+    "2026-11-07": {
      "status": 0,
      "tickets": 1,
      "wallets": [
@@ -114,5 +123,5 @@
    }
   }
  },
- "updatedAt": "2026-11-06T12:45:57.921Z"
+ "updatedAt": "2026-11-07T12:45:55.299Z"
 }
