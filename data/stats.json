@@ -43,7 +43,7 @@
    "paidWei": "100000000000000000",
    "refundedWei": "0",
    "nightsPaid": 3,
-   "nightsCancelled": 2,
+   "nightsCancelled": 3,
    "nights": {
     "2026-11-01": {
      "status": 1,
@@ -92,7 +92,7 @@
      "refundedWei": "0"
     },
     "2026-11-07": {
-     "status": 0,
+     "status": 2,
      "tickets": 1,
      "wallets": [
       "0xbcd309c7f99bde5018c217c1a6dc9f454c91950f"
@@ -123,5 +123,5 @@
    }
   }
  },
- "updatedAt": "2026-11-07T12:45:55.299Z"
+ "updatedAt": "2026-11-08T12:45:48.011Z"
 }
