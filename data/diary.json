@@ -2,14 +2,14 @@
  "about": "Squeektoshi's finished nights, saved once a day from the Squeekchain API. A night runs 12:00 to 12:00 UTC and is named by its first day. km is the distance run, slots the wheel work per half hour from 12:00 UTC, blocks the Squeek blocks settled that night.",
  "firstObservedAt": "2026-10-26T13:50:00.000Z",
  "lifetime": {
-  "acceptedWorkUnits": "42343",
-  "observedDistanceMm": "37315000",
+  "acceptedWorkUnits": "48609",
+  "observedDistanceMm": "42678702",
   "activeDayCount": 6,
-  "settledBlockCount": "4674",
-  "settlementCount": "692",
+  "settledBlockCount": "5376",
+  "settlementCount": "777",
   "coverageBps": 10000,
   "firstObservedAt": "2026-11-03T19:50:00.000Z",
-  "settledWorkUnits": "41904"
+  "settledWorkUnits": "48609"
  },
  "records": {
   "mostWorkHalfHour": {
@@ -62,7 +62,8 @@
   "2026-11-05": {"km":6.349,"coverageBps":10000,"work":7231,"slots":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,258,1197,1079,995,1006,1174,996,526,0,0,0,0,0,0,0,0,0],"blocks":774},
   "2026-11-06": {"km":6.589,"coverageBps":10000,"work":7505,"slots":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1147,869,1067,1105,935,616,613,1085,68,0,0,0,0,0,0,0,0],"blocks":859},
   "2026-11-07": {"km":8.913,"coverageBps":10000,"work":10152,"slots":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,281,632,2,0,39,0,0,1035,1131,1131,806,681,0,0,0,0,0,987,1096,1151,1180,0,0,0,0,0,0,0,0,0],"blocks":1206},
-  "2026-11-08": {"km":9.011,"coverageBps":10000,"work":10263,"slots":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,79,1542,1163,1096,867,1380,198,1129,754,0,0,0,0,711,1121,0,0,0,0,0,0,223,0,0,0,0,0,0,0,0],"blocks":1152}
+  "2026-11-08": {"km":9.011,"coverageBps":10000,"work":10263,"slots":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,79,1542,1163,1096,867,1380,198,1129,754,0,0,0,0,711,1121,0,0,0,0,0,0,223,0,0,0,0,0,0,0,0],"blocks":1152},
+  "2026-11-09": {"km":8.465,"coverageBps":10000,"work":9641,"slots":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1638,1298,1334,889,0,1414,542,0,603,945,0,0,0,0,978,0,0,0,0,0,0,0,0,0,0,0,0,0,0],"blocks":1019}
  },
- "updatedAt": "2026-11-09T22:42:30.731Z"
+ "updatedAt": "2026-11-10T12:45:48.595Z"
 }
